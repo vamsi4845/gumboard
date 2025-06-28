@@ -70,6 +70,25 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     if (!newNoteContent.trim()) return
 
+    // Calculate position for new note - place it in a grid pattern
+    const noteWidth = 192 + 16 // 48 * 4px + gap
+    const noteHeight = 192 + 16 // 48 * 4px + gap
+    const startX = 20
+    const startY = 80 // Below header
+    
+    // Find next available position
+    let newX = startX
+    let newY = startY
+    
+    if (notes.length > 0) {
+      const columns = Math.floor((window.innerWidth - 40) / noteWidth)
+      const row = Math.floor(notes.length / columns)
+      const col = notes.length % columns
+      
+      newX = startX + (col * noteWidth)
+      newY = startY + (row * noteHeight)
+    }
+
     try {
       const response = await fetch(`/api/boards/${params.id}/notes`, {
         method: "POST",
@@ -78,8 +97,8 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         },
         body: JSON.stringify({
           content: newNoteContent,
-          x: Math.random() * 300,
-          y: Math.random() * 300,
+          x: newX,
+          y: newY,
         }),
       })
 
@@ -162,9 +181,15 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     if (!draggedNote) return
 
     const note = notes.find(n => n.id === draggedNote)
+    const currentDraggedNote = draggedNote
+    
+    // Immediately stop dragging to prevent delay
+    setDraggedNote(null)
+
+    // Then update the position in the background
     if (note) {
       try {
-        await fetch(`/api/boards/${params.id}/notes/${draggedNote}`, {
+        await fetch(`/api/boards/${params.id}/notes/${currentDraggedNote}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -175,8 +200,6 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         console.error("Error updating note position:", error)
       }
     }
-
-    setDraggedNote(null)
   }
 
   if (loading) {
@@ -235,13 +258,12 @@ export default function BoardPage({ params }: { params: { id: string } }) {
           <div
             key={note.id}
             className="absolute w-48 h-48 p-4 rounded-lg shadow-md cursor-move select-none group"
-            style={{
-              backgroundColor: note.color,
-              left: note.x,
-              top: note.y,
-              transform: draggedNote === note.id ? 'rotate(5deg)' : 'rotate(0deg)',
-              zIndex: draggedNote === note.id ? 1000 : 1,
-            }}
+                         style={{
+               backgroundColor: note.color,
+               left: note.x,
+               top: note.y,
+               zIndex: draggedNote === note.id ? 1000 : 1,
+             }}
             onMouseDown={(e) => handleMouseDown(e, note.id)}
           >
             <div className="flex justify-end space-x-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
