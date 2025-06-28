@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { signOut } from "@/auth"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { Plus, Trash2, MoreVertical, Settings, LogOut } from "lucide-react"
+import { Plus, Trash2, MoreVertical, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface Board {
@@ -177,6 +177,7 @@ export default function Dashboard() {
                 <span className="text-sm font-medium">
                   {user?.name?.split(' ')[0] || 'User'}
                 </span>
+                <ChevronDown className="w-4 h-4 ml-1" />
               </button>
 
               {showUserDropdown && (
