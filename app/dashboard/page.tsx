@@ -4,12 +4,28 @@ import { Button } from "@/components/ui/button"
 import { signOut } from "@/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { db } from "@/lib/db"
 
 export default async function Dashboard() {
   const session = await auth()
 
   if (!session?.user) {
     redirect("/auth/signin")
+  }
+
+  // Check if user needs to complete profile setup
+  if (!session.user.name) {
+    redirect("/setup/profile")
+  }
+
+  // Check if user needs to complete organization setup
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: { organization: true }
+  })
+
+  if (!user?.organization) {
+    redirect("/setup/organization")
   }
 
   return (
