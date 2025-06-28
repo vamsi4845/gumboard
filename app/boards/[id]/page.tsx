@@ -41,6 +41,48 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
+  // Grid configuration
+  const GRID_SIZE = 208 // Note width (192) + gap (16)
+  const GRID_START_X = 20
+  const GRID_START_Y = 80
+
+  // Helper functions for grid positioning
+  const pixelsToGrid = (x: number, y: number) => ({
+    col: Math.round((x - GRID_START_X) / GRID_SIZE),
+    row: Math.round((y - GRID_START_Y) / GRID_SIZE)
+  })
+
+  const gridToPixels = (col: number, row: number) => ({
+    x: GRID_START_X + (col * GRID_SIZE),
+    y: GRID_START_Y + (row * GRID_SIZE)
+  })
+
+  const isGridPositionOccupied = (col: number, row: number, excludeNoteId?: string) => {
+    return notes.some(note => {
+      if (excludeNoteId && note.id === excludeNoteId) return false
+      const noteGrid = pixelsToGrid(note.x, note.y)
+      return noteGrid.col === col && noteGrid.row === row
+    })
+  }
+
+  const findNearestAvailablePosition = (targetCol: number, targetRow: number, excludeNoteId?: string) => {
+    // Start from target position and spiral outward to find available spot
+    for (let radius = 0; radius < 20; radius++) {
+      for (let dx = -radius; dx <= radius; dx++) {
+        for (let dy = -radius; dy <= radius; dy++) {
+          if (Math.abs(dx) === radius || Math.abs(dy) === radius || radius === 0) {
+            const col = Math.max(0, targetCol + dx)
+            const row = Math.max(0, targetRow + dy)
+            if (!isGridPositionOccupied(col, row, excludeNoteId)) {
+              return { col, row }
+            }
+          }
+        }
+      }
+    }
+    return { col: targetCol, row: targetRow } // Fallback
+  }
+
   useEffect(() => {
     fetchBoardData()
   }, [params.id])
@@ -75,24 +117,22 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     e.preventDefault()
     if (!newNoteContent.trim()) return
 
-    // Calculate position for new note - place it in a grid pattern
-    const noteWidth = 192 + 16 // 48 * 4px + gap
-    const noteHeight = 192 + 16 // 48 * 4px + gap
-    const startX = 20
-    const startY = 80 // Below header
+    // Find next available grid position (left to right, top to bottom)
+    let availablePosition = { col: 0, row: 0 }
+    const maxColumns = Math.floor((window.innerWidth - 40) / GRID_SIZE)
     
-    // Find next available position
-    let newX = startX
-    let newY = startY
-    
-    if (notes.length > 0) {
-      const columns = Math.floor((window.innerWidth - 40) / noteWidth)
-      const row = Math.floor(notes.length / columns)
-      const col = notes.length % columns
-      
-      newX = startX + (col * noteWidth)
-      newY = startY + (row * noteHeight)
+    // Search for the first available position
+    for (let row = 0; row < 50; row++) {
+      for (let col = 0; col < maxColumns; col++) {
+        if (!isGridPositionOccupied(col, row)) {
+          availablePosition = { col, row }
+          break
+        }
+      }
+      if (!isGridPositionOccupied(availablePosition.col, availablePosition.row)) break
     }
+
+    const { x, y } = gridToPixels(availablePosition.col, availablePosition.row)
 
     try {
       const response = await fetch(`/api/boards/${params.id}/notes`, {
@@ -102,8 +142,8 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         },
         body: JSON.stringify({
           content: newNoteContent,
-          x: newX,
-          y: newY,
+          x,
+          y,
         }),
       })
 
@@ -172,12 +212,16 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     if (!draggedNote || !boardRef.current) return
 
     const boardRect = boardRef.current.getBoundingClientRect()
-    const x = e.clientX - boardRect.left - dragOffset.x
-    const y = e.clientY - boardRect.top - dragOffset.y
+    const rawX = e.clientX - boardRect.left - dragOffset.x
+    const rawY = e.clientY - boardRect.top - dragOffset.y
+
+    // Snap to grid during drag for visual feedback
+    const targetGrid = pixelsToGrid(rawX, rawY)
+    const { x, y } = gridToPixels(Math.max(0, targetGrid.col), Math.max(0, targetGrid.row))
 
     setNotes(notes.map(note => 
       note.id === draggedNote 
-        ? { ...note, x: Math.max(0, x), y: Math.max(0, y) }
+        ? { ...note, x, y }
         : note
     ))
   }
@@ -188,22 +232,41 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     const note = notes.find(n => n.id === draggedNote)
     const currentDraggedNote = draggedNote
     
-    // Immediately stop dragging to prevent delay
-    setDraggedNote(null)
-
-    // Then update the position in the background
     if (note) {
+      // Find the target grid position
+      const targetGrid = pixelsToGrid(note.x, note.y)
+      
+      // Check if position is available, if not find nearest available
+      const finalPosition = isGridPositionOccupied(targetGrid.col, targetGrid.row, draggedNote) 
+        ? findNearestAvailablePosition(targetGrid.col, targetGrid.row, draggedNote)
+        : targetGrid
+
+      const { x: finalX, y: finalY } = gridToPixels(finalPosition.col, finalPosition.row)
+
+      // Update notes state with final position
+      setNotes(prevNotes => prevNotes.map(n => 
+        n.id === draggedNote 
+          ? { ...n, x: finalX, y: finalY }
+          : n
+      ))
+
+      // Immediately stop dragging to prevent delay
+      setDraggedNote(null)
+
+      // Then update the position in the background
       try {
         await fetch(`/api/boards/${params.id}/notes/${currentDraggedNote}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ x: note.x, y: note.y }),
+          body: JSON.stringify({ x: finalX, y: finalY }),
         })
       } catch (error) {
         console.error("Error updating note position:", error)
       }
+    } else {
+      setDraggedNote(null)
     }
   }
 
@@ -258,6 +321,11 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        style={{
+          backgroundImage: `radial-gradient(circle, #e5e7eb 1px, transparent 1px)`,
+          backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+          backgroundPosition: `${GRID_START_X}px ${GRID_START_Y}px`
+        }}
       >
         {notes.map((note) => (
           <div
