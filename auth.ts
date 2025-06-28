@@ -22,6 +22,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true
     },
     async redirect({ url, baseUrl }) {
+      // Handle invite callback URLs
+      if (url.includes("/invite/accept")) {
+        return url.startsWith("/") ? `${baseUrl}${url}` : url
+      }
+      
       // Redirect to dashboard after successful sign in
       if (url.startsWith("/")) return `${baseUrl}/dashboard`
       else if (new URL(url).origin === baseUrl) return url

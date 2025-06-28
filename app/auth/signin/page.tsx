@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { signIn, getProviders } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,9 +10,18 @@ import { Label } from "@/components/ui/label"
 import { Mail, ArrowRight, Loader2 } from "lucide-react"
 
 export default function SignIn() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+
+  // Pre-fill email from URL params (e.g., when coming from invite)
+  useEffect(() => {
+    const emailParam = searchParams.get('email')
+    if (emailParam) {
+      setEmail(emailParam)
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,10 +29,11 @@ export default function SignIn() {
     
     setIsLoading(true)
     try {
+      const callbackUrl = searchParams.get('callbackUrl') || '/'
       await signIn("resend", { 
         email,
         redirect: false,
-        callbackUrl: "/" 
+        callbackUrl 
       })
       setIsSubmitted(true)
     } catch (error) {
@@ -76,11 +87,21 @@ export default function SignIn() {
           </div>
           <CardTitle className="text-2xl font-bold">Welcome to Gumboard</CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a magic link to sign in
+            {searchParams.get('email') ? 
+              "We'll send you a magic link to verify your email address" :
+              "Enter your email address and we'll send you a magic link to sign in"
+            }
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {searchParams.get('email') && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  📧 You're signing in from an organization invitation
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
@@ -89,7 +110,7 @@ export default function SignIn() {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || !!searchParams.get('email')}
                 required
                 className="h-12"
               />

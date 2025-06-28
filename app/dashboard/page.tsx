@@ -76,6 +76,15 @@ export default async function Dashboard() {
                 </div>
               </div>
 
+              <div className="flex justify-between items-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
+                  Organization
+                </span>
+                <span className="text-sm text-purple-600 dark:text-purple-300 font-semibold">
+                  {user.organization.name}
+                </span>
+              </div>
+
               <div className="pt-4 border-t">
                 <div className="flex gap-3">
                   <Button asChild variant="outline" className="flex-1">
