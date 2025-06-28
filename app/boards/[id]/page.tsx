@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
-import { signOut } from "@/auth"
+import { signOut } from "next-auth/react"
 
 interface Note {
   id: string
@@ -165,6 +165,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     fetchBoardData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id])
 
   // Close dropdowns when clicking outside

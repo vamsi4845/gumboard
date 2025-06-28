@@ -3,7 +3,7 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { signOut } from "@/auth"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Plus, Trash2, Settings, LogOut, ChevronDown } from "lucide-react"
@@ -38,6 +38,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchUserAndBoards()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Close dropdown when clicking outside
