@@ -98,7 +98,7 @@ export default function SignIn() {
           <CardFooter>
             <Button 
               type="submit" 
-              className="w-full h-12 font-medium"
+              className="w-full h-12 font-medium mt-4"
               disabled={isLoading || !email}
             >
               {isLoading ? (
@@ -115,21 +115,6 @@ export default function SignIn() {
             </Button>
           </CardFooter>
         </form>
-        <div className="px-6 pb-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Secure authentication
-              </span>
-            </div>
-          </div>
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            By continuing, you agree to our Terms of Service and Privacy Policy.
-          </p>
-        </div>
       </Card>
     </div>
   )
