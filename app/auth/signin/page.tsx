@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail, ArrowRight, Loader2 } from "lucide-react"
 
-export default function SignIn() {
+function SignInContent() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -138,5 +138,31 @@ export default function SignIn() {
         </form>
       </Card>
     </div>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+            <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+          </div>
+          <CardTitle className="text-2xl">Loading...</CardTitle>
+          <CardDescription>
+            Please wait while we prepare the sign in page
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <SignInContent />
+    </Suspense>
   )
 } 

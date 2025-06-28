@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { AlertCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { Suspense } from "react"
 
 const errorMessages: Record<string, string> = {
   Configuration: "There is a problem with the server configuration.",
@@ -13,39 +14,63 @@ const errorMessages: Record<string, string> = {
   Default: "An unexpected error occurred. Please try again.",
 }
 
-export default function AuthError() {
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams.get("error") || "Default"
   const errorMessage = errorMessages[error] || errorMessages.Default
 
   return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <div className="mx-auto w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-4">
+          <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+        </div>
+        <CardTitle className="text-2xl">Authentication Error</CardTitle>
+        <CardDescription>
+          Something went wrong during sign in
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            {errorMessage}
+          </p>
+        </div>
+        <div className="pt-4">
+          <Button asChild className="w-full">
+            <Link href="/auth/signin">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Try again
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function LoadingFallback() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="text-center">
+        <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+          <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+        </div>
+        <CardTitle className="text-2xl">Loading...</CardTitle>
+        <CardDescription>
+          Please wait while we process your request
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  )
+}
+
+export default function AuthError() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-4">
-            <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-          </div>
-          <CardTitle className="text-2xl">Authentication Error</CardTitle>
-          <CardDescription>
-            Something went wrong during sign in
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              {errorMessage}
-            </p>
-          </div>
-          <div className="pt-4">
-            <Button asChild className="w-full">
-              <Link href="/auth/signin">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Try again
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Suspense fallback={<LoadingFallback />}>
+        <AuthErrorContent />
+      </Suspense>
     </div>
   )
 } 
