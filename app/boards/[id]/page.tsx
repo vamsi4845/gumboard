@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Plus, ArrowLeft, Trash2, Edit3 } from "lucide-react"
+import { Plus, ArrowLeft, Trash2, Edit3, ChevronDown, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
+import { signOut } from "@/auth"
 
 interface Note {
   id: string
@@ -28,9 +29,20 @@ interface Board {
   description: string | null
 }
 
+interface User {
+  id: string
+  name: string | null
+  email: string
+  organization: {
+    name: string
+  } | null
+}
+
 export default function BoardPage({ params }: { params: { id: string } }) {
   const [board, setBoard] = useState<Board | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
+  const [allBoards, setAllBoards] = useState<Board[]>([])
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAddNote, setShowAddNote] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState("")
@@ -40,13 +52,15 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [dropZonePosition, setDropZonePosition] = useState<{ col: number, row: number } | null>(null)
   const [temporarilyDisplacedNotes, setTemporarilyDisplacedNotes] = useState<Map<string, { originalCol: number, originalRow: number, tempCol: number, tempRow: number }>>(new Map())
+  const [showBoardDropdown, setShowBoardDropdown] = useState(false)
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
   // Grid configuration
   const GRID_SIZE = 208 // Note width (192) + gap (16)
   const GRID_START_X = 20
-  const GRID_START_Y = 80
+  const GRID_START_Y = 20
 
   // Helper functions for grid positioning
   const pixelsToGrid = (x: number, y: number) => ({
@@ -141,9 +155,44 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     fetchBoardData()
   }, [params.id])
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showBoardDropdown || showUserDropdown) {
+        const target = event.target as Element
+        if (!target.closest('.board-dropdown') && !target.closest('.user-dropdown')) {
+          setShowBoardDropdown(false)
+          setShowUserDropdown(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showBoardDropdown, showUserDropdown])
+
   const fetchBoardData = async () => {
     try {
-      // Fetch board info
+      // Get user info first to check authentication
+      const userResponse = await fetch("/api/user")
+      if (userResponse.status === 401) {
+        router.push("/auth/signin")
+        return
+      }
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        setUser(userData)
+      }
+
+      // Fetch all boards for the dropdown
+      const allBoardsResponse = await fetch("/api/boards")
+      if (allBoardsResponse.ok) {
+        const { boards } = await allBoardsResponse.json()
+        setAllBoards(boards)
+      }
+
+      // Fetch current board info
       const boardResponse = await fetch(`/api/boards/${params.id}`)
       if (boardResponse.status === 401) {
         router.push("/auth/signin")
@@ -403,6 +452,10 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const handleSignOut = async () => {
+    await signOut()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -425,24 +478,105 @@ export default function BoardPage({ params }: { params: { id: string } }) {
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-5 h-5" />
+            {/* Left side - Company name and board selector */}
+            <div className="flex items-center space-x-6">
+              {/* Company Name */}
+              <Link href="/dashboard" className="flex-shrink-0">
+                <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
               </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">{board.name}</h1>
-                {board.description && (
-                  <p className="text-sm text-gray-500">{board.description}</p>
+              
+              {/* Board Selector Dropdown */}
+              <div className="relative board-dropdown">
+                <button
+                  onClick={() => setShowBoardDropdown(!showBoardDropdown)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                >
+                  <div>
+                    <div className="text-lg font-semibold text-gray-900">{board?.name}</div>
+                    {board?.description && (
+                      <div className="text-sm text-gray-500">{board.description}</div>
+                    )}
+                  </div>
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </button>
+
+                {showBoardDropdown && (
+                  <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+                    <div className="py-1">
+                      {allBoards.map((b) => (
+                        <Link
+                          key={b.id}
+                          href={`/boards/${b.id}`}
+                          className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
+                            b.id === params.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          }`}
+                          onClick={() => setShowBoardDropdown(false)}
+                        >
+                          <div className="font-medium">{b.name}</div>
+                          {b.description && (
+                            <div className="text-xs text-gray-500 mt-1">{b.description}</div>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
-            <Button
-              onClick={() => setShowAddNote(true)}
-              className="flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Note</span>
-            </Button>
+
+            {/* Right side - Add Note and User dropdown */}
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => setShowAddNote(true)}
+                className="flex items-center space-x-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Note</span>
+              </Button>
+              
+              {/* User Dropdown */}
+              <div className="relative user-dropdown">
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                >
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-medium text-white">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium">
+                    {user?.name?.split(' ')[0] || 'User'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </button>
+
+                {showUserDropdown && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                    <div className="py-1">
+                      <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                        {user?.email}
+                      </div>
+                      <Link
+                        href="/settings"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleSignOut}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
