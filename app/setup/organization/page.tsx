@@ -5,17 +5,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
+import { Resend } from "resend"
+import OrganizationSetupForm from "./form"
 
-async function createOrganization(formData: FormData) {
+const resend = new Resend(process.env.AUTH_RESEND_KEY)
+
+async function createOrganization(orgName: string, teamEmails: string[]) {
   "use server"
   
   const session = await auth()
   if (!session?.user?.id) {
     throw new Error("Not authenticated")
   }
-
-  const orgName = formData.get("organizationName") as string
-  const teamEmails = formData.get("teamEmails") as string
 
   if (!orgName?.trim()) {
     throw new Error("Organization name is required")
@@ -35,20 +36,42 @@ async function createOrganization(formData: FormData) {
   })
 
   // Send invites to team members if provided
-  if (teamEmails?.trim()) {
-    const emails = teamEmails.split('\n')
-      .map(email => email.trim())
-      .filter(email => email && email.includes('@'))
+  if (teamEmails.length > 0) {
+    // Create invite records
+    await db.organizationInvite.createMany({
+      data: teamEmails.map(email => ({
+        email,
+        organizationId: organization.id,
+        invitedBy: session.user.id!
+      })),
+      skipDuplicates: true
+    })
 
-    if (emails.length > 0) {
-      await db.organizationInvite.createMany({
-        data: emails.map(email => ({
-          email,
-          organizationId: organization.id,
-          invitedBy: session.user.id!
-        })),
-        skipDuplicates: true
-      })
+    // Send invite emails
+    for (const email of teamEmails) {
+      try {
+        await resend.emails.send({
+          from: "noreply@gumboard.com",
+          to: email,
+          subject: `${session.user.name} invited you to join ${orgName}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2>You're invited to join ${orgName}!</h2>
+              <p>${session.user.name} (${session.user.email}) has invited you to join their organization on Gumboard.</p>
+              <p>Click the link below to accept the invitation:</p>
+              <a href="${process.env.NEXTAUTH_URL}/invite/accept?email=${encodeURIComponent(email)}&org=${organization.id}" 
+                 style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Accept Invitation
+              </a>
+              <p style="margin-top: 20px; color: #666;">
+                If you don't want to receive these emails, please ignore this message.
+              </p>
+            </div>
+          `
+        })
+      } catch (error) {
+        console.error(`Failed to send invite to ${email}:`, error)
+      }
     }
   }
 
@@ -103,37 +126,10 @@ export default async function OrganizationSetup() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={createOrganization} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="organizationName">Organization Name</Label>
-                  <Input
-                    id="organizationName"
-                    name="organizationName"
-                    type="text"
-                    placeholder="Enter your organization name"
-                    required
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="teamEmails">Team Member Email Addresses</Label>
-                  <textarea
-                    id="teamEmails"
-                    name="teamEmails"
-                    placeholder="Enter email addresses (one per line)&#10;example@company.com&#10;teammate@company.com"
-                    rows={5}
-                    className="w-full px-3 py-2 text-sm border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md resize-none"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter one email address per line. We'll send them invitations to join your organization.
-                  </p>
-                </div>
-                
-                <Button type="submit" className="w-full">
-                  Save & Send Invites
-                </Button>
-              </form>
+              <OrganizationSetupForm 
+                userName={session.user.name!}
+                onSubmit={createOrganization}
+              />
             </CardContent>
           </Card>
         </div>
