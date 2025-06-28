@@ -50,6 +50,15 @@ export async function PUT(
         ...(x !== undefined && { x }),
         ...(y !== undefined && { y }),
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
     })
 
     return NextResponse.json({ note: updatedNote })

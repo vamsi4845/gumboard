@@ -29,7 +29,19 @@ export async function GET(
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      include: { notes: true }
+      include: { 
+        notes: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
     })
 
     if (!board) {
@@ -104,7 +116,17 @@ export async function POST(
         x: x || 0,
         y: y || 0,
         boardId,
+        createdBy: session.user.id,
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
     })
 
     return NextResponse.json({ note }, { status: 201 })

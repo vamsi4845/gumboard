@@ -15,6 +15,11 @@ interface Note {
   y: number
   createdAt: string
   updatedAt: string
+  user: {
+    id: string
+    name: string | null
+    email: string
+  }
 }
 
 interface Board {
@@ -266,34 +271,47 @@ export default function BoardPage({ params }: { params: { id: string } }) {
              }}
             onMouseDown={(e) => handleMouseDown(e, note.id)}
           >
-            <div className="flex justify-end space-x-1 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setEditingNote(note.id)
-                  setEditContent(note.content)
-                }}
-                className="p-1 text-gray-600 hover:text-blue-600 rounded"
-              >
-                <Edit3 className="w-3 h-3" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDeleteNote(note.id)
-                }}
-                className="p-1 text-gray-600 hover:text-red-600 rounded"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
+            {/* User Info Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 bg-white bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
+                  <span className="text-xs font-semibold text-gray-700">
+                    {note.user.name ? note.user.name.charAt(0).toUpperCase() : note.user.email.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-xs font-medium text-gray-700 truncate max-w-20">
+                  {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
+                </span>
+              </div>
+              <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditingNote(note.id)
+                    setEditContent(note.content)
+                  }}
+                  className="p-1 text-gray-600 hover:text-blue-600 rounded"
+                >
+                  <Edit3 className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDeleteNote(note.id)
+                  }}
+                  className="p-1 text-gray-600 hover:text-red-600 rounded"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
             </div>
             
             {editingNote === note.id ? (
-              <div className="h-full">
+              <div className="flex-1">
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full h-32 p-2 bg-transparent border-none resize-none focus:outline-none text-sm"
+                  className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-sm"
                   placeholder="Enter note content..."
                   onBlur={() => handleUpdateNote(note.id, editContent)}
                   onKeyDown={(e) => {
@@ -309,7 +327,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
                 />
               </div>
             ) : (
-              <div className="h-full">
+              <div className="flex-1">
                 <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
                   {note.content}
                 </p>
