@@ -67,7 +67,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     })
   }
 
-  const findNearestAvailablePosition = (targetCol: number, targetRow: number, excludeNoteId?: string) => {
+  const findNearestAvailablePosition = (targetCol: number, targetRow: number, excludeNoteIds: string[] = []) => {
     // Start from target position and spiral outward to find available spot
     for (let radius = 0; radius < 20; radius++) {
       for (let dx = -radius; dx <= radius; dx++) {
@@ -75,7 +75,15 @@ export default function BoardPage({ params }: { params: { id: string } }) {
           if (Math.abs(dx) === radius || Math.abs(dy) === radius || radius === 0) {
             const col = Math.max(0, targetCol + dx)
             const row = Math.max(0, targetRow + dy)
-            if (!isGridPositionOccupied(col, row, excludeNoteId)) {
+            
+            // Check if position is available
+            const isOccupied = notes.some(note => {
+              if (excludeNoteIds.includes(note.id)) return false
+              const noteGrid = pixelsToGrid(note.x, note.y)
+              return noteGrid.col === col && noteGrid.row === row
+            })
+            
+            if (!isOccupied) {
               return { col, row }
             }
           }
@@ -168,14 +176,17 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     const maxColumns = Math.floor((window.innerWidth - 40) / GRID_SIZE)
     
     // Search for the first available position
-    for (let row = 0; row < 50; row++) {
+    outerLoop: for (let row = 0; row < 50; row++) {
       for (let col = 0; col < maxColumns; col++) {
-        if (!isGridPositionOccupied(col, row)) {
+        const isOccupied = notes.some(note => {
+          const noteGrid = pixelsToGrid(note.x, note.y)
+          return noteGrid.col === col && noteGrid.row === row
+        })
+        if (!isOccupied) {
           availablePosition = { col, row }
-          break
+          break outerLoop
         }
       }
-      if (!isGridPositionOccupied(availablePosition.col, availablePosition.row)) break
     }
 
     const { x, y } = gridToPixels(availablePosition.col, availablePosition.row)
@@ -266,15 +277,15 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     const clampedGrid = { col: Math.max(0, targetGrid.col), row: Math.max(0, targetGrid.row) }
     const { x, y } = gridToPixels(clampedGrid.col, clampedGrid.row)
 
-    // Set drop zone position
-    setDropZonePosition(clampedGrid)
-
     // Check if there's a note at the target position (excluding the dragged note)
     const noteAtTarget = notes.find(note => {
       if (note.id === draggedNote) return false
       const noteGrid = pixelsToGrid(note.x, note.y)
       return noteGrid.col === clampedGrid.col && noteGrid.row === clampedGrid.row
     })
+
+    // Set drop zone position only for valid positions (empty spots or spots with displaceable notes)
+    setDropZonePosition(clampedGrid)
 
     let newDisplacedNotes = new Map(temporarilyDisplacedNotes)
 
@@ -337,7 +348,28 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     if (note) {
       // Find the target grid position for the dragged note
       const targetGrid = pixelsToGrid(note.x, note.y)
-      const { x: finalX, y: finalY } = gridToPixels(targetGrid.col, targetGrid.row)
+      
+      // Check if target position is occupied (excluding the dragged note and displaced notes)
+      const excludeIds = [currentDraggedNote, ...Array.from(currentDisplacedNotes.keys())]
+      const isTargetOccupied = notes.some(n => {
+        if (excludeIds.includes(n.id)) return false
+        const nGrid = pixelsToGrid(n.x, n.y)
+        return nGrid.col === targetGrid.col && nGrid.row === targetGrid.row
+      })
+      
+      // If target is occupied, find nearest available position
+      const finalPosition = isTargetOccupied 
+        ? findNearestAvailablePosition(targetGrid.col, targetGrid.row, [currentDraggedNote])
+        : targetGrid
+        
+      const { x: finalX, y: finalY } = gridToPixels(finalPosition.col, finalPosition.row)
+
+      // Update notes state immediately to prevent visual glitches
+      setNotes(prevNotes => prevNotes.map(n => 
+        n.id === currentDraggedNote 
+          ? { ...n, x: finalX, y: finalY }
+          : n
+      ))
 
       // Update dragged note position in database
       try {
