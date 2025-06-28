@@ -2,6 +2,25 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Database Setup
+
+1. Create your environment variables file:
+```bash
+cp .env.example .env
+```
+
+2. Start the PostgreSQL database using Docker:
+```bash
+npm run docker:up
+```
+
+3. Push the database schema:
+```bash
+npm run db:push
+```
+
+### Development Server
+
 First, run the development server:
 
 ```bash
@@ -19,6 +38,16 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Database Commands
+
+- `npm run docker:up` - Start PostgreSQL database
+- `npm run docker:down` - Stop PostgreSQL database
+- `npm run db:generate` - Generate Prisma client
+- `npm run db:push` - Push schema changes to database
+- `npm run db:migrate` - Run database migrations
+- `npm run db:studio` - Open Prisma Studio (database GUI)
+- `npm run db:reset` - Reset database and run migrations
 
 ## Learn More
 
