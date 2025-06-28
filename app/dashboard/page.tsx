@@ -301,11 +301,6 @@ export default function Dashboard() {
                   </button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-sm text-gray-500">
-                  Created {new Date(board.createdAt).toLocaleDateString()}
-                </div>
-              </CardContent>
             </Card>
           ))}
         </div>
