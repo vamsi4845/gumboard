@@ -85,10 +85,22 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     return { col: targetCol, row: targetRow } // Fallback
   }
 
-  const findNextAvailablePositionToRight = (startCol: number, startRow: number, excludeNoteIds: string[] = []) => {
+  const findNextAvailablePosition = (startCol: number, startRow: number, excludeNoteIds: string[] = []) => {
     const maxColumns = Math.floor((window.innerWidth - 40) / GRID_SIZE)
     
-    // First try to the right on the same row
+    // First try to the left on the same row
+    for (let col = startCol - 1; col >= 0; col--) {
+      const isOccupied = notes.some(note => {
+        if (excludeNoteIds.includes(note.id)) return false
+        const noteGrid = pixelsToGrid(note.x, note.y)
+        return noteGrid.col === col && noteGrid.row === startRow
+      })
+      if (!isOccupied) {
+        return { col, row: startRow }
+      }
+    }
+    
+    // Then try to the right on the same row
     for (let col = startCol + 1; col < maxColumns; col++) {
       const isOccupied = notes.some(note => {
         if (excludeNoteIds.includes(note.id)) return false
@@ -100,7 +112,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
       }
     }
     
-    // If no space to the right, try next row from the beginning
+    // If no space on the same row, try next row from the beginning
     for (let row = startRow + 1; row < 50; row++) {
       for (let col = 0; col < maxColumns; col++) {
         const isOccupied = notes.some(note => {
@@ -114,7 +126,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
       }
     }
     
-    return { col: startCol + 1, row: startRow } // Fallback
+    return { col: Math.max(0, startCol - 1), row: startRow } // Fallback to left
   }
 
   useEffect(() => {
@@ -269,7 +281,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     if (noteAtTarget) {
       // Find a position to the right for the displaced note
       const noteGrid = pixelsToGrid(noteAtTarget.x, noteAtTarget.y)
-      const newPosition = findNextAvailablePositionToRight(
+      const newPosition = findNextAvailablePosition(
         clampedGrid.col, 
         clampedGrid.row, 
         [draggedNote, ...Array.from(newDisplacedNotes.keys())]
@@ -429,13 +441,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
               top: gridToPixels(dropZonePosition.col, dropZonePosition.row).y,
               zIndex: 999,
             }}
-          >
-            <div className="flex items-center justify-center h-full">
-              <div className="text-blue-600 text-sm font-medium bg-white bg-opacity-80 px-2 py-1 rounded">
-                Drop Here
-              </div>
-            </div>
-          </div>
+          />
         )}
 
         {notes.map((note) => (
