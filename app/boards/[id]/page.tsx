@@ -645,6 +645,8 @@ export default function BoardPage({ params }: { params: { id: string } }) {
               key={note.id}
               className={`absolute p-4 rounded-lg shadow-md cursor-move select-none group transition-all duration-200 flex flex-col ${
                 temporarilyDisplacedNotes.has(note.id) ? 'ring-2 ring-orange-300' : ''
+              } ${
+                editingNote === note.id ? 'border-2 border-dashed border-gray-400' : ''
               }`}
               style={{
                 backgroundColor: note.color,
