@@ -154,63 +154,61 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Top Navigation Bar */}
       <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
-              </div>
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8">
+              <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
             </div>
+          </div>
 
-                         {/* User Dropdown */}
-             <div className="relative user-dropdown">
-               <button
-                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                 className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
-               >
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-white">
-                    {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-sm font-medium">
-                  {user?.name?.split(' ')[0] || 'User'}
+          {/* User Dropdown */}
+          <div className="relative user-dropdown pr-4 sm:pr-6 lg:pr-8">
+            <button
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+            >
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-white">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
                 </span>
-                <ChevronDown className="w-4 h-4 ml-1" />
-              </button>
+              </div>
+              <span className="text-sm font-medium">
+                {user?.name?.split(' ')[0] || 'User'}
+              </span>
+              <ChevronDown className="w-4 h-4 ml-1" />
+            </button>
 
-              {showUserDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-2 text-sm text-gray-500 border-b">
-                      {user?.email}
-                    </div>
-                    <Link
-                      href="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setShowUserDropdown(false)}
-                    >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
-                    </Link>
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </button>
+            {showUserDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="py-1">
+                  <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                    {user?.email}
                   </div>
+                  <Link
+                    href="/settings"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowUserDropdown(false)}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
