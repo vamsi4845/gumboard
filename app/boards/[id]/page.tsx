@@ -38,6 +38,8 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   const [editContent, setEditContent] = useState("")
   const [draggedNote, setDraggedNote] = useState<string | null>(null)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [dropZonePosition, setDropZonePosition] = useState<{ col: number, row: number } | null>(null)
+  const [temporarilyDisplacedNotes, setTemporarilyDisplacedNotes] = useState<Map<string, { originalCol: number, originalRow: number, tempCol: number, tempRow: number }>>(new Map())
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -81,6 +83,38 @@ export default function BoardPage({ params }: { params: { id: string } }) {
       }
     }
     return { col: targetCol, row: targetRow } // Fallback
+  }
+
+  const findNextAvailablePositionToRight = (startCol: number, startRow: number, excludeNoteIds: string[] = []) => {
+    const maxColumns = Math.floor((window.innerWidth - 40) / GRID_SIZE)
+    
+    // First try to the right on the same row
+    for (let col = startCol + 1; col < maxColumns; col++) {
+      const isOccupied = notes.some(note => {
+        if (excludeNoteIds.includes(note.id)) return false
+        const noteGrid = pixelsToGrid(note.x, note.y)
+        return noteGrid.col === col && noteGrid.row === startRow
+      })
+      if (!isOccupied) {
+        return { col, row: startRow }
+      }
+    }
+    
+    // If no space to the right, try next row from the beginning
+    for (let row = startRow + 1; row < 50; row++) {
+      for (let col = 0; col < maxColumns; col++) {
+        const isOccupied = notes.some(note => {
+          if (excludeNoteIds.includes(note.id)) return false
+          const noteGrid = pixelsToGrid(note.x, note.y)
+          return noteGrid.col === col && noteGrid.row === row
+        })
+        if (!isOccupied) {
+          return { col, row }
+        }
+      }
+    }
+    
+    return { col: startCol + 1, row: startRow } // Fallback
   }
 
   useEffect(() => {
@@ -217,13 +251,63 @@ export default function BoardPage({ params }: { params: { id: string } }) {
 
     // Snap to grid during drag for visual feedback
     const targetGrid = pixelsToGrid(rawX, rawY)
-    const { x, y } = gridToPixels(Math.max(0, targetGrid.col), Math.max(0, targetGrid.row))
+    const clampedGrid = { col: Math.max(0, targetGrid.col), row: Math.max(0, targetGrid.row) }
+    const { x, y } = gridToPixels(clampedGrid.col, clampedGrid.row)
 
-    setNotes(notes.map(note => 
-      note.id === draggedNote 
-        ? { ...note, x, y }
-        : note
-    ))
+    // Set drop zone position
+    setDropZonePosition(clampedGrid)
+
+    // Check if there's a note at the target position (excluding the dragged note)
+    const noteAtTarget = notes.find(note => {
+      if (note.id === draggedNote) return false
+      const noteGrid = pixelsToGrid(note.x, note.y)
+      return noteGrid.col === clampedGrid.col && noteGrid.row === clampedGrid.row
+    })
+
+    let newDisplacedNotes = new Map(temporarilyDisplacedNotes)
+
+    if (noteAtTarget) {
+      // Find a position to the right for the displaced note
+      const noteGrid = pixelsToGrid(noteAtTarget.x, noteAtTarget.y)
+      const newPosition = findNextAvailablePositionToRight(
+        clampedGrid.col, 
+        clampedGrid.row, 
+        [draggedNote, ...Array.from(newDisplacedNotes.keys())]
+      )
+      
+      // Store the displacement information
+      newDisplacedNotes.set(noteAtTarget.id, {
+        originalCol: noteGrid.col,
+        originalRow: noteGrid.row,
+        tempCol: newPosition.col,
+        tempRow: newPosition.row
+      })
+    }
+
+    // Clear displacements for notes that are no longer being displaced
+    // (when the dragged note moves away from their original positions)
+    for (const [noteId, displacement] of newDisplacedNotes.entries()) {
+      if (displacement.originalCol !== clampedGrid.col || displacement.originalRow !== clampedGrid.row) {
+        newDisplacedNotes.delete(noteId)
+      }
+    }
+
+    setTemporarilyDisplacedNotes(newDisplacedNotes)
+
+    // Update note positions with temporary displacements
+    setNotes(notes.map(note => {
+      if (note.id === draggedNote) {
+        return { ...note, x, y }
+      }
+      
+      const displacement = newDisplacedNotes.get(note.id)
+      if (displacement) {
+        const { x: tempX, y: tempY } = gridToPixels(displacement.tempCol, displacement.tempRow)
+        return { ...note, x: tempX, y: tempY }
+      }
+      
+      return note
+    }))
   }
 
   const handleMouseUp = async () => {
@@ -231,29 +315,19 @@ export default function BoardPage({ params }: { params: { id: string } }) {
 
     const note = notes.find(n => n.id === draggedNote)
     const currentDraggedNote = draggedNote
+    const currentDisplacedNotes = new Map(temporarilyDisplacedNotes)
+    
+    // Clear drag state immediately
+    setDraggedNote(null)
+    setDropZonePosition(null)
+    setTemporarilyDisplacedNotes(new Map())
     
     if (note) {
-      // Find the target grid position
+      // Find the target grid position for the dragged note
       const targetGrid = pixelsToGrid(note.x, note.y)
-      
-      // Check if position is available, if not find nearest available
-      const finalPosition = isGridPositionOccupied(targetGrid.col, targetGrid.row, draggedNote) 
-        ? findNearestAvailablePosition(targetGrid.col, targetGrid.row, draggedNote)
-        : targetGrid
+      const { x: finalX, y: finalY } = gridToPixels(targetGrid.col, targetGrid.row)
 
-      const { x: finalX, y: finalY } = gridToPixels(finalPosition.col, finalPosition.row)
-
-      // Update notes state with final position
-      setNotes(prevNotes => prevNotes.map(n => 
-        n.id === draggedNote 
-          ? { ...n, x: finalX, y: finalY }
-          : n
-      ))
-
-      // Immediately stop dragging to prevent delay
-      setDraggedNote(null)
-
-      // Then update the position in the background
+      // Update dragged note position in database
       try {
         await fetch(`/api/boards/${params.id}/notes/${currentDraggedNote}`, {
           method: "PUT",
@@ -263,10 +337,25 @@ export default function BoardPage({ params }: { params: { id: string } }) {
           body: JSON.stringify({ x: finalX, y: finalY }),
         })
       } catch (error) {
-        console.error("Error updating note position:", error)
+        console.error("Error updating dragged note position:", error)
       }
-    } else {
-      setDraggedNote(null)
+
+      // Update displaced notes positions in database
+      for (const [noteId, displacement] of currentDisplacedNotes.entries()) {
+        const { x: newX, y: newY } = gridToPixels(displacement.tempCol, displacement.tempRow)
+        
+        try {
+          await fetch(`/api/boards/${params.id}/notes/${noteId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ x: newX, y: newY }),
+          })
+        } catch (error) {
+          console.error("Error updating displaced note position:", error)
+        }
+      }
     }
   }
 
@@ -320,17 +409,41 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         className="relative w-full h-screen overflow-hidden"
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={() => {
+          handleMouseUp()
+          setDropZonePosition(null)
+          setTemporarilyDisplacedNotes(new Map())
+        }}
         style={{
           backgroundImage: `radial-gradient(circle, #e5e7eb 1px, transparent 1px)`,
           backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
           backgroundPosition: `${GRID_START_X}px ${GRID_START_Y}px`
         }}
       >
+        {/* Drop Zone Indicator */}
+        {dropZonePosition && draggedNote && (
+          <div
+            className="absolute w-48 h-48 border-2 border-blue-400 border-dashed rounded-lg bg-blue-50 bg-opacity-50 pointer-events-none"
+            style={{
+              left: gridToPixels(dropZonePosition.col, dropZonePosition.row).x,
+              top: gridToPixels(dropZonePosition.col, dropZonePosition.row).y,
+              zIndex: 999,
+            }}
+          >
+            <div className="flex items-center justify-center h-full">
+              <div className="text-blue-600 text-sm font-medium bg-white bg-opacity-80 px-2 py-1 rounded">
+                Drop Here
+              </div>
+            </div>
+          </div>
+        )}
+
         {notes.map((note) => (
           <div
             key={note.id}
-            className="absolute w-48 h-48 p-4 rounded-lg shadow-md cursor-move select-none group"
+            className={`absolute w-48 h-48 p-4 rounded-lg shadow-md cursor-move select-none group transition-all duration-200 ${
+              temporarilyDisplacedNotes.has(note.id) ? 'ring-2 ring-orange-300' : ''
+            }`}
                          style={{
                backgroundColor: note.color,
                left: note.x,
