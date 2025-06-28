@@ -664,11 +664,11 @@ export default function BoardPage({ params }: { params: { id: string } }) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
                 <div className="w-7 h-7 bg-white bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
-                  <span className="text-xs font-semibold text-gray-700">
+                  <span className="text-sm font-semibold text-gray-700">
                     {note.user.name ? note.user.name.charAt(0).toUpperCase() : note.user.email.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <span className="text-xs font-medium text-gray-700 truncate max-w-20">
+                <span className="text-sm font-bold text-gray-700 truncate max-w-20">
                   {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
                 </span>
               </div>
@@ -700,7 +700,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
                 <textarea
                   value={editContent}
                   onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-sm"
+                  className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base"
                   placeholder="Enter note content..."
                   onBlur={() => handleUpdateNote(note.id, editContent)}
                   onKeyDown={(e) => {
@@ -722,7 +722,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
               </div>
             ) : (
               <div className="flex-1">
-                <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+                <p className="text-base text-gray-800 whitespace-pre-wrap break-words">
                   {note.content}
                 </p>
               </div>
