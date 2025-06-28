@@ -58,19 +58,45 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   const router = useRouter()
 
   // Grid configuration
-  const GRID_SIZE = 208 // Note width (192) + gap (16)
+  const MIN_NOTE_WIDTH = 192
+  const MIN_NOTE_HEIGHT = 192  
+  const GRID_GAP = 16
   const GRID_START_X = 20
   const GRID_START_Y = 20
 
-  // Helper functions for grid positioning
-  const pixelsToGrid = (x: number, y: number) => ({
-    col: Math.round((x - GRID_START_X) / GRID_SIZE),
-    row: Math.round((y - GRID_START_Y) / GRID_SIZE)
+  // Helper functions for note dimensions and grid positioning
+  const calculateNoteDimensions = (content: string) => {
+    const minWidth = MIN_NOTE_WIDTH
+    const minHeight = MIN_NOTE_HEIGHT
+    
+    // Calculate width based on longest line
+    const lines = content.split('\n')
+    const maxLineLength = Math.max(...lines.map(line => line.length), 20)
+    const calculatedWidth = Math.max(minWidth, maxLineLength * 9 + 48) // 9px per char + padding, no max limit
+    
+    // Calculate height based on number of lines
+    const lineCount = Math.max(lines.length, 3)
+    const calculatedHeight = Math.max(minHeight, lineCount * 28 + 88) // 28px per line + header/padding, no max limit
+    
+    return {
+      width: calculatedWidth,
+      height: calculatedHeight
+    }
+  }
+
+  const getGridSize = (note: Note) => {
+    const { width, height } = calculateNoteDimensions(note.content)
+    return Math.max(width, height) + GRID_GAP
+  }
+
+  const pixelsToGrid = (x: number, y: number, gridSize = MIN_NOTE_WIDTH + GRID_GAP) => ({
+    col: Math.round((x - GRID_START_X) / gridSize),
+    row: Math.round((y - GRID_START_Y) / gridSize)
   })
 
-  const gridToPixels = (col: number, row: number) => ({
-    x: GRID_START_X + (col * GRID_SIZE),
-    y: GRID_START_Y + (row * GRID_SIZE)
+  const gridToPixels = (col: number, row: number, gridSize = MIN_NOTE_WIDTH + GRID_GAP) => ({
+    x: GRID_START_X + (col * gridSize),
+    y: GRID_START_Y + (row * gridSize)
   })
 
   const isGridPositionOccupied = (col: number, row: number, excludeNoteId?: string) => {
@@ -108,7 +134,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   }
 
   const findNextAvailablePosition = (startCol: number, startRow: number, excludeNoteIds: string[] = []) => {
-    const maxColumns = Math.floor((window.innerWidth - 40) / GRID_SIZE)
+    const maxColumns = Math.floor((window.innerWidth - 40) / (MIN_NOTE_WIDTH + GRID_GAP))
     
     // First try to the left on the same row
     for (let col = startCol - 1; col >= 0; col--) {
@@ -222,7 +248,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
 
     // Find next available grid position (left to right, top to bottom)
     let availablePosition = { col: 0, row: 0 }
-    const maxColumns = Math.floor((window.innerWidth - 40) / GRID_SIZE)
+    const maxColumns = Math.floor((window.innerWidth - 40) / (MIN_NOTE_WIDTH + GRID_GAP))
     
     // Search for the first available position
     outerLoop: for (let row = 0; row < 50; row++) {
@@ -595,7 +621,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         }}
         style={{
           backgroundImage: `radial-gradient(circle, #e5e7eb 1px, transparent 1px)`,
-          backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`,
+          backgroundSize: `${MIN_NOTE_WIDTH + GRID_GAP}px ${MIN_NOTE_WIDTH + GRID_GAP}px`,
           backgroundPosition: `${GRID_START_X}px ${GRID_START_Y}px`
         }}
       >
@@ -611,20 +637,29 @@ export default function BoardPage({ params }: { params: { id: string } }) {
           />
         )}
 
-        {notes.map((note) => (
-          <div
-            key={note.id}
-            className={`absolute w-48 h-48 p-4 rounded-lg shadow-md cursor-move select-none group transition-all duration-200 ${
-              temporarilyDisplacedNotes.has(note.id) ? 'ring-2 ring-orange-300' : ''
-            }`}
-                         style={{
-               backgroundColor: note.color,
-               left: note.x,
-               top: note.y,
-               zIndex: draggedNote === note.id ? 1000 : 1,
-             }}
-            onMouseDown={(e) => handleMouseDown(e, note.id)}
-          >
+        {notes.map((note) => {
+          const { width, height } = calculateNoteDimensions(note.content)
+          
+          return (
+            <div
+              key={note.id}
+              className={`absolute p-4 rounded-lg shadow-md cursor-move select-none group transition-all duration-200 flex flex-col ${
+                temporarilyDisplacedNotes.has(note.id) ? 'ring-2 ring-orange-300' : ''
+              }`}
+              style={{
+                backgroundColor: note.color,
+                left: note.x,
+                top: note.y,
+                width: width,
+                height: height,
+                zIndex: draggedNote === note.id ? 1000 : 1,
+              }}
+              onMouseDown={(e) => handleMouseDown(e, note.id)}
+              onDoubleClick={() => {
+                setEditingNote(note.id)
+                setEditContent(note.content)
+              }}
+            >
             {/* User Info Header */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-2">
@@ -692,8 +727,9 @@ export default function BoardPage({ params }: { params: { id: string } }) {
                 </p>
               </div>
             )}
-          </div>
-        ))}
+            </div>
+          )
+        })}
       </div>
 
       {/* Add Note Modal */}
