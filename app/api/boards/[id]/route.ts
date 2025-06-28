@@ -26,7 +26,7 @@ export async function DELETE(
     }
 
     // Check if user is member of the organization
-    const isMember = board.organization.members.some(member => member.id === session.user.id)
+    const isMember = board.organization.members.some(member => member.id === session?.user?.id)
     
     if (!isMember) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
