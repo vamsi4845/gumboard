@@ -1,12 +1,12 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { signOut } from "@/auth"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { Plus, Trash2, MoreVertical, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface Board {
@@ -213,9 +213,9 @@ export default function Dashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">Boards</h2>
-              <p className="text-gray-600 mt-1">
-                Manage your organization's boards
-              </p>
+                          <p className="text-gray-600 mt-1">
+              Manage your organization&apos;s boards
+            </p>
             </div>
             <Button
               onClick={() => setShowAddBoard(true)}

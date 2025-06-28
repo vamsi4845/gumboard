@@ -232,7 +232,7 @@ export default async function InviteAcceptPage({ searchParams }: InviteAcceptPag
               <CardHeader className="text-center">
                 <CardTitle className="text-xl text-yellow-600">Wrong Account</CardTitle>
                 <CardDescription>
-                  This invitation is for {invite.email}, but you're signed in as {session.user.email}.
+                  This invitation is for {invite.email}, but you&apos;re signed in as {session.user.email}.
                   Please sign out and use the invitation link again to sign in with the correct account.
                 </CardDescription>
               </CardHeader>
@@ -280,7 +280,7 @@ export default async function InviteAcceptPage({ searchParams }: InviteAcceptPag
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-2">Organization Invitation</h1>
             <p className="text-muted-foreground">
-              You've been invited to join an organization
+              You&apos;ve been invited to join an organization
             </p>
           </div>
 

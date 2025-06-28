@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, ArrowLeft, Trash2, Edit3, ChevronDown, Settings, LogOut } from "lucide-react"
+import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "@/auth"
 
@@ -84,11 +83,6 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     }
   }
 
-  const getGridSize = (note: Note) => {
-    const { width, height } = calculateNoteDimensions(note.content)
-    return Math.max(width, height) + GRID_GAP
-  }
-
   const pixelsToGrid = (x: number, y: number, gridSize = MIN_NOTE_WIDTH + GRID_GAP) => ({
     col: Math.round((x - GRID_START_X) / gridSize),
     row: Math.round((y - GRID_START_Y) / gridSize)
@@ -98,14 +92,6 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     x: GRID_START_X + (col * gridSize),
     y: GRID_START_Y + (row * gridSize)
   })
-
-  const isGridPositionOccupied = (col: number, row: number, excludeNoteId?: string) => {
-    return notes.some(note => {
-      if (excludeNoteId && note.id === excludeNoteId) return false
-      const noteGrid = pixelsToGrid(note.x, note.y)
-      return noteGrid.col === col && noteGrid.row === row
-    })
-  }
 
   const findNearestAvailablePosition = (targetCol: number, targetRow: number, excludeNoteIds: string[] = []) => {
     // Start from target position and spiral outward to find available spot
@@ -365,7 +351,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     // Set drop zone position only for valid positions (empty spots or spots with displaceable notes)
     setDropZonePosition(clampedGrid)
 
-    let newDisplacedNotes = new Map(temporarilyDisplacedNotes)
+    const newDisplacedNotes = new Map(temporarilyDisplacedNotes)
 
     if (noteAtTarget) {
       // Find a position to the right for the displaced note

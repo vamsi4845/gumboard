@@ -66,7 +66,7 @@ export default async function ProfileSetup() {
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-2">Complete Your Profile</h1>
             <p className="text-muted-foreground">
-              Let's get to know you better
+              Let&apos;s get to know you better
             </p>
           </div>
 

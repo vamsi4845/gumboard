@@ -1,8 +1,6 @@
 import { auth } from "@/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { Resend } from "resend"
@@ -56,7 +54,7 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
           subject: `${session.user.name} invited you to join ${orgName}`,
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>You're invited to join ${orgName}!</h2>
+              <h2>You&apos;re invited to join ${orgName}!</h2>
               <p>${session.user.name} (${session.user.email}) has invited you to join their organization on Gumboard.</p>
               <p>Click the link below to accept the invitation:</p>
               <a href="${process.env.AUTH_URL}/invite/accept?token=${invite.id}" 
@@ -64,7 +62,7 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
                 Accept Invitation
               </a>
               <p style="margin-top: 20px; color: #666;">
-                If you don't want to receive these emails, please ignore this message.
+                If you don&apos;t want to receive these emails, please ignore this message.
               </p>
             </div>
           `
@@ -122,12 +120,11 @@ export default async function OrganizationSetup() {
               </div>
               <CardTitle className="text-xl">Welcome, {session.user.name}!</CardTitle>
               <CardDescription className="text-base">
-                Let's set up your organization
+                Let&apos;s set up your organization
               </CardDescription>
             </CardHeader>
             <CardContent>
               <OrganizationSetupForm 
-                userName={session.user.name!}
                 onSubmit={createOrganization}
               />
             </CardContent>

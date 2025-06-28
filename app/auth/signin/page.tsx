@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { signIn, getProviders } from "next-auth/react"
+import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,7 +53,7 @@ export default function SignIn() {
             </div>
             <CardTitle className="text-2xl">Check your email</CardTitle>
             <CardDescription>
-              We've sent a magic link to <strong>{email}</strong>
+              We&apos;ve sent a magic link to <strong>{email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -88,8 +88,8 @@ export default function SignIn() {
           <CardTitle className="text-2xl font-bold">Welcome to Gumboard</CardTitle>
           <CardDescription>
             {searchParams.get('email') ? 
-              "We'll send you a magic link to verify your email address" :
-              "Enter your email address and we'll send you a magic link to sign in"
+              "We&apos;ll send you a magic link to verify your email address" :
+              "Enter your email address and we&apos;ll send you a magic link to sign in"
             }
           </CardDescription>
         </CardHeader>
@@ -98,7 +98,7 @@ export default function SignIn() {
             {searchParams.get('email') && (
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-3">
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  📧 You're signing in from an organization invitation
+                  📧 You&apos;re signing in from an organization invitation
                 </p>
               </div>
             )}

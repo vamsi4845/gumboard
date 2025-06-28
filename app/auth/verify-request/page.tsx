@@ -13,7 +13,7 @@ export default function VerifyRequest() {
           </div>
           <CardTitle className="text-2xl">Check your email</CardTitle>
           <CardDescription>
-            We've sent you a magic link to sign in
+            We&apos;ve sent you a magic link to sign in
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

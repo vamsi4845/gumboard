@@ -7,11 +7,10 @@ import { Label } from "@/components/ui/label"
 import { X, Plus } from "lucide-react"
 
 interface OrganizationSetupFormProps {
-  userName: string
   onSubmit: (orgName: string, teamEmails: string[]) => Promise<void>
 }
 
-export default function OrganizationSetupForm({ userName, onSubmit }: OrganizationSetupFormProps) {
+export default function OrganizationSetupForm({ onSubmit }: OrganizationSetupFormProps) {
   const [orgName, setOrgName] = useState("")
   const [teamEmails, setTeamEmails] = useState<string[]>([""])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -100,7 +99,7 @@ export default function OrganizationSetupForm({ userName, onSubmit }: Organizati
         </Button>
         
         <p className="text-xs text-muted-foreground">
-          We'll send invitations to join your organization to these email addresses.
+          We&apos;ll send invitations to join your organization to these email addresses.
         </p>
       </div>
       
