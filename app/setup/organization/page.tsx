@@ -37,19 +37,19 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
 
   // Send invites to team members if provided
   if (teamEmails.length > 0) {
-    // Create invite records
-    await db.organizationInvite.createMany({
-      data: teamEmails.map(email => ({
-        email,
-        organizationId: organization.id,
-        invitedBy: session.user.id!
-      })),
-      skipDuplicates: true
-    })
-
-    // Send invite emails
+    // Create invite records individually and send emails
     for (const email of teamEmails) {
       try {
+        // Create individual invite record to get the ID
+        const invite = await db.organizationInvite.create({
+          data: {
+            email,
+            organizationId: organization.id,
+            invitedBy: session.user.id!
+          }
+        })
+
+        // Send invite email using the invite ID as token
         await resend.emails.send({
           from: "noreply@gumboard.com",
           to: email,
@@ -59,7 +59,7 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
               <h2>You're invited to join ${orgName}!</h2>
               <p>${session.user.name} (${session.user.email}) has invited you to join their organization on Gumboard.</p>
               <p>Click the link below to accept the invitation:</p>
-              <a href="${process.env.NEXTAUTH_URL}/invite/accept?email=${encodeURIComponent(email)}&org=${organization.id}" 
+              <a href="${process.env.AUTH_URL}/invite/accept?token=${invite.id}" 
                  style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                 Accept Invitation
               </a>
