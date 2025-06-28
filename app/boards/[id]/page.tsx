@@ -302,6 +302,9 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   }
 
   const handleMouseDown = (e: React.MouseEvent, noteId: string) => {
+    // Disable drag and drop when any note is being edited
+    if (editingNote) return
+
     const note = notes.find(n => n.id === noteId)
     if (!note) return
 
@@ -673,6 +676,11 @@ export default function BoardPage({ params }: { params: { id: string } }) {
                       setEditingNote(null)
                       setEditContent("")
                     }
+                  }}
+                  onFocus={(e) => {
+                    // Set cursor at the end of the text
+                    const length = e.target.value.length
+                    e.target.setSelectionRange(length, length)
                   }}
                   autoFocus
                 />
