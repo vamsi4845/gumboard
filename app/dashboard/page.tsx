@@ -293,25 +293,31 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {boards.map((board) => (
             <Card key={board.id} className="group hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{board.name}</CardTitle>
-                    {board.description && (
-                      <CardDescription className="mt-1">
-                        {board.description}
-                      </CardDescription>
-                    )}
+              <Link href={`/boards/${board.id}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{board.name}</CardTitle>
+                      {board.description && (
+                        <CardDescription className="mt-1">
+                          {board.description}
+                        </CardDescription>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDeleteBoard(board.id)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
+                      title="Delete board"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDeleteBoard(board.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
-                    title="Delete board"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </CardHeader>
+                </CardHeader>
+              </Link>
             </Card>
           ))}
         </div>

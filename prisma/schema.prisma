@@ -83,8 +83,23 @@ model Board {
   createdBy      String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  notes          Note[]
 
   @@map("boards")
+}
+
+model Note {
+  id      String @id @default(cuid())
+  content String @db.Text
+  color   String @default("#fef3c7") // Default yellow color
+  x       Int    @default(0)
+  y       Int    @default(0)
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notes")
 }
 
 model OrganizationInvite {
