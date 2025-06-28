@@ -7,7 +7,7 @@ const prisma = new PrismaClient()
 // Update a note
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; noteId: string } }
+  { params }: { params: Promise<{ id: string; noteId: string }> }
 ) {
   try {
     const session = await auth()
@@ -16,7 +16,7 @@ export async function PUT(
     }
 
     const { content, color, x, y } = await request.json()
-    const { id: boardId, noteId } = params
+    const { id: boardId, noteId } = await params
 
     // Verify user has access to this board (same organization)
     const user = await prisma.user.findUnique({
@@ -71,7 +71,7 @@ export async function PUT(
 // Delete a note
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; noteId: string } }
+  { params }: { params: Promise<{ id: string; noteId: string }> }
 ) {
   try {
     const session = await auth()
@@ -79,7 +79,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { id: boardId, noteId } = params
+    const { id: boardId, noteId } = await params
 
     // Verify user has access to this board (same organization)
     const user = await prisma.user.findUnique({

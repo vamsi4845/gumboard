@@ -37,7 +37,7 @@ interface User {
   } | null
 }
 
-export default function BoardPage({ params }: { params: { id: string } }) {
+export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
   const [allBoards, setAllBoards] = useState<Board[]>([])
@@ -53,6 +53,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   const [temporarilyDisplacedNotes, setTemporarilyDisplacedNotes] = useState<Map<string, { originalCol: number, originalRow: number, tempCol: number, tempRow: number }>>(new Map())
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
   const [showUserDropdown, setShowUserDropdown] = useState(false)
+  const [boardId, setBoardId] = useState<string | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -164,9 +165,19 @@ export default function BoardPage({ params }: { params: { id: string } }) {
   }
 
   useEffect(() => {
-    fetchBoardData()
+    const initializeParams = async () => {
+      const resolvedParams = await params
+      setBoardId(resolvedParams.id)
+    }
+    initializeParams()
+  }, [params])
+
+  useEffect(() => {
+    if (boardId) {
+      fetchBoardData()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.id])
+  }, [boardId])
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -206,7 +217,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
       }
 
       // Fetch current board info
-      const boardResponse = await fetch(`/api/boards/${params.id}`)
+      const boardResponse = await fetch(`/api/boards/${boardId}`)
       if (boardResponse.status === 401) {
         router.push("/auth/signin")
         return
@@ -217,7 +228,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
       }
 
       // Fetch notes
-      const notesResponse = await fetch(`/api/boards/${params.id}/notes`)
+      const notesResponse = await fetch(`/api/boards/${boardId}/notes`)
       if (notesResponse.ok) {
         const { notes } = await notesResponse.json()
         setNotes(notes)
@@ -254,7 +265,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     const { x, y } = gridToPixels(availablePosition.col, availablePosition.row)
 
     try {
-      const response = await fetch(`/api/boards/${params.id}/notes`, {
+      const response = await fetch(`/api/boards/${boardId}/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -279,7 +290,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
 
   const handleUpdateNote = async (noteId: string, content: string) => {
     try {
-      const response = await fetch(`/api/boards/${params.id}/notes/${noteId}`, {
+      const response = await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -302,7 +313,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
     if (!confirm("Are you sure you want to delete this note?")) return
 
     try {
-      const response = await fetch(`/api/boards/${params.id}/notes/${noteId}`, {
+      const response = await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
         method: "DELETE",
       })
 
@@ -438,7 +449,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
 
       // Update dragged note position in database
       try {
-        await fetch(`/api/boards/${params.id}/notes/${currentDraggedNote}`, {
+        await fetch(`/api/boards/${boardId}/notes/${currentDraggedNote}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -454,7 +465,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
         const { x: newX, y: newY } = gridToPixels(displacement.tempCol, displacement.tempRow)
         
         try {
-          await fetch(`/api/boards/${params.id}/notes/${noteId}`, {
+          await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -523,7 +534,7 @@ export default function BoardPage({ params }: { params: { id: string } }) {
                         key={b.id}
                         href={`/boards/${b.id}`}
                         className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
-                          b.id === params.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                          b.id === boardId ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
                         }`}
                         onClick={() => setShowBoardDropdown(false)}
                       >
