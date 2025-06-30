@@ -238,7 +238,11 @@ export default function OrganizationSettingsPage() {
 
     setCreating(true)
     try {
-      const payload: any = {
+      const payload: {
+        name: string
+        expiresAt?: string
+        usageLimit?: number
+      } = {
         name: newSelfServeInvite.name,
       }
 
