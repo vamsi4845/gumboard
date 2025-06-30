@@ -939,7 +939,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               </span>
               {searchTerm && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Search: "{searchTerm}"
+                  Search: &quot;{searchTerm}&quot;
                 </span>
               )}
               {selectedAuthor && (
@@ -1128,7 +1128,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             <div className="text-xl mb-2">No notes found</div>
             <div className="text-sm mb-4 text-center">
               No notes match your current filters
-              {searchTerm && <div>Search: "{searchTerm}"</div>}
+              {searchTerm && <div>Search: &quot;{searchTerm}&quot;</div>}
               {selectedAuthor && (
                 <div>
                   Author: {uniqueAuthors.find(a => a.id === selectedAuthor)?.name || 'Unknown'}
