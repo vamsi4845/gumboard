@@ -60,9 +60,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   // Helper function to calculate note height based on content
   const calculateNoteHeight = (content: string) => {
     const lines = content.split('\n')
-    const lineCount = Math.max(lines.length, 3)
-    // Base height for header + padding, plus line height for content
-    return 120 + (lineCount * 24) // Adjusted for better spacing
+    const lineCount = Math.max(lines.length, 4) // Minimum 4 lines for better appearance
+    
+    // Calculate based on actual text content
+    const headerHeight = 60 // User info header + margins
+    const paddingHeight = 32 // Top and bottom padding (16px each)
+    const lineHeight = 28 // More generous line height for readability
+    const contentHeight = lineCount * lineHeight
+    
+    return Math.max(180, headerHeight + paddingHeight + contentHeight) // Minimum height of 180px
   }
 
   // Helper function to calculate grid layout for desktop
@@ -445,13 +451,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           {layoutNotes.map((note) => (
             <div
               key={note.id}
-              className="absolute p-4 rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200"
+              className="absolute p-4 rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 overflow-hidden"
               style={{
                 backgroundColor: note.color,
                 left: note.x,
                 top: note.y,
                 width: note.width,
                 height: note.height,
+                minHeight: note.height, // Ensure minimum height is respected
               }}
               onDoubleClick={() => {
                 setEditingNote(note.id)
@@ -459,7 +466,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               }}
             >
               {/* User Info Header */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <div className="w-7 h-7 bg-white bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
                     <span className="text-sm font-semibold text-gray-700">
@@ -494,11 +501,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               </div>
               
               {editingNote === note.id ? (
-                <div className="flex-1">
+                <div className="flex-1 flex flex-col min-h-0">
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base"
+                    className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 overflow-y-auto"
                     placeholder="Enter note content..."
                     onBlur={() => handleUpdateNote(note.id, editContent)}
                     onKeyDown={(e) => {
@@ -519,10 +526,12 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   />
                 </div>
               ) : (
-                <div className="flex-1">
-                  <p className="text-base text-gray-800 whitespace-pre-wrap break-words">
-                    {note.content}
-                  </p>
+                <div className="flex-1 flex flex-col justify-start min-h-0">
+                  <div className="flex-1 overflow-y-auto">
+                    <p className="text-base text-gray-800 whitespace-pre-wrap break-words leading-7">
+                      {note.content}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
