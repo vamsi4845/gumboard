@@ -425,6 +425,20 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
   const layoutNotes = isMobile ? calculateMobileLayout() : calculateGridLayout()
 
+  // Calculate the total height needed for the board area
+  const calculateBoardHeight = () => {
+    if (layoutNotes.length === 0) {
+      return 'calc(100vh - 64px)' // Default minimum height when no notes
+    }
+    
+    // Find the bottommost note position
+    const maxBottom = Math.max(...layoutNotes.map(note => note.y + note.height))
+    const minHeight = typeof window !== 'undefined' && window.innerWidth < 768 ? 500 : 600 // Different min heights for mobile/desktop
+    const calculatedHeight = Math.max(minHeight, maxBottom + 100) // Add 100px padding at bottom
+    
+    return `${calculatedHeight}px`
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -589,8 +603,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       {/* Board Area */}
       <div 
         ref={boardRef}
-        className="relative w-full pb-8 bg-gray-50"
+        className="relative w-full bg-gray-50"
         style={{
+          height: calculateBoardHeight(),
           minHeight: 'calc(100vh - 64px)', // Account for header height
         }}
       >
