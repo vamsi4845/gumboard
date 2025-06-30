@@ -421,7 +421,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <div className="flex items-center space-x-4 pr-4 sm:pr-6 lg:pr-8">
             <Button
               onClick={() => setShowAddNote(true)}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden md:inline">Add Note</span>
