@@ -53,25 +53,45 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const router = useRouter()
 
   // Grid configuration
-  const NOTE_WIDTH = 320  // Slightly smaller to fit more notes
-  const GRID_GAP = 16     // Smaller gap for better space utilization
-  const CONTAINER_PADDING = 16
+  const NOTE_WIDTH = 320  // Base width for calculations
+  const GRID_GAP = 20     // Even spacing between notes
+  const CONTAINER_PADDING = 20 // Padding from edges
+  const NOTE_PADDING = 16 // Internal note padding
 
   // Helper function to calculate note height based on content
-  const calculateNoteHeight = (content: string) => {
+  const calculateNoteHeight = (content: string, noteWidth?: number) => {
     const lines = content.split('\n')
-    const lineCount = Math.max(lines.length, 4) // Minimum 4 lines for better appearance
     
-    // Calculate based on actual text content
-    const headerHeight = 60 // User info header + margins
-    const paddingHeight = 32 // Top and bottom padding (16px each)
-    const lineHeight = 28 // More generous line height for readability
-    const contentHeight = lineCount * lineHeight
+    // Estimate character width and calculate text wrapping
+    const avgCharWidth = 9 // Average character width in pixels
+    const contentWidth = (noteWidth || 320) - (NOTE_PADDING * 2) - 16 // Note width minus padding and margins
+    const charsPerLine = Math.floor(contentWidth / avgCharWidth)
     
-    return Math.max(180, headerHeight + paddingHeight + contentHeight) // Minimum height of 180px
+    // Calculate total lines including wrapped text
+    let totalLines = 0
+    lines.forEach(line => {
+      if (line.length === 0) {
+        totalLines += 1 // Empty line
+      } else {
+        const wrappedLines = Math.ceil(line.length / charsPerLine)
+        totalLines += Math.max(1, wrappedLines)
+      }
+    })
+    
+    // Ensure minimum content
+    totalLines = Math.max(3, totalLines)
+    
+    // Calculate based on actual text content with wrapping
+    const headerHeight = 76 // User info header + margins (more accurate)
+    const paddingHeight = NOTE_PADDING * 2 // Top and bottom padding
+    const lineHeight = 28 // Line height for readability (leading-7)
+    const contentHeight = totalLines * lineHeight
+    const minContentHeight = 84 // Minimum content area (3 lines)
+    
+    return headerHeight + paddingHeight + Math.max(minContentHeight, contentHeight)
   }
 
-  // Helper function to calculate grid layout for desktop
+  // Helper function to calculate bin-packed layout for desktop
   const calculateGridLayout = () => {
     if (typeof window === 'undefined') return []
     
@@ -89,32 +109,29 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     // Use full width with minimal left offset
     const offsetX = CONTAINER_PADDING
     
-    // Group notes by rows and calculate proper Y positions
-    const rowHeights: number[] = []
-    const layoutedNotes = notes.map((note, index) => {
-      const col = index % actualColumnsCount
-      const row = Math.floor(index / actualColumnsCount)
-      const noteHeight = calculateNoteHeight(note.content)
+    // Bin-packing algorithm: track the bottom Y position of each column
+    const columnBottoms: number[] = new Array(actualColumnsCount).fill(CONTAINER_PADDING)
+    
+    return notes.map((note) => {
+      const noteHeight = calculateNoteHeight(note.content, adjustedNoteWidth)
       
-      // Track the maximum height for each row
-      if (!rowHeights[row]) {
-        rowHeights[row] = noteHeight
-      } else {
-        rowHeights[row] = Math.max(rowHeights[row], noteHeight)
+      // Find the column with the lowest bottom position
+      let bestColumn = 0
+      let minBottom = columnBottoms[0]
+      
+      for (let col = 1; col < actualColumnsCount; col++) {
+        if (columnBottoms[col] < minBottom) {
+          minBottom = columnBottoms[col]
+          bestColumn = col
+        }
       }
       
-      return { note, col, row, noteHeight }
-    })
-    
-    // Calculate Y positions based on accumulated row heights
-    const rowYPositions: number[] = [CONTAINER_PADDING]
-    for (let i = 1; i < rowHeights.length; i++) {
-      rowYPositions[i] = rowYPositions[i - 1] + rowHeights[i - 1] + GRID_GAP
-    }
-    
-    return layoutedNotes.map(({ note, col, row, noteHeight }) => {
-      const x = offsetX + (col * (adjustedNoteWidth + GRID_GAP))
-      const y = rowYPositions[row] || CONTAINER_PADDING
+      // Place the note in the best column
+      const x = offsetX + (bestColumn * (adjustedNoteWidth + GRID_GAP))
+      const y = columnBottoms[bestColumn]
+      
+      // Update the column bottom position
+      columnBottoms[bestColumn] = y + noteHeight + GRID_GAP
       
       return {
         ...note,
@@ -126,22 +143,48 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     })
   }
 
-  // Helper function to calculate mobile layout (single column)
+  // Helper function to calculate mobile layout (optimized single/double column)
   const calculateMobileLayout = () => {
     if (typeof window === 'undefined') return []
     
-    let currentY = CONTAINER_PADDING
+    const containerWidth = window.innerWidth - (CONTAINER_PADDING * 2)
+    const minNoteWidth = 280
+    const columnsCount = Math.floor((containerWidth + GRID_GAP) / (minNoteWidth + GRID_GAP))
+    const actualColumnsCount = Math.max(1, columnsCount)
+    
+    // Calculate note width for mobile
+    const availableWidthForNotes = containerWidth - ((actualColumnsCount - 1) * GRID_GAP)
+    const noteWidth = Math.floor(availableWidthForNotes / actualColumnsCount)
+    
+    // Bin-packing for mobile with fewer columns
+    const columnBottoms: number[] = new Array(actualColumnsCount).fill(CONTAINER_PADDING)
     
     return notes.map((note) => {
-      const noteHeight = calculateNoteHeight(note.content)
-      const y = currentY
-      currentY += noteHeight + GRID_GAP
+      const noteHeight = calculateNoteHeight(note.content, noteWidth)
+      
+      // Find the column with the lowest bottom position
+      let bestColumn = 0
+      let minBottom = columnBottoms[0]
+      
+      for (let col = 1; col < actualColumnsCount; col++) {
+        if (columnBottoms[col] < minBottom) {
+          minBottom = columnBottoms[col]
+          bestColumn = col
+        }
+      }
+      
+      // Place the note in the best column
+      const x = CONTAINER_PADDING + (bestColumn * (noteWidth + GRID_GAP))
+      const y = columnBottoms[bestColumn]
+      
+      // Update the column bottom position
+      columnBottoms[bestColumn] = y + noteHeight + GRID_GAP
       
       return {
         ...note,
-        x: CONTAINER_PADDING,
+        x,
         y,
-        width: window.innerWidth - (CONTAINER_PADDING * 2),
+        width: noteWidth,
         height: noteHeight
       }
     })
@@ -451,14 +494,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           {layoutNotes.map((note) => (
             <div
               key={note.id}
-              className="absolute p-4 rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 overflow-hidden"
+              className="absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 box-border"
               style={{
                 backgroundColor: note.color,
                 left: note.x,
                 top: note.y,
                 width: note.width,
                 height: note.height,
-                minHeight: note.height, // Ensure minimum height is respected
+                padding: `${NOTE_PADDING}px`,
               }}
               onDoubleClick={() => {
                 setEditingNote(note.id)
@@ -501,11 +544,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               </div>
               
               {editingNote === note.id ? (
-                <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 min-h-0">
                   <textarea
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 overflow-y-auto"
+                    className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7"
                     placeholder="Enter note content..."
                     onBlur={() => handleUpdateNote(note.id, editContent)}
                     onKeyDown={(e) => {
@@ -526,12 +569,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   />
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col justify-start min-h-0">
-                  <div className="flex-1 overflow-y-auto">
-                    <p className="text-base text-gray-800 whitespace-pre-wrap break-words leading-7">
-                      {note.content}
-                    </p>
-                  </div>
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <p className="text-base text-gray-800 whitespace-pre-wrap break-words leading-7 m-0 p-0 flex-1">
+                    {note.content}
+                  </p>
                 </div>
               )}
             </div>
