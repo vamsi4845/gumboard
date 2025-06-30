@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Settings, LogOut, ChevronDown, Grid3x3 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { FullPageLoader } from "@/components/ui/loader"
 
@@ -315,6 +315,25 @@ export default function Dashboard() {
 
         {/* Boards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {/* All Notes Card */}
+          <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+            <Link href="/boards/all-notes">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Grid3x3 className="w-5 h-5 text-blue-600" />
+                      <CardTitle className="text-lg text-blue-900">All Notes</CardTitle>
+                    </div>
+                    <CardDescription className="text-blue-700">
+                      View notes from all boards
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Link>
+          </Card>
+          
           {boards.map((board) => (
             <Card key={board.id} className="group hover:shadow-lg transition-shadow cursor-pointer">
               <Link href={`/boards/${board.id}`}>
