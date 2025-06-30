@@ -30,10 +30,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Only admins can delete self-serve invites" }, { status: 403 })
     }
 
-    // Verify the invite belongs to this organization
-    const invite = await db.organizationSelfServeInvite.findUnique({
-      where: { id: inviteId }
-    })
+      // Verify the invite belongs to this organization
+  const invite = await db.organizationSelfServeInvite.findUnique({
+    where: { token: inviteId }
+  })
 
     if (!invite) {
       return NextResponse.json({ error: "Invite not found" }, { status: 404 })
@@ -43,10 +43,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Delete the invite
-    await db.organizationSelfServeInvite.delete({
-      where: { id: inviteId }
-    })
+      // Delete the invite
+  await db.organizationSelfServeInvite.delete({
+    where: { token: inviteId }
+  })
 
     return NextResponse.json({ success: true })
   } catch (error) {

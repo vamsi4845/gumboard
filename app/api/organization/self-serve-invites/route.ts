@@ -1,6 +1,12 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
+import { randomBytes } from "crypto"
+
+// Generate a cryptographically secure token
+function generateSecureToken(): string {
+  return randomBytes(32).toString('base64url')
+}
 
 // Get all active self-serve invites for the organization
 export async function GET() {
@@ -107,6 +113,7 @@ export async function POST(request: NextRequest) {
     // Create the self-serve invite
     const selfServeInvite = await db.organizationSelfServeInvite.create({
       data: {
+        token: generateSecureToken(),
         name: name.trim(),
         organizationId: user.organizationId,
         createdBy: session.user.id,

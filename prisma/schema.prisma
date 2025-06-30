@@ -124,6 +124,7 @@ model OrganizationInvite {
 
 model OrganizationSelfServeInvite {
   id             String       @id @default(cuid())
+  token          String?      @unique // Cryptographically secure token for the URL
   name           String       // Name/description for the invite link
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

@@ -15,7 +15,7 @@ async function joinOrganization(token: string) {
 
   // Find the self-serve invite by token
   const invite = await db.organizationSelfServeInvite.findUnique({
-    where: { id: token },
+    where: { token: token },
     include: { organization: true }
   })
 
@@ -59,11 +59,104 @@ async function joinOrganization(token: string) {
 
   // Increment usage count
   await db.organizationSelfServeInvite.update({
-    where: { id: token },
+    where: { token: token },
     data: { usageCount: { increment: 1 } }
   })
 
   redirect("/dashboard")
+}
+
+async function autoCreateAccountAndJoin(token: string, formData: FormData) {
+  "use server"
+  
+  const email = formData.get("email")?.toString()
+  if (!email) {
+    throw new Error("Email is required")
+  }
+  
+  try {
+    // Find the self-serve invite by token
+    const invite = await db.organizationSelfServeInvite.findUnique({
+      where: { token: token },
+      include: { organization: true }
+    })
+
+    if (!invite || !invite.isActive) {
+      throw new Error("Invalid or inactive invitation link")
+    }
+
+    // Check if invite has expired
+    if (invite.expiresAt && invite.expiresAt < new Date()) {
+      throw new Error("This invitation link has expired")
+    }
+
+    // Check if usage limit has been reached
+    if (invite.usageLimit && invite.usageCount >= invite.usageLimit) {
+      throw new Error("This invitation link has reached its usage limit")
+    }
+
+    // Check if user already exists
+    let user = await db.user.findUnique({
+      where: { email }
+    })
+
+    // If user doesn't exist, create one with verified email and auto-join organization
+    if (!user) {
+      user = await db.user.create({
+        data: {
+          email,
+          emailVerified: new Date(), // Auto-verify since they clicked the invite link
+          organizationId: invite.organizationId // Auto-join the organization
+        }
+      })
+    } else if (!user.organizationId) {
+      // If user exists but isn't in an organization, add them to this one
+      user = await db.user.update({
+        where: { id: user.id },
+        data: { organizationId: invite.organizationId }
+      })
+    } else if (user.organizationId === invite.organizationId) {
+      // User is already in this organization, just continue
+    } else {
+      throw new Error("You are already a member of another organization")
+    }
+
+    // Verify email if not already verified
+    if (!user.emailVerified) {
+      await db.user.update({
+        where: { id: user.id },
+        data: { emailVerified: new Date() }
+      })
+    }
+
+    // Increment usage count only if this is a new join
+    if (user.organizationId === invite.organizationId) {
+      await db.organizationSelfServeInvite.update({
+        where: { token: token },
+        data: { usageCount: { increment: 1 } }
+      })
+    }
+
+    // Create a session for the user
+    const sessionToken = crypto.randomUUID()
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+
+    await db.session.create({
+      data: {
+        sessionToken,
+        userId: user.id,
+        expires,
+      }
+    })
+
+    // Redirect to a special endpoint that will set the session cookie and redirect to dashboard
+    redirect(`/api/auth/set-session?token=${sessionToken}&redirectTo=${encodeURIComponent("/dashboard")}`)
+    
+  } catch (error) {
+    console.error("Auto-join error:", error)
+    // Fallback to regular auth flow
+    redirect(`/auth/signin?email=${encodeURIComponent(email)}&callbackUrl=${encodeURIComponent(`/join/${token}`)}`)
+  }
 }
 
 interface JoinPageProps {
@@ -97,7 +190,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
 
   // Find the self-serve invite by token
   const invite = await db.organizationSelfServeInvite.findUnique({
-    where: { id: token },
+    where: { token: token },
     include: { 
       organization: true,
       user: true // The user who created the invite
@@ -183,9 +276,84 @@ export default async function JoinPage({ params }: JoinPageProps) {
     )
   }
 
-  // If user is not authenticated, redirect to sign in
+  // If user is not authenticated, show join form
   if (!session?.user) {
-    redirect(`/auth/signin?callbackUrl=${encodeURIComponent(`/join/${token}`)}`)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto space-y-8">
+            {/* Header */}
+            <div className="text-center">
+              <h1 className="text-3xl font-bold mb-2">Join Organization</h1>
+              <p className="text-muted-foreground">
+                You&apos;ve been invited to join {invite.organization.name}
+              </p>
+            </div>
+
+            {/* Join Form */}
+            <Card className="border-2">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">
+                    {invite.organization.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <CardTitle className="text-xl">{invite.organization.name}</CardTitle>
+                <CardDescription className="text-base">
+                  {invite.name}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Created by: {invite.user.name || invite.user.email}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {invite.usageLimit ? `${invite.usageCount}/${invite.usageLimit} used` : `${invite.usageCount} joined`}
+                  </p>
+                  {invite.expiresAt && (
+                    <p className="text-sm text-muted-foreground">
+                      Expires: {invite.expiresAt.toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                
+                <form action={autoCreateAccountAndJoin.bind(null, token)} className="space-y-4">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter your email address"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
+                    Join {invite.organization.name}
+                  </Button>
+                </form>
+                
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    Already have an account?{' '}
+                    <a 
+                      href={`/auth/signin?callbackUrl=${encodeURIComponent(`/join/${token}`)}`}
+                      className="text-blue-600 hover:text-blue-500"
+                    >
+                      Sign in instead
+                    </a>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Check if user is already in an organization

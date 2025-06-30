@@ -35,6 +35,7 @@ interface OrganizationInvite {
 
 interface SelfServeInvite {
   id: string
+  token: string
   name: string
   createdAt: string
   expiresAt: string | null
@@ -276,11 +277,11 @@ export default function OrganizationSettingsPage() {
     }
   }
 
-  const handleDeleteSelfServeInvite = async (inviteId: string) => {
+  const handleDeleteSelfServeInvite = async (inviteToken: string) => {
     if (!confirm("Are you sure you want to delete this invite link?")) return
 
     try {
-      const response = await fetch(`/api/organization/self-serve-invites/${inviteId}`, {
+      const response = await fetch(`/api/organization/self-serve-invites/${inviteToken}`, {
         method: "DELETE",
       })
 
@@ -296,8 +297,8 @@ export default function OrganizationSettingsPage() {
     }
   }
 
-  const copyInviteLink = async (inviteId: string) => {
-    const inviteUrl = `${window.location.origin}/join/${inviteId}`
+  const copyInviteLink = async (inviteToken: string) => {
+    const inviteUrl = `${window.location.origin}/join/${inviteToken}`
     try {
       await navigator.clipboard.writeText(inviteUrl)
       alert("Invite link copied to clipboard!")
@@ -572,13 +573,13 @@ export default function OrganizationSettingsPage() {
                       </div>
                       <div className="mt-3 p-2 bg-white rounded border">
                         <code className="text-sm text-gray-700 break-all">
-                          {typeof window !== 'undefined' ? `${window.location.origin}/join/${invite.id}` : `/join/${invite.id}`}
+                          {typeof window !== 'undefined' ? `${window.location.origin}/join/${invite.token}` : `/join/${invite.token}`}
                         </code>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
                       <Button
-                        onClick={() => copyInviteLink(invite.id)}
+                        onClick={() => copyInviteLink(invite.token)}
                         variant="outline"
                         size="sm"
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
@@ -588,7 +589,7 @@ export default function OrganizationSettingsPage() {
                       </Button>
                       {user?.isAdmin && (
                         <Button
-                          onClick={() => handleDeleteSelfServeInvite(invite.id)}
+                          onClick={() => handleDeleteSelfServeInvite(invite.token)}
                           variant="outline"
                           size="sm"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
