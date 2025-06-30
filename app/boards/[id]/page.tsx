@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut } from "lucide-react"
+import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 
@@ -49,6 +49,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [boardId, setBoardId] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -112,7 +113,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     // Bin-packing algorithm: track the bottom Y position of each column
     const columnBottoms: number[] = new Array(actualColumnsCount).fill(CONTAINER_PADDING)
     
-    return notes.map((note) => {
+    return filteredNotes.map((note) => {
       const noteHeight = calculateNoteHeight(note.content, adjustedNoteWidth)
       
       // Find the column with the lowest bottom position
@@ -159,7 +160,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     // Bin-packing for mobile with fewer columns
     const columnBottoms: number[] = new Array(actualColumnsCount).fill(CONTAINER_PADDING)
     
-    return notes.map((note) => {
+    return filteredNotes.map((note) => {
       const noteHeight = calculateNoteHeight(note.content, noteWidth)
       
       // Find the column with the lowest bottom position
@@ -233,6 +234,21 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  // Filter notes based on search term
+  const filterNotes = (notes: Note[], searchTerm: string): Note[] => {
+    if (!searchTerm.trim()) return notes
+    
+    const search = searchTerm.toLowerCase()
+    return notes.filter(note => {
+      const authorName = (note.user.name || note.user.email).toLowerCase()
+      const noteContent = note.content.toLowerCase()
+      return authorName.includes(search) || noteContent.includes(search)
+    })
+  }
+
+  // Get filtered notes for display
+  const filteredNotes = filterNotes(notes, searchTerm)
 
 
 
@@ -417,8 +433,30 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
 
-          {/* Right side - Add Note and User dropdown */}
+          {/* Right side - Search, Add Note and User dropdown */}
           <div className="flex items-center space-x-4 pr-4 sm:pr-6 lg:pr-8">
+            {/* Search Box */}
+            <div className="relative hidden sm:block">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white shadow-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+            
             <Button
               onClick={() => setShowAddNote(true)}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
@@ -474,11 +512,35 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {/* Mobile Board Title */}
-      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
-        <h2 className="text-lg font-semibold text-gray-900">{board?.name}</h2>
-        {board?.description && (
-          <p className="text-sm text-gray-500">{board.description}</p>
-        )}
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">{board?.name}</h2>
+          {board?.description && (
+            <p className="text-sm text-gray-500">{board.description}</p>
+          )}
+        </div>
+        
+        {/* Mobile Search Box */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search notes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white shadow-sm"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Board Area */}
@@ -489,6 +551,16 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           minHeight: 'calc(100vh - 64px)', // Account for header height
         }}
       >
+        {/* Search Results Info */}
+        {searchTerm && (
+          <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
+            {filteredNotes.length === 1 
+              ? `1 note found for "${searchTerm}"` 
+              : `${filteredNotes.length} notes found for "${searchTerm}"`
+            }
+          </div>
+        )}
+
         {/* Notes */}
         <div className="relative w-full h-full">
           {layoutNotes.map((note) => (
@@ -580,6 +652,21 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Empty State */}
+        {filteredNotes.length === 0 && notes.length > 0 && searchTerm && (
+          <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+            <Search className="w-12 h-12 mb-4 text-gray-400" />
+            <div className="text-xl mb-2">No notes found</div>
+            <div className="text-sm mb-4">No notes match your search for &ldquo;{searchTerm}&rdquo;</div>
+            <Button
+              onClick={() => setSearchTerm("")}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
+              <span>Clear Search</span>
+            </Button>
+          </div>
+        )}
+        
         {notes.length === 0 && (
           <div className="flex flex-col items-center justify-center h-96 text-gray-500">
             <div className="text-xl mb-2">No notes yet</div>
