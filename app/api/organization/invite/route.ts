@@ -1,6 +1,9 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.AUTH_RESEND_KEY)
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +27,7 @@ export async function POST(request: NextRequest) {
       include: { organization: true }
     })
 
-    if (!user?.organizationId) {
+    if (!user?.organizationId || !user.organization) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 })
     }
 
@@ -70,6 +73,32 @@ export async function POST(request: NextRequest) {
         status: 'PENDING'
       }
     })
+
+    // Send invite email
+    try {
+      await resend.emails.send({
+        from: "noreply@gumboard.com",
+        to: cleanEmail,
+        subject: `${session.user.name} invited you to join ${user.organization.name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>You're invited to join ${user.organization.name}!</h2>
+            <p>${session.user.name} (${session.user.email}) has invited you to join their organization on Gumboard.</p>
+            <p>Click the link below to accept the invitation:</p>
+            <a href="${process.env.AUTH_URL}/invite/accept?token=${invite.id}" 
+               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Accept Invitation
+            </a>
+            <p style="margin-top: 20px; color: #666;">
+              If you don't want to receive these emails, please ignore this message.
+            </p>
+          </div>
+        `
+      })
+    } catch (emailError) {
+      console.error("Failed to send invite email:", emailError)
+      // Don't fail the entire request if email sending fails
+    }
 
     return NextResponse.json({ invite }, { status: 201 })
   } catch (error) {
