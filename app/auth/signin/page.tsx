@@ -88,8 +88,8 @@ function SignInContent() {
           <CardTitle className="text-2xl font-bold">Welcome to Gumboard</CardTitle>
           <CardDescription>
             {searchParams.get('email') ? 
-              "We&apos;ll send you a magic link to verify your email address" :
-              "Enter your email address and we&apos;ll send you a magic link to sign in"
+              "we'll send you a magic link to verify your email address" :
+              "Enter your email address and we'll send you a magic link to sign in"
             }
           </CardDescription>
         </CardHeader>
