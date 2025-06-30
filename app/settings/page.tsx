@@ -228,11 +228,6 @@ export default function SettingsPage() {
             <Link href="/dashboard" className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8">
               <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
             </Link>
-              
-            {/* Settings Title */}
-            <div className="hidden md:block">
-              <div className="text-lg font-semibold text-gray-900">Settings</div>
-            </div>
           </div>
 
           {/* User Dropdown */}
