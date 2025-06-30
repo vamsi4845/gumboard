@@ -284,7 +284,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
           <div className="max-w-md mx-auto space-y-8">
             {/* Header */}
             <div className="text-center">
-              <h1 className="text-3xl font-bold mb-2">Join Organization</h1>
+              <h1 className="text-3xl font-bold mb-2">Join {invite.organization.name} on Gumboard!</h1>
               <p className="text-muted-foreground">
                 You&apos;ve been invited to join {invite.organization.name}
               </p>
@@ -299,17 +299,11 @@ export default async function JoinPage({ params }: JoinPageProps) {
                   </span>
                 </div>
                 <CardTitle className="text-xl">{invite.organization.name}</CardTitle>
-                <CardDescription className="text-base">
-                  {invite.name}
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Created by: {invite.user.name || invite.user.email}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {invite.usageLimit ? `${invite.usageCount}/${invite.usageLimit} used` : `${invite.usageCount} joined`}
+                    {invite.usageLimit ? `${invite.usageCount}/${invite.usageLimit} used` : ''}
                   </p>
                   {invite.expiresAt && (
                     <p className="text-sm text-muted-foreground">
