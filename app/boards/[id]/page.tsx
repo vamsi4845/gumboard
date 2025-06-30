@@ -7,6 +7,7 @@ import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search } from "luci
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 
 interface Note {
   id: string
@@ -53,6 +54,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [boardId, setBoardId] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [dateRange, setDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({
+    startDate: null,
+    endDate: null
+  })
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -257,20 +262,43 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Filter notes based on search term
-  const filterNotes = (notes: Note[], searchTerm: string): Note[] => {
-    if (!searchTerm.trim()) return notes
+  // Filter notes based on search term and date range
+  const filterNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }): Note[] => {
+    let filteredNotes = notes
     
-    const search = searchTerm.toLowerCase()
-    return notes.filter(note => {
-      const authorName = (note.user.name || note.user.email).toLowerCase()
-      const noteContent = note.content.toLowerCase()
-      return authorName.includes(search) || noteContent.includes(search)
-    })
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase()
+      filteredNotes = filteredNotes.filter(note => {
+        const authorName = (note.user.name || note.user.email).toLowerCase()
+        const noteContent = note.content.toLowerCase()
+        return authorName.includes(search) || noteContent.includes(search)
+      })
+    }
+    
+    // Filter by date range
+    if (dateRange.startDate || dateRange.endDate) {
+      filteredNotes = filteredNotes.filter(note => {
+        const noteDate = new Date(note.createdAt)
+        const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate())
+        const endOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
+        
+        if (dateRange.startDate && dateRange.endDate) {
+          return noteDate >= startOfDay(dateRange.startDate) && noteDate <= endOfDay(dateRange.endDate)
+        } else if (dateRange.startDate) {
+          return noteDate >= startOfDay(dateRange.startDate)
+        } else if (dateRange.endDate) {
+          return noteDate <= endOfDay(dateRange.endDate)
+        }
+        return true
+      })
+    }
+    
+    return filteredNotes
   }
 
   // Get filtered notes for display and sort by done status
-  const filteredNotes = filterNotes(notes, searchTerm).sort((a, b) => {
+  const filteredNotes = filterNotes(notes, searchTerm, dateRange).sort((a, b) => {
     // Sort by done status first (undone notes first), then by creation date (newest first)
     if (a.done !== b.done) {
       return a.done ? 1 : -1 // Undone notes (false) come first
@@ -496,6 +524,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               )}
             </div>
+
+            {/* Date Range Picker */}
+            <div className="hidden lg:block">
+              <DateRangePicker
+                startDate={dateRange.startDate}
+                endDate={dateRange.endDate}
+                onDateRangeChange={(startDate, endDate) => {
+                  setDateRange({ startDate, endDate })
+                }}
+                className="min-w-fit"
+              />
+            </div>
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
@@ -606,6 +646,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </button>
           )}
         </div>
+        
+        {/* Mobile Date Range Picker */}
+        <div className="lg:hidden">
+          <DateRangePicker
+            startDate={dateRange.startDate}
+            endDate={dateRange.endDate}
+            onDateRangeChange={(startDate, endDate) => {
+              setDateRange({ startDate, endDate })
+            }}
+            className="w-full"
+          />
+        </div>
       </div>
 
       {/* Board Area */}
@@ -618,12 +670,35 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         }}
       >
         {/* Search Results Info */}
-        {searchTerm && (
+        {(searchTerm || dateRange.startDate || dateRange.endDate) && (
           <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
-            {filteredNotes.length === 1 
-              ? `1 note found for "${searchTerm}"` 
-              : `${filteredNotes.length} notes found for "${searchTerm}"`
-            }
+            <div className="flex flex-wrap items-center gap-2">
+              <span>
+                {filteredNotes.length === 1 
+                  ? `1 note found` 
+                  : `${filteredNotes.length} notes found`
+                }
+              </span>
+              {searchTerm && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Search: "{searchTerm}"
+                </span>
+              )}
+              {(dateRange.startDate || dateRange.endDate) && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Date: {dateRange.startDate ? dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'} - {dateRange.endDate ? dateRange.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setSearchTerm("")
+                  setDateRange({ startDate: null, endDate: null })
+                }}
+                className="text-blue-600 hover:text-blue-800 text-xs underline"
+              >
+                Clear all filters
+              </button>
+            </div>
           </div>
         )}
 
@@ -777,17 +852,28 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Empty State */}
-        {filteredNotes.length === 0 && notes.length > 0 && searchTerm && (
+        {filteredNotes.length === 0 && notes.length > 0 && (searchTerm || dateRange.startDate || dateRange.endDate) && (
           <div className="flex flex-col items-center justify-center h-96 text-gray-500">
             <Search className="w-12 h-12 mb-4 text-gray-400" />
             <div className="text-xl mb-2">No notes found</div>
-            <div className="text-sm mb-4">No notes match your search for &ldquo;{searchTerm}&rdquo;</div>
+            <div className="text-sm mb-4 text-center">
+              No notes match your current filters
+              {searchTerm && <div>Search: "{searchTerm}"</div>}
+              {(dateRange.startDate || dateRange.endDate) && (
+                <div>
+                  Date range: {dateRange.startDate ? dateRange.startDate.toLocaleDateString() : '...'} - {dateRange.endDate ? dateRange.endDate.toLocaleDateString() : '...'}
+                </div>
+              )}
+            </div>
             <Button
-              onClick={() => setSearchTerm("")}
+              onClick={() => {
+                setSearchTerm("")
+                setDateRange({ startDate: null, endDate: null })
+              }}
               variant="outline"
               className="flex items-center space-x-2"
             >
-              <span>Clear Search</span>
+              <span>Clear All Filters</span>
             </Button>
           </div>
         )}
