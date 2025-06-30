@@ -84,19 +84,19 @@ export default function SettingsLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
+      {/* Enhanced Responsive Top Navigation Bar */}
       <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
           {/* Left side - Logo and Settings */}
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4 sm:space-x-6">
             {/* Logo */}
-            <Link href="/dashboard" className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8">
-              <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
+            <Link href="/dashboard" className="flex-shrink-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600">Gumboard</h1>
             </Link>
           </div>
 
           {/* User Dropdown */}
-          <div className="relative user-dropdown pr-4 sm:pr-6 lg:pr-8">
+          <div className="relative user-dropdown">
             <button
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
@@ -157,30 +157,30 @@ export default function SettingsLayout({
           </Link>
         </div>
         <div className="flex flex-col lg:flex-row lg:space-x-8">
-          {/* Sidebar Navigation */}
-          <div className="lg:w-64 mb-8 lg:mb-0">
-            <nav className="space-y-2">
+          {/* Enhanced Responsive Sidebar Navigation */}
+          <div className="lg:w-64 mb-6 lg:mb-0">
+            <nav className="flex flex-row lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0">
               <Link
                 href="/settings"
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors ${
+                className={`flex-shrink-0 lg:w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 text-left rounded-lg transition-colors ${
                   isProfileActive
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <User className="w-5 h-5 mr-3" />
-                Profile
+                <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
+                <span className="text-sm sm:text-base whitespace-nowrap">Profile</span>
               </Link>
               <Link
                 href="/settings/organization"
-                className={`w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors ${
+                className={`flex-shrink-0 lg:w-full flex items-center px-3 sm:px-4 py-2 sm:py-3 text-left rounded-lg transition-colors ${
                   isOrganizationActive
                     ? "bg-blue-50 text-blue-700 border border-blue-200"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <Building2 className="w-5 h-5 mr-3" />
-                Organization
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
+                <span className="text-sm sm:text-base whitespace-nowrap">Organization</span>
               </Link>
             </nav>
           </div>

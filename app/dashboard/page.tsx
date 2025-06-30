@@ -177,41 +177,41 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation Bar */}
+      {/* Enhanced Responsive Top Navigation Bar */}
       <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8">
-              <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
+            <div className="flex-shrink-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600">Gumboard</h1>
             </div>
           </div>
 
           {/* Add Board Button and User Dropdown */}
-          <div className="flex items-center space-x-4 pr-4 sm:pr-6 lg:pr-8">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Button
               onClick={() => setShowAddBoard(true)}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
+              className="flex items-center space-x-1 sm:space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium px-3 sm:px-4 py-2"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden md:inline">Add Board</span>
+              <span className="hidden sm:inline">Add Board</span>
             </Button>
             
             <div className="relative user-dropdown">
-            <button
-              onClick={() => setShowUserDropdown(!showUserDropdown)}
-              className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
-            >
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-white">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                          <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 sm:px-3 py-2"
+              >
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-white">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-sm font-medium hidden sm:inline">
+                  {user?.name?.split(' ')[0] || 'User'}
                 </span>
-              </div>
-              <span className="text-sm font-medium">
-                {user?.name?.split(' ')[0] || 'User'}
-              </span>
-              <ChevronDown className="w-4 h-4 ml-1" />
-            </button>
+                <ChevronDown className="w-4 h-4 ml-1 hidden sm:inline" />
+              </button>
 
             {showUserDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
@@ -242,18 +242,18 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+      {/* Enhanced Responsive Main Content */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Boards</h2>
-            <p className="text-gray-600 mt-1">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Boards</h2>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
               Manage your organization&apos;s boards
             </p>
           </div>
         </div>
 
-        {/* Add Board Modal */}
+        {/* Enhanced Responsive Add Board Modal */}
         {showAddBoard && (
           <div 
             className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -264,7 +264,7 @@ export default function Dashboard() {
             }}
           >
             <div 
-              className="bg-white bg-opacity-95 backdrop-blur-md rounded-lg p-6 w-full max-w-md shadow-2xl drop-shadow-2xl border border-white border-opacity-30"
+              className="bg-white bg-opacity-95 backdrop-blur-md rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl drop-shadow-2xl border border-white border-opacity-30"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold mb-4">Create New Board</h3>
@@ -313,8 +313,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Boards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Enhanced Responsive Boards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
           {/* All Notes Card */}
           <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
             <Link href="/boards/all-notes">

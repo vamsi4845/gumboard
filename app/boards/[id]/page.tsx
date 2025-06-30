@@ -159,19 +159,45 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     setShowDoneNotes(urlShowDone === null ? false : urlShowDone === 'true')
   }
 
-  // Grid configuration
-  const NOTE_WIDTH = 320  // Base width for calculations
-  const GRID_GAP = 20     // Even spacing between notes
-  const CONTAINER_PADDING = 20 // Padding from edges
-  const NOTE_PADDING = 16 // Internal note padding
+  // Enhanced responsive grid configuration
+  const getResponsiveConfig = () => {
+    if (typeof window === 'undefined') return { noteWidth: 320, gridGap: 20, containerPadding: 20, notePadding: 16 }
+    
+    const width = window.innerWidth
+    
+    // Ultra-wide screens (1920px+)
+    if (width >= 1920) {
+      return { noteWidth: 340, gridGap: 24, containerPadding: 32, notePadding: 18 }
+    }
+    // Large desktop (1200px-1919px)
+    else if (width >= 1200) {
+      return { noteWidth: 320, gridGap: 20, containerPadding: 24, notePadding: 16 }
+    }
+    // Medium desktop/laptop (768px-1199px)
+    else if (width >= 768) {
+      return { noteWidth: 300, gridGap: 16, containerPadding: 20, notePadding: 16 }
+    }
+    // Small tablet (600px-767px)
+    else if (width >= 600) {
+      return { noteWidth: 280, gridGap: 16, containerPadding: 16, notePadding: 14 }
+    }
+    // Mobile (less than 600px)
+    else {
+      return { noteWidth: 260, gridGap: 12, containerPadding: 12, notePadding: 12 }
+    }
+  }
 
   // Helper function to calculate note height based on content
-  const calculateNoteHeight = (content: string, noteWidth?: number) => {
+  const calculateNoteHeight = (content: string, noteWidth?: number, notePadding?: number) => {
+    const config = getResponsiveConfig()
+    const actualNotePadding = notePadding || config.notePadding
+    const actualNoteWidth = noteWidth || config.noteWidth
+    
     const lines = content.split('\n')
     
     // Estimate character width and calculate text wrapping
     const avgCharWidth = 9 // Average character width in pixels
-    const contentWidth = (noteWidth || 320) - (NOTE_PADDING * 2) - 16 // Note width minus padding and margins
+    const contentWidth = actualNoteWidth - (actualNotePadding * 2) - 16 // Note width minus padding and margins
     const charsPerLine = Math.floor(contentWidth / avgCharWidth)
     
     // Calculate total lines including wrapped text
@@ -190,7 +216,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     
     // Calculate based on actual text content with wrapping
     const headerHeight = 76 // User info header + margins (more accurate)
-    const paddingHeight = NOTE_PADDING * 2 // Top and bottom padding
+    const paddingHeight = actualNotePadding * 2 // Top and bottom padding
     const lineHeight = 28 // Line height for readability (leading-7)
     const contentHeight = totalLines * lineHeight
     const minContentHeight = 84 // Minimum content area (3 lines)
@@ -202,25 +228,28 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const calculateGridLayout = () => {
     if (typeof window === 'undefined') return []
     
-    const containerWidth = window.innerWidth - (CONTAINER_PADDING * 2)
-    const noteWidthWithGap = NOTE_WIDTH + GRID_GAP
-    const columnsCount = Math.floor((containerWidth + GRID_GAP) / noteWidthWithGap)
+    const config = getResponsiveConfig()
+    const containerWidth = window.innerWidth - (config.containerPadding * 2)
+    const noteWidthWithGap = config.noteWidth + config.gridGap
+    const columnsCount = Math.floor((containerWidth + config.gridGap) / noteWidthWithGap)
     const actualColumnsCount = Math.max(1, columnsCount)
     
     // Calculate the actual available width and adjust note width to fill better
-    const availableWidthForNotes = containerWidth - ((actualColumnsCount - 1) * GRID_GAP)
+    const availableWidthForNotes = containerWidth - ((actualColumnsCount - 1) * config.gridGap)
     const calculatedNoteWidth = Math.floor(availableWidthForNotes / actualColumnsCount)
-    // Ensure notes don't get too narrow or too wide
-    const adjustedNoteWidth = Math.max(280, Math.min(400, calculatedNoteWidth))
+    // Ensure notes don't get too narrow or too wide based on screen size
+    const minWidth = config.noteWidth - 40
+    const maxWidth = config.noteWidth + 80
+    const adjustedNoteWidth = Math.max(minWidth, Math.min(maxWidth, calculatedNoteWidth))
     
     // Use full width with minimal left offset
-    const offsetX = CONTAINER_PADDING
+    const offsetX = config.containerPadding
     
     // Bin-packing algorithm: track the bottom Y position of each column
-    const columnBottoms: number[] = new Array(actualColumnsCount).fill(CONTAINER_PADDING)
+    const columnBottoms: number[] = new Array(actualColumnsCount).fill(config.containerPadding)
     
     return filteredNotes.map((note) => {
-      const noteHeight = calculateNoteHeight(note.content, adjustedNoteWidth)
+      const noteHeight = calculateNoteHeight(note.content, adjustedNoteWidth, config.notePadding)
       
       // Find the column with the lowest bottom position
       let bestColumn = 0
@@ -234,11 +263,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       }
       
       // Place the note in the best column
-      const x = offsetX + (bestColumn * (adjustedNoteWidth + GRID_GAP))
+      const x = offsetX + (bestColumn * (adjustedNoteWidth + config.gridGap))
       const y = columnBottoms[bestColumn]
       
       // Update the column bottom position
-      columnBottoms[bestColumn] = y + noteHeight + GRID_GAP
+      columnBottoms[bestColumn] = y + noteHeight + config.gridGap
       
       return {
         ...note,
@@ -254,20 +283,21 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const calculateMobileLayout = () => {
     if (typeof window === 'undefined') return []
     
-    const containerWidth = window.innerWidth - (CONTAINER_PADDING * 2)
-    const minNoteWidth = 280
-    const columnsCount = Math.floor((containerWidth + GRID_GAP) / (minNoteWidth + GRID_GAP))
+    const config = getResponsiveConfig()
+    const containerWidth = window.innerWidth - (config.containerPadding * 2)
+    const minNoteWidth = config.noteWidth - 20 // Slightly smaller minimum for mobile
+    const columnsCount = Math.floor((containerWidth + config.gridGap) / (minNoteWidth + config.gridGap))
     const actualColumnsCount = Math.max(1, columnsCount)
     
     // Calculate note width for mobile
-    const availableWidthForNotes = containerWidth - ((actualColumnsCount - 1) * GRID_GAP)
+    const availableWidthForNotes = containerWidth - ((actualColumnsCount - 1) * config.gridGap)
     const noteWidth = Math.floor(availableWidthForNotes / actualColumnsCount)
     
     // Bin-packing for mobile with fewer columns
-    const columnBottoms: number[] = new Array(actualColumnsCount).fill(CONTAINER_PADDING)
+    const columnBottoms: number[] = new Array(actualColumnsCount).fill(config.containerPadding)
     
     return filteredNotes.map((note) => {
-      const noteHeight = calculateNoteHeight(note.content, noteWidth)
+      const noteHeight = calculateNoteHeight(note.content, noteWidth, config.notePadding)
       
       // Find the column with the lowest bottom position
       let bestColumn = 0
@@ -281,11 +311,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       }
       
       // Place the note in the best column
-      const x = CONTAINER_PADDING + (bestColumn * (noteWidth + GRID_GAP))
+      const x = config.containerPadding + (bestColumn * (noteWidth + config.gridGap))
       const y = columnBottoms[bestColumn]
       
       // Update the column bottom position
-      columnBottoms[bestColumn] = y + noteHeight + GRID_GAP
+      columnBottoms[bestColumn] = y + noteHeight + config.gridGap
       
       return {
         ...note,
@@ -362,17 +392,31 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     }
   }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showSortDropdown, showAddNote])
 
-  // Check if mobile on mount and resize
+  // Enhanced responsive handling with debounced resize and better breakpoints
   useEffect(() => {
-    const checkMobile = () => {
+    let resizeTimeout: NodeJS.Timeout
+    
+    const checkResponsive = () => {
       if (typeof window !== 'undefined') {
-        setIsMobile(window.innerWidth < 768) // Use tablet breakpoint for better mobile experience
+        const width = window.innerWidth
+        setIsMobile(width < 768) // Tablet breakpoint
+        
+        // Force re-render of notes layout after screen size change
+        // This ensures notes are properly repositioned
+        clearTimeout(resizeTimeout)
+        resizeTimeout = setTimeout(() => {
+          // Trigger a state update to force re-calculation of note positions
+          setNotes(prevNotes => [...prevNotes])
+        }, 150) // Debounce resize events
       }
     }
     
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
+    checkResponsive()
+    window.addEventListener('resize', checkResponsive)
+    return () => {
+      window.removeEventListener('resize', checkResponsive)
+      clearTimeout(resizeTimeout)
+    }
   }, [])
 
   // Get unique authors from notes
@@ -1231,7 +1275,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 top: note.y,
                 width: note.width,
                 height: note.height,
-                padding: `${NOTE_PADDING}px`,
+                padding: `${getResponsiveConfig().notePadding}px`,
               }}
               onDoubleClick={() => {
                 // Allow editing if user is the note author or admin

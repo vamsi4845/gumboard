@@ -45,8 +45,8 @@ function SignInContent() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
+        <Card className="w-full max-w-sm sm:max-w-md">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
@@ -79,13 +79,13 @@ function SignInContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
+      <Card className="w-full max-w-sm sm:max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
             <Mail className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to Gumboard</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl font-bold">Welcome to Gumboard</CardTitle>
           <CardDescription>
             {searchParams.get('email') ? 
               "we'll send you a magic link to verify your email address" :
@@ -143,13 +143,13 @@ function SignInContent() {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
+      <Card className="w-full max-w-sm sm:max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
             <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
           </div>
-          <CardTitle className="text-2xl">Loading...</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Loading...</CardTitle>
           <CardDescription>
             Please wait while we prepare the sign in page
           </CardDescription>

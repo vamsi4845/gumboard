@@ -100,12 +100,12 @@ export default async function OrganizationSetup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto space-y-8">
+      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <div className="max-w-sm sm:max-w-md mx-auto space-y-6 sm:space-y-8">
           {/* Header */}
           <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">Setup Your Organization</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Setup Your Organization</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Create your workspace and invite your team
             </p>
           </div>
@@ -118,8 +118,8 @@ export default async function OrganizationSetup() {
                   {session.user.name?.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <CardTitle className="text-xl">Welcome, {session.user.name}!</CardTitle>
-              <CardDescription className="text-base">
+              <CardTitle className="text-lg sm:text-xl">Welcome, {session.user.name}!</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
                 Let&apos;s set up your organization
               </CardDescription>
             </CardHeader>
