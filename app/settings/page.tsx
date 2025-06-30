@@ -410,7 +410,7 @@ export default function SettingsPage() {
                   <div className="space-y-6">
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">Team Members</h3>
-                      <p className="text-gray-600">Manage your organization's team members.</p>
+                      <p className="text-gray-600">{`Manage your organization's team members.`}</p>
                     </div>
 
                     <div className="space-y-3">
