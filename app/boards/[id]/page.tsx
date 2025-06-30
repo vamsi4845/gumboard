@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
+import { FullPageLoader } from "@/components/ui/loader"
 
 interface Note {
   id: string
@@ -206,7 +208,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId])
 
-  // Close dropdowns when clicking outside
+  // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showBoardDropdown || showUserDropdown) {
@@ -218,9 +220,28 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       }
     }
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showAddNote) {
+          setShowAddNote(false)
+          setNewNoteContent("")
+        }
+        if (showBoardDropdown) {
+          setShowBoardDropdown(false)
+        }
+        if (showUserDropdown) {
+          setShowUserDropdown(false)
+        }
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showBoardDropdown, showUserDropdown])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showBoardDropdown, showUserDropdown, showAddNote])
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -365,11 +386,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
+    return <FullPageLoader message="Loading board..." />
   }
 
   if (!board) {

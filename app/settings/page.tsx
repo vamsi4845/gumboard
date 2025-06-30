@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Mail } from "lucide-react"
+import { Loader } from "@/components/ui/loader"
 
 interface User {
   id: string
@@ -81,7 +82,7 @@ export default function ProfileSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Loading...</div>
+        <Loader size="lg" />
       </div>
     )
   }

@@ -8,6 +8,7 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { Plus, Trash2, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { FullPageLoader } from "@/components/ui/loader"
 
 interface Board {
   id: string
@@ -41,7 +42,7 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside and handle escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showUserDropdown) {
@@ -52,9 +53,26 @@ export default function Dashboard() {
       }
     }
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (showAddBoard) {
+          setShowAddBoard(false)
+          setNewBoardName("")
+          setNewBoardDescription("")
+        }
+        if (showUserDropdown) {
+          setShowUserDropdown(false)
+        }
+      }
+    }
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showUserDropdown])
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [showUserDropdown, showAddBoard])
 
   const fetchUserAndBoards = async () => {
     try {
@@ -144,11 +162,7 @@ export default function Dashboard() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
+    return <FullPageLoader message="Loading dashboard..." />
   }
 
   return (
@@ -163,8 +177,17 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* User Dropdown */}
-          <div className="relative user-dropdown pr-4 sm:pr-6 lg:pr-8">
+          {/* Add Board Button and User Dropdown */}
+          <div className="flex items-center space-x-4 pr-4 sm:pr-6 lg:pr-8">
+            <Button
+              onClick={() => setShowAddBoard(true)}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden md:inline">Add Board</span>
+            </Button>
+            
+            <div className="relative user-dropdown">
             <button
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
@@ -204,6 +227,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </div>
       </nav>
@@ -211,27 +235,18 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900">Boards</h2>
-                          <p className="text-gray-600 mt-1">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Boards</h2>
+            <p className="text-gray-600 mt-1">
               Manage your organization&apos;s boards
             </p>
-            </div>
-            <Button
-              onClick={() => setShowAddBoard(true)}
-              className="flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Board</span>
-            </Button>
           </div>
         </div>
 
         {/* Add Board Modal */}
         {showAddBoard && (
           <div 
-            className="fixed inset-0 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             onClick={() => {
               setShowAddBoard(false)
               setNewBoardName("")

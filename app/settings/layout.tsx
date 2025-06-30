@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { User, Building2, ArrowLeft, Settings, LogOut, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
+import { FullPageLoader } from "@/components/ui/loader"
 
 interface User {
   id: string
@@ -76,11 +77,7 @@ export default function SettingsLayout({
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    )
+    return <FullPageLoader message="Loading settings..." />
   }
 
   const isProfileActive = pathname === '/settings'
