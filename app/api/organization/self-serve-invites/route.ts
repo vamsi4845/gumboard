@@ -1,11 +1,11 @@
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
-import { randomBytes } from "crypto"
+import { nanoid } from "nanoid"
 
-// Generate a cryptographically secure token
+// Generate a cryptographically secure token using nanoid
 function generateSecureToken(): string {
-  return randomBytes(32).toString('base64url')
+  return nanoid(32) // 32 characters, URL-safe
 }
 
 // Get all active self-serve invites for the organization
