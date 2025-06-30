@@ -246,7 +246,7 @@ export default function Dashboard() {
         {/* Add Board Modal */}
         {showAddBoard && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => {
               setShowAddBoard(false)
               setNewBoardName("")
@@ -254,7 +254,7 @@ export default function Dashboard() {
             }}
           >
             <div 
-              className="bg-white rounded-lg p-6 w-full max-w-md shadow-2xl border border-gray-200"
+              className="bg-white bg-opacity-95 backdrop-blur-md rounded-lg p-6 w-full max-w-md shadow-2xl drop-shadow-2xl border border-white border-opacity-30"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold mb-4">Create New Board</h3>
