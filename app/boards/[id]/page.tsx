@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search, User } from "lucide-react"
+import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search, User, ArrowUpDown } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
@@ -39,6 +39,14 @@ interface User {
   } | null
 }
 
+type SortOption = 'created-desc' | 'created-asc' | 'author-name'
+
+const SORT_OPTIONS = [
+  { value: 'created-desc' as SortOption, label: 'Newest First', description: 'Created at (descending)' },
+  { value: 'created-asc' as SortOption, label: 'Oldest First', description: 'Created at (ascending)' },
+  { value: 'author-name' as SortOption, label: 'Author Name', description: 'Alphabetical by author' },
+] as const
+
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null)
   const [notes, setNotes] = useState<Note[]>([])
@@ -60,6 +68,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   })
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
   const [showAuthorDropdown, setShowAuthorDropdown] = useState(false)
+  const [sortBy, setSortBy] = useState<SortOption>('created-desc')
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -219,12 +229,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showBoardDropdown || showUserDropdown || showAuthorDropdown) {
+      if (showBoardDropdown || showUserDropdown || showAuthorDropdown || showSortDropdown) {
         const target = event.target as Element
-        if (!target.closest('.board-dropdown') && !target.closest('.user-dropdown') && !target.closest('.author-dropdown')) {
+        if (!target.closest('.board-dropdown') && !target.closest('.user-dropdown') && !target.closest('.author-dropdown') && !target.closest('.sort-dropdown')) {
           setShowBoardDropdown(false)
           setShowUserDropdown(false)
           setShowAuthorDropdown(false)
+          setShowSortDropdown(false)
         }
       }
     }
@@ -244,6 +255,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         if (showAuthorDropdown) {
           setShowAuthorDropdown(false)
         }
+        if (showSortDropdown) {
+          setShowSortDropdown(false)
+        }
       }
     }
 
@@ -253,7 +267,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showAddNote])
+  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showSortDropdown, showAddNote])
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -285,8 +299,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     return Array.from(authorsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  // Filter notes based on search term, date range, and author
-  const filterNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null): Note[] => {
+  // Filter and sort notes based on search term, date range, author, and sort option
+  const filterAndSortNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null, sortOption: SortOption): Note[] => {
     let filteredNotes = notes
     
     // Filter by search term
@@ -322,20 +336,36 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       })
     }
     
+    // Sort notes
+    filteredNotes.sort((a, b) => {
+      // Always prioritize done status first (undone notes first)
+      if (a.done !== b.done) {
+        return a.done ? 1 : -1 // Undone notes (false) come first
+      }
+      
+      // Then sort by the selected option
+      switch (sortOption) {
+        case 'created-asc':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case 'created-desc':
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        case 'author-name':
+          const authorNameA = (a.user.name || a.user.email).toLowerCase()
+          const authorNameB = (b.user.name || b.user.email).toLowerCase()
+          return authorNameA.localeCompare(authorNameB)
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+    })
+    
     return filteredNotes
   }
 
   // Get unique authors for dropdown
   const uniqueAuthors = getUniqueAuthors(notes)
   
-  // Get filtered notes for display and sort by done status
-  const filteredNotes = filterNotes(notes, searchTerm, dateRange, selectedAuthor).sort((a, b) => {
-    // Sort by done status first (undone notes first), then by creation date (newest first)
-    if (a.done !== b.done) {
-      return a.done ? 1 : -1 // Undone notes (false) come first
-    }
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  })
+  // Get filtered and sorted notes for display
+  const filteredNotes = filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, sortBy)
 
 
 
@@ -627,6 +657,44 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               )}
             </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative sort-dropdown hidden md:block">
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              >
+                <ArrowUpDown className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-700 truncate max-w-32">
+                  {SORT_OPTIONS.find(option => option.value === sortBy)?.label || 'Sort'}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                  showSortDropdown ? 'rotate-180' : ''
+                }`} />
+              </button>
+
+              {showSortDropdown && (
+                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                  <div className="py-1">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSortBy(option.value)
+                          setShowSortDropdown(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                          sortBy === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium">{option.label}</div>
+                        <div className="text-xs text-gray-500 mt-1">{option.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
@@ -811,6 +879,46 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
         </div>
+
+        {/* Mobile Sort Dropdown */}
+        <div className="md:hidden relative sort-dropdown">
+          <button
+            onClick={() => setShowSortDropdown(!showSortDropdown)}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          >
+            <div className="flex items-center space-x-2">
+              <ArrowUpDown className="w-4 h-4 text-gray-500" />
+              <span className="text-gray-700">
+                {SORT_OPTIONS.find(option => option.value === sortBy)?.label || 'Sort'}
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+              showSortDropdown ? 'rotate-180' : ''
+            }`} />
+          </button>
+
+          {showSortDropdown && (
+            <div className="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+              <div className="py-1">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortBy(option.value)
+                      setShowSortDropdown(false)
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                      sortBy === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <div className="font-medium">{option.label}</div>
+                    <div className="text-xs text-gray-500 mt-1">{option.description}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Board Area */}
@@ -823,7 +931,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         }}
       >
         {/* Search Results Info */}
-        {(searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor) && (
+        {(searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor || sortBy !== 'created-desc') && (
           <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
             <div className="flex flex-wrap items-center gap-2">
               <span>
@@ -847,11 +955,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   Date: {dateRange.startDate ? dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'} - {dateRange.endDate ? dateRange.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'}
                 </span>
               )}
+              {sortBy !== 'created-desc' && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Sort: {SORT_OPTIONS.find(option => option.value === sortBy)?.label || 'Custom'}
+                </span>
+              )}
               <button
                 onClick={() => {
                   setSearchTerm("")
                   setDateRange({ startDate: null, endDate: null })
                   setSelectedAuthor(null)
+                  setSortBy('created-desc')
                 }}
                 className="text-blue-600 hover:text-blue-800 text-xs underline"
               >
@@ -1034,6 +1148,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 setSearchTerm("")
                 setDateRange({ startDate: null, endDate: null })
                 setSelectedAuthor(null)
+                setSortBy('created-desc')
               }}
               variant="outline"
               className="flex items-center space-x-2"
