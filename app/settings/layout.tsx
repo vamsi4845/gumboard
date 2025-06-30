@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { User, Building2, ArrowLeft, Settings, LogOut, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
@@ -34,26 +33,7 @@ export default function SettingsLayout({
   const router = useRouter()
   const pathname = usePathname()
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showUserDropdown) {
-        const target = event.target as Element
-        if (!target.closest('.user-dropdown')) {
-          setShowUserDropdown(false)
-        }
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showUserDropdown])
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await fetch("/api/user")
       if (response.status === 401) {
@@ -70,7 +50,26 @@ export default function SettingsLayout({
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showUserDropdown) {
+        const target = event.target as Element
+        if (!target.closest('.user-dropdown')) {
+          setShowUserDropdown(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showUserDropdown])
 
   const handleSignOut = async () => {
     await signOut()

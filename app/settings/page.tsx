@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -31,11 +31,7 @@ export default function ProfileSettingsPage() {
   const [profileName, setProfileName] = useState("")
   const router = useRouter()
 
-  useEffect(() => {
-    fetchUserData()
-  }, [])
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await fetch("/api/user")
       if (response.status === 401) {
@@ -53,7 +49,11 @@ export default function ProfileSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    fetchUserData()
+  }, [fetchUserData])
 
   const handleSaveProfile = async () => {
     setSaving(true)

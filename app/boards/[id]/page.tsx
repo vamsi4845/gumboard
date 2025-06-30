@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"

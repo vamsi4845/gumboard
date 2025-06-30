@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -41,12 +41,7 @@ export default function OrganizationSettingsPage() {
   const [inviting, setInviting] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    fetchUserData()
-    fetchInvites()
-  }, [])
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await fetch("/api/user")
       if (response.status === 401) {
@@ -64,7 +59,12 @@ export default function OrganizationSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
+
+  useEffect(() => {
+    fetchUserData()
+    fetchInvites()
+  }, [fetchUserData])
 
   const fetchInvites = async () => {
     try {
