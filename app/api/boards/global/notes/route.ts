@@ -1,0 +1,137 @@
+import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/auth"
+import { db } from "@/lib/db"
+
+// Get all notes from all boards in the organization
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Get user with organization
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      include: { organization: true }
+    })
+
+    if (!user?.organizationId) {
+      return NextResponse.json({ error: "No organization found" }, { status: 403 })
+    }
+
+    // Get all notes from all boards in the organization
+    const notes = await db.note.findMany({
+      where: {
+        deletedAt: null, // Only include non-deleted notes
+        board: {
+          organizationId: user.organizationId
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        board: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    return NextResponse.json({ notes })
+  } catch (error) {
+    console.error("Error fetching global notes:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+// Create a new note (for global view, we need to specify which board)
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { content, color, boardId } = await request.json()
+
+    if (!content || !boardId) {
+      return NextResponse.json({ error: "Content and board ID are required" }, { status: 400 })
+    }
+
+    // Verify user has access to the specified board (same organization)
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      include: { organization: true }
+    })
+
+    if (!user?.organizationId) {
+      return NextResponse.json({ error: "No organization found" }, { status: 403 })
+    }
+
+    const board = await db.board.findUnique({
+      where: { id: boardId }
+    })
+
+    if (!board) {
+      return NextResponse.json({ error: "Board not found" }, { status: 404 })
+    }
+
+    if (board.organizationId !== user.organizationId) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
+    // Random colors for sticky notes
+    const colors = [
+      "#fef3c7", // yellow
+      "#fce7f3", // pink
+      "#dbeafe", // blue
+      "#dcfce7", // green
+      "#fed7d7", // red
+      "#e0e7ff", // indigo
+      "#f3e8ff", // purple
+      "#fef4e6", // orange
+    ]
+
+    const randomColor = color || colors[Math.floor(Math.random() * colors.length)]
+
+    const note = await db.note.create({
+      data: {
+        content,
+        color: randomColor,
+        boardId,
+        createdBy: session.user.id,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        board: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({ note }, { status: 201 })
+  } catch (error) {
+    console.error("Error creating note:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+} 

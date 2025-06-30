@@ -21,6 +21,10 @@ interface Note {
     name: string | null
     email: string
   }
+  board?: {
+    id: string
+    name: string
+  }
 }
 
 interface Board {
@@ -55,6 +59,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [loading, setLoading] = useState(true)
   const [showAddNote, setShowAddNote] = useState(false)
   const [newNoteContent, setNewNoteContent] = useState("")
+  const [selectedBoardForNote, setSelectedBoardForNote] = useState<string>("")
   const [editingNote, setEditingNote] = useState<string | null>(null)
   const [editContent, setEditContent] = useState("")
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
@@ -323,6 +328,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         if (showAddNote) {
           setShowAddNote(false)
           setNewNoteContent("")
+          setSelectedBoardForNote("")
         }
         if (showBoardDropdown) {
           setShowBoardDropdown(false)
@@ -468,22 +474,38 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         setAllBoards(boards)
       }
 
-      // Fetch current board info
-      const boardResponse = await fetch(`/api/boards/${boardId}`)
-      if (boardResponse.status === 401) {
-        router.push("/auth/signin")
-        return
-      }
-      if (boardResponse.ok) {
-        const { board } = await boardResponse.json()
-        setBoard(board)
-      }
+      if (boardId === 'global') {
+        // For global view, create a virtual board object and fetch all notes
+        setBoard({
+          id: 'global',
+          name: 'Global',
+          description: 'Notes from all boards'
+        })
 
-      // Fetch notes
-      const notesResponse = await fetch(`/api/boards/${boardId}/notes`)
-      if (notesResponse.ok) {
-        const { notes } = await notesResponse.json()
-        setNotes(notes)
+        // Fetch notes from all boards
+        const notesResponse = await fetch(`/api/boards/global/notes`)
+        if (notesResponse.ok) {
+          const { notes } = await notesResponse.json()
+          setNotes(notes)
+        }
+      } else {
+        // Fetch current board info
+        const boardResponse = await fetch(`/api/boards/${boardId}`)
+        if (boardResponse.status === 401) {
+          router.push("/auth/signin")
+          return
+        }
+        if (boardResponse.ok) {
+          const { board } = await boardResponse.json()
+          setBoard(board)
+        }
+
+        // Fetch notes for specific board
+        const notesResponse = await fetch(`/api/boards/${boardId}/notes`)
+        if (notesResponse.ok) {
+          const { notes } = await notesResponse.json()
+          setNotes(notes)
+        }
       }
     } catch (error) {
       console.error("Error fetching board data:", error)
@@ -496,14 +518,24 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     e.preventDefault()
     if (!newNoteContent.trim()) return
 
+    // For global view, ensure a board is selected
+    if (boardId === 'global' && !selectedBoardForNote) {
+      alert("Please select a board to add the note to")
+      return
+    }
+
     try {
-      const response = await fetch(`/api/boards/${boardId}/notes`, {
+      const targetBoardId = boardId === 'global' ? selectedBoardForNote : boardId
+      const isGlobalView = boardId === 'global'
+      
+      const response = await fetch(`/api/boards/${isGlobalView ? 'global' : targetBoardId}/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           content: newNoteContent,
+          ...(isGlobalView && { boardId: selectedBoardForNote })
         }),
       })
 
@@ -511,6 +543,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         const { note } = await response.json()
         setNotes([...notes, note])
         setNewNoteContent("")
+        setSelectedBoardForNote("")
         setShowAddNote(false)
       }
     } catch (error) {
@@ -520,7 +553,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
   const handleUpdateNote = async (noteId: string, content: string) => {
     try {
-      const response = await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
+      // Find the note to get its board ID for global view
+      const currentNote = notes.find(n => n.id === noteId)
+      const targetBoardId = boardId === 'global' && currentNote?.board?.id ? currentNote.board.id : boardId
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -547,7 +584,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     if (!confirm("Are you sure you want to delete this note?")) return
 
     try {
-      const response = await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
+      // Find the note to get its board ID for global view
+      const currentNote = notes.find(n => n.id === noteId)
+      const targetBoardId = boardId === 'global' && currentNote?.board?.id ? currentNote.board.id : boardId
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "DELETE",
       })
 
@@ -565,7 +606,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
   const handleToggleDone = async (noteId: string, currentDone: boolean) => {
     try {
-      const response = await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
+      // Find the note to get its board ID for global view
+      const currentNote = notes.find(n => n.id === noteId)
+      const targetBoardId = boardId === 'global' && currentNote?.board?.id ? currentNote.board.id : boardId
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -590,7 +635,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     return <FullPageLoader message="Loading board..." />
   }
 
-  if (!board) {
+  if (!board && boardId !== 'global') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Board not found</div>
@@ -633,7 +678,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
               >
                 <div>
-                  <div className="text-lg font-semibold text-gray-900">{board?.name}</div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {boardId === 'global' ? 'Global' : board?.name}
+                  </div>
                 </div>
                 <ChevronDown className="w-4 h-4 ml-1" />
               </button>
@@ -641,6 +688,20 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               {showBoardDropdown && (
                 <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
+                    {/* Global Option */}
+                    <Link
+                      href="/boards/global"
+                      className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
+                        boardId === 'global' ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                      }`}
+                      onClick={() => setShowBoardDropdown(false)}
+                    >
+                      <div className="font-medium">Global</div>
+                      <div className="text-xs text-gray-500 mt-1">Notes from all boards</div>
+                    </Link>
+                    {allBoards.length > 0 && (
+                      <div className="border-t border-gray-200 my-1"></div>
+                    )}
                     {allBoards.map((b) => (
                       <Link
                         key={b.id}
@@ -808,7 +869,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </div>
             
             <Button
-              onClick={() => setShowAddNote(true)}
+              onClick={() => {
+                setShowAddNote(true)
+                // Set default board selection for global view
+                if (boardId === 'global' && allBoards.length > 0) {
+                  setSelectedBoardForNote(allBoards[0].id)
+                }
+              }}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -864,9 +931,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       {/* Mobile Board Title */}
       <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">{board?.name}</h2>
-          {board?.description && (
-            <p className="text-sm text-gray-500">{board.description}</p>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {boardId === 'global' ? 'Global' : board?.name}
+          </h2>
+          {boardId === 'global' ? (
+            <p className="text-sm text-gray-500">Notes from all boards</p>
+          ) : (
+            board?.description && (
+              <p className="text-sm text-gray-500">{board.description}</p>
+            )
           )}
         </div>
         
@@ -1109,13 +1182,20 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     <span className="text-sm font-bold text-gray-700 truncate max-w-20">
                       {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
                     </span>
-                    <span className="text-xs text-gray-500 opacity-70">
-                      {new Date(note.createdAt).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric',
-                        year: new Date(note.createdAt).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                      })}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 opacity-70">
+                        {new Date(note.createdAt).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric',
+                          year: new Date(note.createdAt).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                        })}
+                      </span>
+                      {boardId === 'global' && note.board && (
+                        <span className="text-xs text-blue-600 opacity-80 font-medium truncate max-w-20">
+                          {note.board.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1262,7 +1342,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             <div className="text-xl mb-2">No notes yet</div>
             <div className="text-sm mb-4">Click &ldquo;Add Note&rdquo; to get started</div>
             <Button
-              onClick={() => setShowAddNote(true)}
+              onClick={() => {
+                setShowAddNote(true)
+                // Set default board selection for global view
+                if (boardId === 'global' && allBoards.length > 0) {
+                  setSelectedBoardForNote(allBoards[0].id)
+                }
+              }}
               className="flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
@@ -1279,6 +1365,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           onClick={() => {
             setShowAddNote(false)
             setNewNoteContent("")
+            setSelectedBoardForNote("")
           }}
         >
           <div 
@@ -1288,6 +1375,26 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             <h3 className="text-lg font-semibold mb-4">Add New Note</h3>
             <form onSubmit={handleAddNote}>
               <div className="space-y-4">
+                {boardId === 'global' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Board
+                    </label>
+                    <select
+                      value={selectedBoardForNote}
+                      onChange={(e) => setSelectedBoardForNote(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    >
+                      <option value="">Choose a board...</option>
+                      {allBoards.map((board) => (
+                        <option key={board.id} value={board.id}>
+                          {board.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Note Content
@@ -1308,6 +1415,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   onClick={() => {
                     setShowAddNote(false)
                     setNewNoteContent("")
+                    setSelectedBoardForNote("")
                   }}
                 >
                   Cancel
