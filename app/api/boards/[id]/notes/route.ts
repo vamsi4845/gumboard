@@ -70,7 +70,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { content, color, x, y } = await request.json()
+    const { content, color } = await request.json()
     const boardId = (await params).id
 
     // Verify user has access to this board (same organization)
@@ -113,8 +113,6 @@ export async function POST(
       data: {
         content,
         color: randomColor,
-        x: x || 0,
-        y: y || 0,
         boardId,
         createdBy: session.user.id,
       },
