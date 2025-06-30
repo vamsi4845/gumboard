@@ -59,6 +59,7 @@ model User {
   isAdmin        Boolean      @default(false) // Admin role for organization
   organization   Organization? @relation(fields: [organizationId], references: [id])
   invitedOrganizations OrganizationInvite[]
+  createdSelfServeInvites OrganizationSelfServeInvite[]
   notes          Note[]
 
   @@map("users")
@@ -72,6 +73,7 @@ model Organization {
   members   User[]
   invites   OrganizationInvite[]
   boards    Board[]
+  selfServeInvites OrganizationSelfServeInvite[]
 
   @@map("organizations")
 }
@@ -118,6 +120,22 @@ model OrganizationInvite {
 
   @@unique([email, organizationId])
   @@map("organization_invites")
+}
+
+model OrganizationSelfServeInvite {
+  id             String       @id @default(cuid())
+  name           String       // Name/description for the invite link
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy      String
+  user           User         @relation(fields: [createdBy], references: [id])
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime?    // Optional expiration date
+  usageLimit     Int?         // Optional usage limit
+  usageCount     Int          @default(0) // Track how many times it's been used
+  isActive       Boolean      @default(true)
+
+  @@map("organization_self_serve_invites")
 }
 
 enum InviteStatus {
