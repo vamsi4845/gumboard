@@ -19,11 +19,23 @@ export async function PUT(request: NextRequest) {
     // Get user with organization
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { organization: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isAdmin: true,
+        organizationId: true,
+        organization: true
+      }
     })
 
     if (!user?.organizationId) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 })
+    }
+
+    // Only admins can update organization name
+    if (!user.isAdmin) {
+      return NextResponse.json({ error: "Only admins can update organization settings" }, { status: 403 })
     }
 
     // Update organization name

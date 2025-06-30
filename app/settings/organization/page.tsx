@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Trash2, UserPlus } from "lucide-react"
+import { Trash2, UserPlus, Shield, ShieldCheck } from "lucide-react"
 import { Loader } from "@/components/ui/loader"
 
 interface User {
   id: string
   name: string | null
   email: string
+  isAdmin: boolean
   organization: {
     id: string
     name: string
@@ -20,6 +21,7 @@ interface User {
       id: string
       name: string | null
       email: string
+      isAdmin: boolean
     }[]
   } | null
 }
@@ -94,9 +96,13 @@ export default function OrganizationSettingsPage() {
       if (response.ok) {
         const updatedUser = await response.json()
         setUser(updatedUser)
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to update organization")
       }
     } catch (error) {
       console.error("Error updating organization:", error)
+      alert("Failed to update organization")
     } finally {
       setSaving(false)
     }
@@ -121,9 +127,13 @@ export default function OrganizationSettingsPage() {
       if (response.ok) {
         setInviteEmail("")
         fetchInvites()
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to send invite")
       }
     } catch (error) {
       console.error("Error inviting member:", error)
+      alert("Failed to send invite")
     } finally {
       setInviting(false)
     }
@@ -139,9 +149,13 @@ export default function OrganizationSettingsPage() {
 
       if (response.ok) {
         fetchUserData()
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to remove member")
       }
     } catch (error) {
       console.error("Error removing member:", error)
+      alert("Failed to remove member")
     }
   }
 
@@ -156,6 +170,30 @@ export default function OrganizationSettingsPage() {
       }
     } catch (error) {
       console.error("Error canceling invite:", error)
+    }
+  }
+
+  const handleToggleAdmin = async (memberId: string, currentAdminStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/organization/members/${memberId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isAdmin: !currentAdminStatus,
+        }),
+      })
+
+      if (response.ok) {
+        fetchUserData() // Refresh the data to show updated admin status
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to update admin status")
+      }
+    } catch (error) {
+      console.error("Error toggling admin status:", error)
+      alert("Failed to update admin status")
     }
   }
 
@@ -186,14 +224,16 @@ export default function OrganizationSettingsPage() {
               onChange={(e) => setOrgName(e.target.value)}
               placeholder="Enter organization name"
               className="mt-1"
+              disabled={!user?.isAdmin}
             />
           </div>
 
           <div className="pt-4 border-t">
             <Button 
               onClick={handleSaveOrganization}
-              disabled={saving || orgName === user?.organization?.name}
-              className="bg-blue-600 hover:bg-blue-700"
+              disabled={saving || orgName === user?.organization?.name || !user?.isAdmin}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              title={!user?.isAdmin ? "Only admins can update organization settings" : undefined}
             >
               {saving ? "Saving..." : "Save Changes"}
             </Button>
@@ -206,33 +246,64 @@ export default function OrganizationSettingsPage() {
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Team Members</h3>
-            <p className="text-gray-600">{`Manage your organization's team members.`}</p>
+            <p className="text-gray-600">
+              {user?.isAdmin 
+                ? `Manage your organization's team members.` 
+                : `View your organization's team members.`
+              }
+            </p>
           </div>
 
           <div className="space-y-3">
             {user?.organization?.members?.map((member) => (
               <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                  <div className={`w-10 h-10 ${member.isAdmin ? 'bg-purple-500' : 'bg-blue-500'} rounded-full flex items-center justify-center`}>
                     <span className="text-white font-medium">
                       {member.name ? member.name.charAt(0).toUpperCase() : member.email.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">{member.name || "Unnamed User"}</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="font-medium text-gray-900">{member.name || "Unnamed User"}</p>
+                      {member.isAdmin && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <ShieldCheck className="w-3 h-3 mr-1" />
+                          Admin
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500">{member.email}</p>
                   </div>
                 </div>
-                {member.id !== user.id && (
-                  <Button
-                    onClick={() => handleRemoveMember(member.id)}
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <div className="flex items-center space-x-2">
+                  {/* Only show admin toggle to current admins and not for yourself */}
+                  {user?.isAdmin && member.id !== user.id && (
+                    <Button
+                      onClick={() => handleToggleAdmin(member.id, member.isAdmin)}
+                      variant="outline"
+                      size="sm"
+                      className={`${
+                        member.isAdmin 
+                          ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' 
+                          : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                      }`}
+                      title={member.isAdmin ? "Remove admin role" : "Make admin"}
+                    >
+                      {member.isAdmin ? <ShieldCheck className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                    </Button>
+                  )}
+                  {user?.isAdmin && member.id !== user.id && (
+                    <Button
+                      onClick={() => handleRemoveMember(member.id)}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -255,9 +326,15 @@ export default function OrganizationSettingsPage() {
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="Enter email address"
                 required
+                disabled={!user?.isAdmin}
               />
             </div>
-            <Button type="submit" disabled={inviting}>
+            <Button 
+              type="submit" 
+              disabled={inviting || !user?.isAdmin}
+              className="disabled:bg-gray-400 disabled:cursor-not-allowed"
+              title={!user?.isAdmin ? "Only admins can invite new team members" : undefined}
+            >
               <UserPlus className="w-4 h-4 mr-2" />
               {inviting ? "Inviting..." : "Send Invite"}
             </Button>

@@ -20,7 +20,8 @@ export async function GET() {
               select: {
                 id: true,
                 name: true,
-                email: true
+                email: true,
+                isAdmin: true
               }
             }
           }
@@ -36,6 +37,7 @@ export async function GET() {
       id: user.id,
       name: user.name,
       email: user.email,
+      isAdmin: user.isAdmin,
       organization: user.organization ? {
         id: user.organization.id,
         name: user.organization.name,

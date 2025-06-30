@@ -32,6 +32,7 @@ interface User {
   id: string
   name: string | null
   email: string
+  isAdmin: boolean
   organization: {
     name: string
   } | null
@@ -643,8 +644,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 padding: `${NOTE_PADDING}px`,
               }}
               onDoubleClick={() => {
-                // Only allow editing if user is the note author
-                if (user?.id === note.user.id) {
+                // Allow editing if user is the note author or admin
+                if (user?.id === note.user.id || user?.isAdmin) {
                   setEditingNote(note.id)
                   setEditContent(note.content)
                 }
@@ -672,8 +673,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* Only show edit/delete buttons for note author */}
-                  {user?.id === note.user.id && (
+                  {/* Show edit/delete buttons for note author or admin */}
+                  {(user?.id === note.user.id || user?.isAdmin) && (
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
@@ -696,8 +697,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                       </button>
                     </div>
                   )}
-                  {/* Beautiful checkbox for done status - only show to author */}
-                  {user?.id === note.user.id && (
+                  {/* Beautiful checkbox for done status - show to author or admin */}
+                  {(user?.id === note.user.id || user?.isAdmin) && (
                     <div className="flex items-center">
                       <button
                         onClick={(e) => {

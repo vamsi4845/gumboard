@@ -24,11 +24,23 @@ export async function POST(request: NextRequest) {
     // Get user with organization
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { organization: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        isAdmin: true,
+        organizationId: true,
+        organization: true
+      }
     })
 
     if (!user?.organizationId || !user.organization) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 })
+    }
+
+    // Only admins can invite new members
+    if (!user.isAdmin) {
+      return NextResponse.json({ error: "Only admins can invite new members" }, { status: 403 })
     }
 
     // Check if user is already in the organization

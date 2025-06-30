@@ -45,9 +45,9 @@ export async function PUT(
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Check if user is the author of the note
-    if (note.createdBy !== session.user.id) {
-      return NextResponse.json({ error: "Only the note author can edit this note" }, { status: 403 })
+    // Check if user is the author of the note or an admin
+    if (note.createdBy !== session.user.id && !user.isAdmin) {
+      return NextResponse.json({ error: "Only the note author or admin can edit this note" }, { status: 403 })
     }
 
     const updatedNote = await db.note.update({
@@ -117,9 +117,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Check if user is the author of the note
-    if (note.createdBy !== session.user.id) {
-      return NextResponse.json({ error: "Only the note author can delete this note" }, { status: 403 })
+    // Check if user is the author of the note or an admin
+    if (note.createdBy !== session.user.id && !user.isAdmin) {
+      return NextResponse.json({ error: "Only the note author or admin can delete this note" }, { status: 403 })
     }
 
     // Soft delete: set deletedAt timestamp instead of actually deleting
