@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search, User, ArrowUpDown } from "lucide-react"
+import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search, User, ArrowUpDown, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
@@ -75,18 +75,20 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [showAuthorDropdown, setShowAuthorDropdown] = useState(false)
   const [sortBy, setSortBy] = useState<SortOption>('created-desc')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [showDoneNotes, setShowDoneNotes] = useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
 
   // Update URL with current filter state
-  const updateURL = (newSearchTerm?: string, newDateRange?: { startDate: Date | null; endDate: Date | null }, newAuthor?: string | null, newSort?: SortOption) => {
+  const updateURL = (newSearchTerm?: string, newDateRange?: { startDate: Date | null; endDate: Date | null }, newAuthor?: string | null, newSort?: SortOption, newShowDone?: boolean) => {
     const params = new URLSearchParams()
     
     const currentSearchTerm = newSearchTerm !== undefined ? newSearchTerm : searchTerm
     const currentDateRange = newDateRange !== undefined ? newDateRange : dateRange
     const currentAuthor = newAuthor !== undefined ? newAuthor : selectedAuthor
     const currentSort = newSort !== undefined ? newSort : sortBy
+    const currentShowDone = newShowDone !== undefined ? newShowDone : showDoneNotes
     
     if (currentSearchTerm) {
       params.set('search', currentSearchTerm)
@@ -108,6 +110,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       params.set('sort', currentSort)
     }
     
+    if (currentShowDone) { // Only add if not default (false)
+      params.set('showDone', 'true')
+    }
+    
     const queryString = params.toString()
     const newURL = queryString ? `?${queryString}` : window.location.pathname
     router.replace(newURL, { scroll: false })
@@ -120,6 +126,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     const urlEndDate = searchParams.get('endDate') 
     const urlAuthor = searchParams.get('author')
     const urlSort = searchParams.get('sort') as SortOption || 'created-desc'
+    const urlShowDone = searchParams.get('showDone')
     
     // Validate sort option
     const validSortOptions: SortOption[] = ['created-desc', 'created-asc', 'author-name']
@@ -148,6 +155,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     setDateRange({ startDate, endDate })
     setSelectedAuthor(urlAuthor)
     setSortBy(validSort)
+    // Default to false if not specified, otherwise parse the boolean
+    setShowDoneNotes(urlShowDone === null ? false : urlShowDone === 'true')
   }
 
   // Grid configuration
@@ -384,8 +393,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   }
 
   // Filter and sort notes based on search term, date range, author, and sort option
-  const filterAndSortNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null, sortOption: SortOption): Note[] => {
+  const filterAndSortNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null, sortOption: SortOption, showDone: boolean): Note[] => {
     let filteredNotes = notes
+    
+    // Filter by done status
+    if (!showDone) {
+      filteredNotes = filteredNotes.filter(note => !note.done)
+    }
     
     // Filter by search term
     if (searchTerm.trim()) {
@@ -422,8 +436,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     
     // Sort notes
     filteredNotes.sort((a, b) => {
-      // Always prioritize done status first (undone notes first)
-      if (a.done !== b.done) {
+      // Always prioritize done status first (undone notes first) if showing done notes
+      if (showDone && a.done !== b.done) {
         return a.done ? 1 : -1 // Undone notes (false) come first
       }
       
@@ -449,7 +463,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const uniqueAuthors = getUniqueAuthors(notes)
   
   // Get filtered and sorted notes for display
-  const filteredNotes = filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, sortBy)
+  const filteredNotes = filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, sortBy, showDoneNotes)
 
 
 
@@ -836,6 +850,32 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               )}
             </div>
+
+            {/* Show/Hide Completed Notes Toggle */}
+            <div className="hidden md:block">
+              <button
+                onClick={() => {
+                  const newShowDone = !showDoneNotes
+                  setShowDoneNotes(newShowDone)
+                  updateURL(undefined, undefined, undefined, undefined, newShowDone)
+                }}
+                className={`flex items-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  showDoneNotes 
+                    ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700'
+                    : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700'
+                }`}
+                title={showDoneNotes ? "Hide completed notes" : "Show completed notes"}
+              >
+                {showDoneNotes ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                <span className="truncate max-w-28">
+                  {showDoneNotes ? 'Hide Completed' : 'Show Completed'}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
@@ -1089,6 +1129,31 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
         </div>
+
+        {/* Mobile Show/Hide Completed Notes Toggle */}
+        <div className="md:hidden">
+          <button
+            onClick={() => {
+              const newShowDone = !showDoneNotes
+              setShowDoneNotes(newShowDone)
+              updateURL(undefined, undefined, undefined, undefined, newShowDone)
+            }}
+            className={`w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+              showDoneNotes 
+                ? 'border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700'
+                : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700'
+            }`}
+          >
+            {showDoneNotes ? (
+              <EyeOff className="w-4 h-4" />
+            ) : (
+              <Eye className="w-4 h-4" />
+            )}
+            <span>
+              {showDoneNotes ? 'Hide Completed Notes' : 'Show Completed Notes'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Board Area */}
@@ -1101,7 +1166,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         }}
       >
         {/* Search Results Info */}
-        {(searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor || sortBy !== 'created-desc') && (
+        {(searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor || sortBy !== 'created-desc' || showDoneNotes) && (
           <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
             <div className="flex flex-wrap items-center gap-2">
               <span>
@@ -1130,13 +1195,19 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   Sort: {SORT_OPTIONS.find(option => option.value === sortBy)?.label || 'Custom'}
                 </span>
               )}
+              {showDoneNotes && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Completed notes shown
+                </span>
+              )}
               <button
                 onClick={() => {
                   setSearchTerm("")
                   setDateRange({ startDate: null, endDate: null })
                   setSelectedAuthor(null)
                   setSortBy('created-desc')
-                  updateURL("", { startDate: null, endDate: null }, null, 'created-desc')
+                  setShowDoneNotes(false)
+                  updateURL("", { startDate: null, endDate: null }, null, 'created-desc', false)
                 }}
                 className="text-blue-600 hover:text-blue-800 text-xs underline"
               >
@@ -1303,7 +1374,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Empty State */}
-        {filteredNotes.length === 0 && notes.length > 0 && (searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor) && (
+        {filteredNotes.length === 0 && notes.length > 0 && (searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor || !showDoneNotes) && (
           <div className="flex flex-col items-center justify-center h-96 text-gray-500">
             <Search className="w-12 h-12 mb-4 text-gray-400" />
             <div className="text-xl mb-2">No notes found</div>
@@ -1320,6 +1391,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   Date range: {dateRange.startDate ? dateRange.startDate.toLocaleDateString() : '...'} - {dateRange.endDate ? dateRange.endDate.toLocaleDateString() : '...'}
                 </div>
               )}
+              {!showDoneNotes && <div>Completed notes are hidden</div>}
             </div>
             <Button
               onClick={() => {
@@ -1327,7 +1399,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 setDateRange({ startDate: null, endDate: null })
                 setSelectedAuthor(null)
                 setSortBy('created-desc')
-                updateURL("", { startDate: null, endDate: null }, null, 'created-desc')
+                setShowDoneNotes(false)
+                updateURL("", { startDate: null, endDate: null }, null, 'created-desc', false)
               }}
               variant="outline"
               className="flex items-center space-x-2"
