@@ -556,9 +556,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               >
                 <div>
                   <div className="text-lg font-semibold text-gray-900">{board?.name}</div>
-                  {board?.description && (
-                    <div className="text-sm text-gray-500">{board.description}</div>
-                  )}
                 </div>
                 <ChevronDown className="w-4 h-4 ml-1" />
               </button>
