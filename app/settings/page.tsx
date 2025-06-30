@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { User, Building2, Mail, Trash2, UserPlus, ArrowLeft } from "lucide-react"
+import { User, Building2, Mail, Trash2, UserPlus, ArrowLeft, Settings, LogOut, ChevronDown } from "lucide-react"
 import Link from "next/link"
+import { signOut } from "next-auth/react"
 
 interface User {
   id: string
@@ -41,6 +42,7 @@ export default function SettingsPage() {
   const [inviteEmail, setInviteEmail] = useState("")
   const [invites, setInvites] = useState<OrganizationInvite[]>([])
   const [inviting, setInviting] = useState(false)
+  const [showUserDropdown, setShowUserDropdown] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -49,6 +51,21 @@ export default function SettingsPage() {
       fetchInvites()
     }
   }, [activeTab])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showUserDropdown) {
+        const target = event.target as Element
+        if (!target.closest('.user-dropdown')) {
+          setShowUserDropdown(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showUserDropdown])
 
   const fetchUserData = async () => {
     try {
@@ -188,6 +205,10 @@ export default function SettingsPage() {
     }
   }
 
+  const handleSignOut = async () => {
+    await signOut()
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -198,23 +219,83 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="flex items-center text-gray-600 hover:text-gray-900">
-                <ArrowLeft className="w-5 h-5 mr-2" />
-                <span>Back to Dashboard</span>
-              </Link>
-              <div className="hidden sm:block w-px h-6 bg-gray-300"></div>
-              <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+      {/* Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side - Logo and Settings */}
+          <div className="flex items-center space-x-6">
+            {/* Logo */}
+            <Link href="/dashboard" className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8">
+              <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
+            </Link>
+              
+            {/* Settings Title */}
+            <div className="hidden md:block">
+              <div className="text-lg font-semibold text-gray-900">Settings</div>
             </div>
           </div>
+
+          {/* User Dropdown */}
+          <div className="relative user-dropdown pr-4 sm:pr-6 lg:pr-8">
+            <button
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+            >
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-white">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <span className="text-sm font-medium hidden md:inline">
+                {user?.name?.split(' ')[0] || 'User'}
+              </span>
+              <ChevronDown className="w-4 h-4 ml-1" />
+            </button>
+
+            {showUserDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="py-1">
+                  <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                    {user?.email}
+                  </div>
+                  <Link
+                    href="/settings"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowUserDropdown(false)}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+      </nav>
+
+      {/* Mobile Settings Title */}
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back to Dashboard Button */}
+        <div className="mb-6">
+          <Link 
+            href="/dashboard" 
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 font-medium"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </div>
         <div className="flex flex-col lg:flex-row lg:space-x-8">
           {/* Sidebar Navigation */}
           <div className="lg:w-64 mb-8 lg:mb-0">
@@ -279,7 +360,6 @@ export default function SettingsPage() {
                         />
                         <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">Email cannot be changed</p>
                     </div>
                   </div>
 
