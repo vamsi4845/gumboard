@@ -626,16 +626,25 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               }}
             >
               {/* User Info Header */}
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+              <div className="flex items-start justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <div className="w-7 h-7 bg-white bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
                     <span className="text-sm font-semibold text-gray-700">
                       {note.user.name ? note.user.name.charAt(0).toUpperCase() : note.user.email.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-gray-700 truncate max-w-20">
-                    {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-gray-700 truncate max-w-20">
+                      {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
+                    </span>
+                    <span className="text-xs text-gray-500 opacity-70">
+                      {new Date(note.createdAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: new Date(note.createdAt).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                      })}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -663,17 +672,19 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity duration-200">
                     <button
                       onClick={(e) => {
+                        e.preventDefault()
                         e.stopPropagation()
                         handleToggleDone(note.id, note.done)
                       }}
                       className={`
-                        relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                        relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110
                         ${note.done
                           ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
                           : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50'
                         }
                       `}
                       title={note.done ? "Mark as not done" : "Mark as done"}
+                      type="button"
                     >
                       {note.done && (
                         <svg
