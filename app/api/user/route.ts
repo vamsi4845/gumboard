@@ -10,10 +10,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get user with organization
+    // Get user with organization and members
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { organization: true }
+      include: { 
+        organization: {
+          include: {
+            members: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
     })
 
     if (!user) {
@@ -25,7 +37,9 @@ export async function GET() {
       name: user.name,
       email: user.email,
       organization: user.organization ? {
-        name: user.organization.name
+        id: user.organization.id,
+        name: user.organization.name,
+        members: user.organization.members
       } : null
     })
   } catch (error) {
