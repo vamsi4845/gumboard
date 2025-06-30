@@ -669,7 +669,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     </button>
                   </div>
                   {/* Beautiful checkbox for done status */}
-                  <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity duration-200">
+                  <div className="flex items-center">
                     <button
                       onClick={(e) => {
                         e.preventDefault()
@@ -677,14 +677,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         handleToggleDone(note.id, note.done)
                       }}
                       className={`
-                        relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110
+                        relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 z-10
                         ${note.done
                           ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
-                          : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50'
+                          : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
                         }
                       `}
                       title={note.done ? "Mark as not done" : "Mark as done"}
                       type="button"
+                      style={{ pointerEvents: 'auto' }}
                     >
                       {note.done && (
                         <svg
