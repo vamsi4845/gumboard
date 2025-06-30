@@ -583,8 +583,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               {/* User Info Header */}
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 rounded-full overflow-hidden shadow-sm border border-white border-opacity-30">
-                    <Avatar user={{ name: note.user.name, email: note.user.email }} size={28} />
+                  <div className="w-7 h-7 bg-white bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-sm font-semibold text-gray-700">
+                      {note.user.name ? note.user.name.charAt(0).toUpperCase() : note.user.email.charAt(0).toUpperCase()}
+                    </span>
                   </div>
                   <span className="text-sm font-bold text-gray-700 truncate max-w-20">
                     {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
