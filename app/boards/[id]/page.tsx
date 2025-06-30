@@ -13,6 +13,7 @@ interface Note {
   id: string
   content: string
   color: string
+  done: boolean
   createdAt: string
   updatedAt: string
   user: {
@@ -268,8 +269,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     })
   }
 
-  // Get filtered notes for display
-  const filteredNotes = filterNotes(notes, searchTerm)
+  // Get filtered notes for display and sort by done status
+  const filteredNotes = filterNotes(notes, searchTerm).sort((a, b) => {
+    // Sort by done status first (undone notes first), then by creation date (newest first)
+    if (a.done !== b.done) {
+      return a.done ? 1 : -1 // Undone notes (false) come first
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
 
 
 
@@ -378,6 +385,25 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       }
     } catch (error) {
       console.error("Error deleting note:", error)
+    }
+  }
+
+  const handleToggleDone = async (noteId: string, currentDone: boolean) => {
+    try {
+      const response = await fetch(`/api/boards/${boardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ done: !currentDone }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+      }
+    } catch (error) {
+      console.error("Error toggling note done status:", error)
     }
   }
 
@@ -583,7 +609,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           {layoutNotes.map((note) => (
             <div
               key={note.id}
-              className="absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 box-border"
+              className={`absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 box-border ${
+                note.done ? 'opacity-80' : ''
+              }`}
               style={{
                 backgroundColor: note.color,
                 left: note.x,
@@ -609,26 +637,59 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
                   </span>
                 </div>
-                <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setEditingNote(note.id)
-                      setEditContent(note.content)
-                    }}
-                    className="p-1 text-gray-600 hover:text-blue-600 rounded"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteNote(note.id)
-                    }}
-                    className="p-1 text-gray-600 hover:text-red-600 rounded"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setEditingNote(note.id)
+                        setEditContent(note.content)
+                      }}
+                      className="p-1 text-gray-600 hover:text-blue-600 rounded"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteNote(note.id)
+                      }}
+                      className="p-1 text-gray-600 hover:text-red-600 rounded"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  {/* Beautiful checkbox for done status */}
+                  <div className="flex items-center opacity-30 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggleDone(note.id, note.done)
+                      }}
+                      className={`
+                        relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                        ${note.done
+                          ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
+                          : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50'
+                        }
+                      `}
+                      title={note.done ? "Mark as not done" : "Mark as done"}
+                    >
+                      {note.done && (
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -659,7 +720,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               ) : (
                 <div className="flex-1 overflow-hidden flex flex-col">
-                  <p className="text-base text-gray-800 whitespace-pre-wrap break-words leading-7 m-0 p-0 flex-1">
+                  <p className={`text-base whitespace-pre-wrap break-words leading-7 m-0 p-0 flex-1 transition-all duration-200 ${
+                    note.done 
+                      ? 'text-gray-500 opacity-70 line-through' 
+                      : 'text-gray-800'
+                  }`}>
                     {note.content}
                   </p>
                 </div>

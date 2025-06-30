@@ -93,6 +93,7 @@ model Note {
   id        String @id @default(cuid())
   content   String @db.Text
   color     String @default("#fef3c7") // Default yellow color
+  done      Boolean @default(false) // Track completion status
   boardId   String
   board     Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   createdBy String
