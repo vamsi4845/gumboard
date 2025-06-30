@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 import { auth } from "@/auth"
-
-const prisma = new PrismaClient()
+import { db } from "@/lib/db"
 
 // Update a note
 export async function PUT(
@@ -19,7 +17,7 @@ export async function PUT(
     const { id: boardId, noteId } = await params
 
     // Verify user has access to this board (same organization)
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
@@ -29,7 +27,7 @@ export async function PUT(
     }
 
     // Verify the note belongs to a board in the user's organization
-    const note = await prisma.note.findUnique({
+    const note = await db.note.findUnique({
       where: { id: noteId },
       include: { board: true }
     })
@@ -38,11 +36,21 @@ export async function PUT(
       return NextResponse.json({ error: "Note not found" }, { status: 404 })
     }
 
+    // Check if note is soft-deleted
+    if (note.deletedAt) {
+      return NextResponse.json({ error: "Note not found" }, { status: 404 })
+    }
+
     if (note.board.organizationId !== user.organizationId || note.boardId !== boardId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    const updatedNote = await prisma.note.update({
+    // Check if user is the author of the note
+    if (note.createdBy !== session.user.id) {
+      return NextResponse.json({ error: "Only the note author can edit this note" }, { status: 403 })
+    }
+
+    const updatedNote = await db.note.update({
       where: { id: noteId },
       data: {
         ...(content !== undefined && { content }),
@@ -67,7 +75,7 @@ export async function PUT(
   }
 }
 
-// Delete a note
+// Delete a note (soft delete)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; noteId: string }> }
@@ -81,7 +89,7 @@ export async function DELETE(
     const { id: boardId, noteId } = await params
 
     // Verify user has access to this board (same organization)
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
@@ -91,7 +99,7 @@ export async function DELETE(
     }
 
     // Verify the note belongs to a board in the user's organization
-    const note = await prisma.note.findUnique({
+    const note = await db.note.findUnique({
       where: { id: noteId },
       include: { board: true }
     })
@@ -100,12 +108,26 @@ export async function DELETE(
       return NextResponse.json({ error: "Note not found" }, { status: 404 })
     }
 
+    // Check if note is already soft-deleted
+    if (note.deletedAt) {
+      return NextResponse.json({ error: "Note not found" }, { status: 404 })
+    }
+
     if (note.board.organizationId !== user.organizationId || note.boardId !== boardId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    await prisma.note.delete({
+    // Check if user is the author of the note
+    if (note.createdBy !== session.user.id) {
+      return NextResponse.json({ error: "Only the note author can delete this note" }, { status: 403 })
+    }
+
+    // Soft delete: set deletedAt timestamp instead of actually deleting
+    await db.note.update({
       where: { id: noteId },
+      data: {
+        deletedAt: new Date()
+      }
     })
 
     return NextResponse.json({ success: true })

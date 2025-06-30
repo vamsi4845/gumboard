@@ -100,6 +100,7 @@ model Note {
   user      User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? // Soft delete timestamp
 
   @@map("notes")
 }

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { PrismaClient } from "@prisma/client"
 import { auth } from "@/auth"
-
-const prisma = new PrismaClient()
+import { db } from "@/lib/db"
 
 // Get all notes for a board
 export async function GET(
@@ -18,7 +16,7 @@ export async function GET(
     const boardId = (await params).id
 
     // Verify user has access to this board (same organization)
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
@@ -27,10 +25,13 @@ export async function GET(
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
-    const board = await prisma.board.findUnique({
+    const board = await db.board.findUnique({
       where: { id: boardId },
       include: { 
         notes: {
+          where: {
+            deletedAt: null // Only include non-deleted notes
+          },
           include: {
             user: {
               select: {
@@ -74,7 +75,7 @@ export async function POST(
     const boardId = (await params).id
 
     // Verify user has access to this board (same organization)
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
@@ -83,7 +84,7 @@ export async function POST(
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
-    const board = await prisma.board.findUnique({
+    const board = await db.board.findUnique({
       where: { id: boardId }
     })
 
@@ -109,7 +110,7 @@ export async function POST(
 
     const randomColor = color || colors[Math.floor(Math.random() * colors.length)]
 
-    const note = await prisma.note.create({
+    const note = await db.note.create({
       data: {
         content,
         color: randomColor,

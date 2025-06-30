@@ -365,9 +365,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         setNotes(notes.map(n => n.id === noteId ? note : n))
         setEditingNote(null)
         setEditContent("")
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to update note")
       }
     } catch (error) {
       console.error("Error updating note:", error)
+      alert("Failed to update note")
     }
   }
 
@@ -381,9 +385,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
       if (response.ok) {
         setNotes(notes.filter(n => n.id !== noteId))
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to delete note")
       }
     } catch (error) {
       console.error("Error deleting note:", error)
+      alert("Failed to delete note")
     }
   }
 
@@ -635,8 +643,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 padding: `${NOTE_PADDING}px`,
               }}
               onDoubleClick={() => {
-                setEditingNote(note.id)
-                setEditContent(note.content)
+                // Only allow editing if user is the note author
+                if (user?.id === note.user.id) {
+                  setEditingNote(note.id)
+                  setEditContent(note.content)
+                }
               }}
             >
               {/* User Info Header */}
@@ -661,61 +672,66 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditingNote(note.id)
-                        setEditContent(note.content)
-                      }}
-                      className="p-1 text-gray-600 hover:text-blue-600 rounded"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteNote(note.id)
-                      }}
-                      className="p-1 text-gray-600 hover:text-red-600 rounded"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  {/* Beautiful checkbox for done status */}
-                  <div className="flex items-center">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleToggleDone(note.id, note.done)
-                      }}
-                      className={`
-                        relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 z-10
-                        ${note.done
-                          ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
-                          : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
-                        }
-                      `}
-                      title={note.done ? "Mark as not done" : "Mark as done"}
-                      type="button"
-                      style={{ pointerEvents: 'auto' }}
-                    >
-                      {note.done && (
-                        <svg
-                          className="w-3 h-3 text-white"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M5 13l4 4L19 7"></path>
-                        </svg>
-                      )}
-                    </button>
-                  </div>
+                  {/* Only show edit/delete buttons for note author */}
+                  {user?.id === note.user.id && (
+                    <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingNote(note.id)
+                          setEditContent(note.content)
+                        }}
+                        className="p-1 text-gray-600 hover:text-blue-600 rounded"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteNote(note.id)
+                        }}
+                        className="p-1 text-gray-600 hover:text-red-600 rounded"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                  {/* Beautiful checkbox for done status - only show to author */}
+                  {user?.id === note.user.id && (
+                    <div className="flex items-center">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleToggleDone(note.id, note.done)
+                        }}
+                        className={`
+                          relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 z-10
+                          ${note.done
+                            ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
+                            : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
+                          }
+                        `}
+                        title={note.done ? "Mark as not done" : "Mark as done"}
+                        type="button"
+                        style={{ pointerEvents: 'auto' }}
+                      >
+                        {note.done && (
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               
