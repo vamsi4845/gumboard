@@ -66,7 +66,20 @@ export async function DELETE(
     // Check if board exists and user has access
     const board = await db.board.findUnique({
       where: { id: boardId },
-      include: { organization: { include: { members: true } } }
+      include: { 
+        organization: { 
+          include: { 
+            members: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                isAdmin: true
+              }
+            }
+          } 
+        } 
+      }
     })
 
     if (!board) {
@@ -74,10 +87,15 @@ export async function DELETE(
     }
 
     // Check if user is member of the organization
-    const isMember = board.organization.members.some(member => member.id === session?.user?.id)
+    const currentUser = board.organization.members.find(member => member.id === session?.user?.id)
     
-    if (!isMember) {
+    if (!currentUser) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
+    }
+
+    // Check if user can delete this board (board creator or admin)
+    if (board.createdBy !== session.user.id && !currentUser.isAdmin) {
+      return NextResponse.json({ error: "Only the board creator or admin can delete this board" }, { status: 403 })
     }
 
     // Delete the board

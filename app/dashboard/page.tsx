@@ -14,6 +14,7 @@ interface Board {
   id: string
   name: string
   description: string | null
+  createdBy: string
   createdAt: string
   updatedAt: string
 }
@@ -22,6 +23,7 @@ interface User {
   id: string
   name: string | null
   email: string
+  isAdmin: boolean
   organization: {
     name: string
   } | null
@@ -135,9 +137,13 @@ export default function Dashboard() {
         setNewBoardName("")
         setNewBoardDescription("")
         setShowAddBoard(false)
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to create board")
       }
     } catch (error) {
       console.error("Error creating board:", error)
+      alert("Failed to create board")
     }
   }
 
@@ -151,9 +157,13 @@ export default function Dashboard() {
 
       if (response.ok) {
         setBoards(boards.filter(board => board.id !== boardId))
+      } else {
+        const errorData = await response.json()
+        alert(errorData.error || "Failed to delete board")
       }
     } catch (error) {
       console.error("Error deleting board:", error)
+      alert("Failed to delete board")
     }
   }
 
@@ -318,17 +328,20 @@ export default function Dashboard() {
                         </CardDescription>
                       )}
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        handleDeleteBoard(board.id)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
-                      title="Delete board"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {/* Only show delete button for board creator or admin */}
+                    {(user?.id === board.createdBy || user?.isAdmin) && (
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleDeleteBoard(board.id)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
+                        title={user?.id === board.createdBy ? "Delete board" : "Delete board (Admin)"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </CardHeader>
               </Link>
