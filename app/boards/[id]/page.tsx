@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search } from "lucide-react"
+import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search, User } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
@@ -58,6 +58,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     startDate: null,
     endDate: null
   })
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
+  const [showAuthorDropdown, setShowAuthorDropdown] = useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -217,11 +219,12 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showBoardDropdown || showUserDropdown) {
+      if (showBoardDropdown || showUserDropdown || showAuthorDropdown) {
         const target = event.target as Element
-        if (!target.closest('.board-dropdown') && !target.closest('.user-dropdown')) {
+        if (!target.closest('.board-dropdown') && !target.closest('.user-dropdown') && !target.closest('.author-dropdown')) {
           setShowBoardDropdown(false)
           setShowUserDropdown(false)
+          setShowAuthorDropdown(false)
         }
       }
     }
@@ -238,6 +241,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         if (showUserDropdown) {
           setShowUserDropdown(false)
         }
+        if (showAuthorDropdown) {
+          setShowAuthorDropdown(false)
+        }
       }
     }
 
@@ -247,7 +253,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [showBoardDropdown, showUserDropdown, showAddNote])
+  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showAddNote])
 
   // Check if mobile on mount and resize
   useEffect(() => {
@@ -262,8 +268,25 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Filter notes based on search term and date range
-  const filterNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }): Note[] => {
+  // Get unique authors from notes
+  const getUniqueAuthors = (notes: Note[]) => {
+    const authorsMap = new Map<string, { id: string; name: string; email: string }>()
+    
+    notes.forEach(note => {
+      if (!authorsMap.has(note.user.id)) {
+        authorsMap.set(note.user.id, {
+          id: note.user.id,
+          name: note.user.name || note.user.email.split('@')[0],
+          email: note.user.email
+        })
+      }
+    })
+    
+    return Array.from(authorsMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }
+
+  // Filter notes based on search term, date range, and author
+  const filterNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null): Note[] => {
     let filteredNotes = notes
     
     // Filter by search term
@@ -274,6 +297,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         const noteContent = note.content.toLowerCase()
         return authorName.includes(search) || noteContent.includes(search)
       })
+    }
+    
+    // Filter by author
+    if (authorId) {
+      filteredNotes = filteredNotes.filter(note => note.user.id === authorId)
     }
     
     // Filter by date range
@@ -297,8 +325,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     return filteredNotes
   }
 
+  // Get unique authors for dropdown
+  const uniqueAuthors = getUniqueAuthors(notes)
+  
   // Get filtered notes for display and sort by done status
-  const filteredNotes = filterNotes(notes, searchTerm, dateRange).sort((a, b) => {
+  const filteredNotes = filterNotes(notes, searchTerm, dateRange, selectedAuthor).sort((a, b) => {
     // Sort by done status first (undone notes first), then by creation date (newest first)
     if (a.done !== b.done) {
       return a.done ? 1 : -1 // Undone notes (false) come first
@@ -536,6 +567,66 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 className="min-w-fit"
               />
             </div>
+
+            {/* Author Filter Dropdown */}
+            <div className="relative author-dropdown hidden md:block">
+              <button
+                onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              >
+                <User className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-700 truncate max-w-32">
+                  {selectedAuthor 
+                    ? uniqueAuthors.find(a => a.id === selectedAuthor)?.name || 'Unknown Author'
+                    : 'All Authors'
+                  }
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                  showAuthorDropdown ? 'rotate-180' : ''
+                }`} />
+              </button>
+
+              {showAuthorDropdown && (
+                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setSelectedAuthor(null)
+                        setShowAuthorDropdown(false)
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                        !selectedAuthor ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                      }`}
+                    >
+                      <User className="w-4 h-4 text-gray-500" />
+                      <span className="font-medium">All Authors</span>
+                    </button>
+                    {uniqueAuthors.map((author) => (
+                      <button
+                        key={author.id}
+                        onClick={() => {
+                          setSelectedAuthor(author.id)
+                          setShowAuthorDropdown(false)
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                          selectedAuthor === author.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-medium text-white">
+                            {author.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{author.name}</div>
+                          <div className="text-xs text-gray-500 truncate">{author.email}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
@@ -658,6 +749,68 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             className="w-full"
           />
         </div>
+
+        {/* Mobile Author Filter */}
+        <div className="md:hidden relative author-dropdown">
+          <button
+            onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          >
+            <div className="flex items-center space-x-2">
+              <User className="w-4 h-4 text-gray-500" />
+              <span className="text-gray-700">
+                {selectedAuthor 
+                  ? uniqueAuthors.find(a => a.id === selectedAuthor)?.name || 'Unknown Author'
+                  : 'All Authors'
+                }
+              </span>
+            </div>
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+              showAuthorDropdown ? 'rotate-180' : ''
+            }`} />
+          </button>
+
+          {showAuthorDropdown && (
+            <div className="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+              <div className="py-1">
+                <button
+                  onClick={() => {
+                    setSelectedAuthor(null)
+                    setShowAuthorDropdown(false)
+                  }}
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                    !selectedAuthor ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                  }`}
+                >
+                  <User className="w-4 h-4 text-gray-500" />
+                  <span className="font-medium">All Authors</span>
+                </button>
+                {uniqueAuthors.map((author) => (
+                  <button
+                    key={author.id}
+                    onClick={() => {
+                      setSelectedAuthor(author.id)
+                      setShowAuthorDropdown(false)
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                      selectedAuthor === author.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                    }`}
+                  >
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-white">
+                        {author.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{author.name}</div>
+                      <div className="text-xs text-gray-500 truncate">{author.email}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Board Area */}
@@ -670,7 +823,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         }}
       >
         {/* Search Results Info */}
-        {(searchTerm || dateRange.startDate || dateRange.endDate) && (
+        {(searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor) && (
           <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
             <div className="flex flex-wrap items-center gap-2">
               <span>
@@ -684,6 +837,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   Search: "{searchTerm}"
                 </span>
               )}
+              {selectedAuthor && (
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Author: {uniqueAuthors.find(a => a.id === selectedAuthor)?.name || 'Unknown'}
+                </span>
+              )}
               {(dateRange.startDate || dateRange.endDate) && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   Date: {dateRange.startDate ? dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'} - {dateRange.endDate ? dateRange.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '...'}
@@ -693,6 +851,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 onClick={() => {
                   setSearchTerm("")
                   setDateRange({ startDate: null, endDate: null })
+                  setSelectedAuthor(null)
                 }}
                 className="text-blue-600 hover:text-blue-800 text-xs underline"
               >
@@ -852,13 +1011,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Empty State */}
-        {filteredNotes.length === 0 && notes.length > 0 && (searchTerm || dateRange.startDate || dateRange.endDate) && (
+        {filteredNotes.length === 0 && notes.length > 0 && (searchTerm || dateRange.startDate || dateRange.endDate || selectedAuthor) && (
           <div className="flex flex-col items-center justify-center h-96 text-gray-500">
             <Search className="w-12 h-12 mb-4 text-gray-400" />
             <div className="text-xl mb-2">No notes found</div>
             <div className="text-sm mb-4 text-center">
               No notes match your current filters
               {searchTerm && <div>Search: "{searchTerm}"</div>}
+              {selectedAuthor && (
+                <div>
+                  Author: {uniqueAuthors.find(a => a.id === selectedAuthor)?.name || 'Unknown'}
+                </div>
+              )}
               {(dateRange.startDate || dateRange.endDate) && (
                 <div>
                   Date range: {dateRange.startDate ? dateRange.startDate.toLocaleDateString() : '...'} - {dateRange.endDate ? dateRange.endDate.toLocaleDateString() : '...'}
@@ -869,6 +1033,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               onClick={() => {
                 setSearchTerm("")
                 setDateRange({ startDate: null, endDate: null })
+                setSelectedAuthor(null)
               }}
               variant="outline"
               className="flex items-center space-x-2"
