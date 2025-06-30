@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus, Trash2, Edit3, ChevronDown, Settings, LogOut, Search, User, ArrowUpDown } from "lucide-react"
 import Link from "next/link"
@@ -72,6 +72,78 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Update URL with current filter state
+  const updateURL = (newSearchTerm?: string, newDateRange?: { startDate: Date | null; endDate: Date | null }, newAuthor?: string | null, newSort?: SortOption) => {
+    const params = new URLSearchParams()
+    
+    const currentSearchTerm = newSearchTerm !== undefined ? newSearchTerm : searchTerm
+    const currentDateRange = newDateRange !== undefined ? newDateRange : dateRange
+    const currentAuthor = newAuthor !== undefined ? newAuthor : selectedAuthor
+    const currentSort = newSort !== undefined ? newSort : sortBy
+    
+    if (currentSearchTerm) {
+      params.set('search', currentSearchTerm)
+    }
+    
+    if (currentDateRange.startDate) {
+      params.set('startDate', currentDateRange.startDate.toISOString().split('T')[0])
+    }
+    
+    if (currentDateRange.endDate) {
+      params.set('endDate', currentDateRange.endDate.toISOString().split('T')[0])
+    }
+    
+    if (currentAuthor) {
+      params.set('author', currentAuthor)
+    }
+    
+    if (currentSort !== 'created-desc') {
+      params.set('sort', currentSort)
+    }
+    
+    const queryString = params.toString()
+    const newURL = queryString ? `?${queryString}` : window.location.pathname
+    router.replace(newURL, { scroll: false })
+  }
+
+  // Initialize filters from URL parameters
+  const initializeFiltersFromURL = () => {
+    const urlSearchTerm = searchParams.get('search') || ''
+    const urlStartDate = searchParams.get('startDate')
+    const urlEndDate = searchParams.get('endDate') 
+    const urlAuthor = searchParams.get('author')
+    const urlSort = searchParams.get('sort') as SortOption || 'created-desc'
+    
+    // Validate sort option
+    const validSortOptions: SortOption[] = ['created-desc', 'created-asc', 'author-name']
+    const validSort = validSortOptions.includes(urlSort) ? urlSort : 'created-desc'
+    
+    setSearchTerm(urlSearchTerm)
+    
+    // Parse dates safely
+    let startDate: Date | null = null
+    let endDate: Date | null = null
+    
+    if (urlStartDate) {
+      const parsedStartDate = new Date(urlStartDate)
+      if (!isNaN(parsedStartDate.getTime())) {
+        startDate = parsedStartDate
+      }
+    }
+    
+    if (urlEndDate) {
+      const parsedEndDate = new Date(urlEndDate)
+      if (!isNaN(parsedEndDate.getTime())) {
+        endDate = parsedEndDate
+      }
+    }
+    
+    setDateRange({ startDate, endDate })
+    setSelectedAuthor(urlAuthor)
+    setSortBy(validSort)
+  }
 
   // Grid configuration
   const NOTE_WIDTH = 320  // Base width for calculations
@@ -218,6 +290,12 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     }
     initializeParams()
   }, [params])
+
+  // Initialize filters from URL on mount
+  useEffect(() => {
+    initializeFiltersFromURL()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (boardId) {
@@ -589,7 +667,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
                 onDateRangeChange={(startDate, endDate) => {
-                  setDateRange({ startDate, endDate })
+                  const newDateRange = { startDate, endDate }
+                  setDateRange(newDateRange)
+                  updateURL(undefined, newDateRange)
                 }}
                 className="min-w-fit"
               />
@@ -620,6 +700,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                       onClick={() => {
                         setSelectedAuthor(null)
                         setShowAuthorDropdown(false)
+                        updateURL(undefined, undefined, null)
                       }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
                         !selectedAuthor ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
@@ -634,6 +715,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         onClick={() => {
                           setSelectedAuthor(author.id)
                           setShowAuthorDropdown(false)
+                          updateURL(undefined, undefined, author.id)
                         }}
                         className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
                           selectedAuthor === author.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
@@ -679,6 +761,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         onClick={() => {
                           setSortBy(option.value)
                           setShowSortDropdown(false)
+                          updateURL(undefined, undefined, undefined, option.value)
                         }}
                         className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
                           sortBy === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
@@ -705,12 +788,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 type="text"
                 placeholder="Search notes..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  updateURL(e.target.value)
+                }}
                 className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white shadow-sm"
               />
               {searchTerm && (
                 <button
-                  onClick={() => setSearchTerm("")}
+                  onClick={() => {
+                    setSearchTerm("")
+                    updateURL("")
+                  }}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
                 >
                   ×
@@ -790,12 +879,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             type="text"
             placeholder="Search notes..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              updateURL(e.target.value)
+            }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white shadow-sm"
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm("")}
+              onClick={() => {
+                setSearchTerm("")
+                updateURL("")
+              }}
               className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
             >
               ×
@@ -809,7 +904,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
             onDateRangeChange={(startDate, endDate) => {
-              setDateRange({ startDate, endDate })
+              const newDateRange = { startDate, endDate }
+              setDateRange(newDateRange)
+              updateURL(undefined, newDateRange)
             }}
             className="w-full"
           />
@@ -842,6 +939,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   onClick={() => {
                     setSelectedAuthor(null)
                     setShowAuthorDropdown(false)
+                    updateURL(undefined, undefined, null)
                   }}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
                     !selectedAuthor ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
@@ -856,6 +954,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     onClick={() => {
                       setSelectedAuthor(author.id)
                       setShowAuthorDropdown(false)
+                      updateURL(undefined, undefined, author.id)
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
                       selectedAuthor === author.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
@@ -903,6 +1002,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     onClick={() => {
                       setSortBy(option.value)
                       setShowSortDropdown(false)
+                      updateURL(undefined, undefined, undefined, option.value)
                     }}
                     className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
                       sortBy === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
@@ -963,6 +1063,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   setDateRange({ startDate: null, endDate: null })
                   setSelectedAuthor(null)
                   setSortBy('created-desc')
+                  updateURL("", { startDate: null, endDate: null }, null, 'created-desc')
                 }}
                 className="text-blue-600 hover:text-blue-800 text-xs underline"
               >
@@ -1146,6 +1247,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 setDateRange({ startDate: null, endDate: null })
                 setSelectedAuthor(null)
                 setSortBy('created-desc')
+                updateURL("", { startDate: null, endDate: null }, null, 'created-desc')
               }}
               variant="outline"
               className="flex items-center space-x-2"
