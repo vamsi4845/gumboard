@@ -53,9 +53,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const router = useRouter()
 
   // Grid configuration
-  const NOTE_WIDTH = 350
-  const GRID_GAP = 20
-  const CONTAINER_PADDING = 20
+  const NOTE_WIDTH = 320  // Slightly smaller to fit more notes
+  const GRID_GAP = 16     // Smaller gap for better space utilization
+  const CONTAINER_PADDING = 16
 
   // Helper function to calculate note height based on content
   const calculateNoteHeight = (content: string) => {
@@ -74,23 +74,48 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     const columnsCount = Math.floor((containerWidth + GRID_GAP) / noteWidthWithGap)
     const actualColumnsCount = Math.max(1, columnsCount)
     
-    // Calculate centered offset
-    const totalGridWidth = (actualColumnsCount * NOTE_WIDTH) + ((actualColumnsCount - 1) * GRID_GAP)
-    const offsetX = Math.max(0, (containerWidth - totalGridWidth) / 2) + CONTAINER_PADDING
+    // Calculate the actual available width and adjust note width to fill better
+    const availableWidthForNotes = containerWidth - ((actualColumnsCount - 1) * GRID_GAP)
+    const calculatedNoteWidth = Math.floor(availableWidthForNotes / actualColumnsCount)
+    // Ensure notes don't get too narrow or too wide
+    const adjustedNoteWidth = Math.max(280, Math.min(400, calculatedNoteWidth))
     
-    return notes.map((note, index) => {
+    // Use full width with minimal left offset
+    const offsetX = CONTAINER_PADDING
+    
+    // Group notes by rows and calculate proper Y positions
+    const rowHeights: number[] = []
+    const layoutedNotes = notes.map((note, index) => {
       const col = index % actualColumnsCount
       const row = Math.floor(index / actualColumnsCount)
+      const noteHeight = calculateNoteHeight(note.content)
       
-      const x = offsetX + (col * (NOTE_WIDTH + GRID_GAP))
-      const y = CONTAINER_PADDING + (row * (calculateNoteHeight(note.content) + GRID_GAP))
+      // Track the maximum height for each row
+      if (!rowHeights[row]) {
+        rowHeights[row] = noteHeight
+      } else {
+        rowHeights[row] = Math.max(rowHeights[row], noteHeight)
+      }
+      
+      return { note, col, row, noteHeight }
+    })
+    
+    // Calculate Y positions based on accumulated row heights
+    const rowYPositions: number[] = [CONTAINER_PADDING]
+    for (let i = 1; i < rowHeights.length; i++) {
+      rowYPositions[i] = rowYPositions[i - 1] + rowHeights[i - 1] + GRID_GAP
+    }
+    
+    return layoutedNotes.map(({ note, col, row, noteHeight }) => {
+      const x = offsetX + (col * (adjustedNoteWidth + GRID_GAP))
+      const y = rowYPositions[row] || CONTAINER_PADDING
       
       return {
         ...note,
         x,
         y,
-        width: NOTE_WIDTH,
-        height: calculateNoteHeight(note.content)
+        width: adjustedNoteWidth,
+        height: noteHeight
       }
     })
   }
@@ -99,15 +124,19 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const calculateMobileLayout = () => {
     if (typeof window === 'undefined') return []
     
-    return notes.map((note, index) => {
-      const y = CONTAINER_PADDING + (index * (calculateNoteHeight(note.content) + GRID_GAP))
+    let currentY = CONTAINER_PADDING
+    
+    return notes.map((note) => {
+      const noteHeight = calculateNoteHeight(note.content)
+      const y = currentY
+      currentY += noteHeight + GRID_GAP
       
       return {
         ...note,
         x: CONTAINER_PADDING,
         y,
         width: window.innerWidth - (CONTAINER_PADDING * 2),
-        height: calculateNoteHeight(note.content)
+        height: noteHeight
       }
     })
   }
@@ -147,7 +176,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   useEffect(() => {
     const checkMobile = () => {
       if (typeof window !== 'undefined') {
-        setIsMobile(window.innerWidth < 640)
+        setIsMobile(window.innerWidth < 768) // Use tablet breakpoint for better mobile experience
       }
     }
     
@@ -301,7 +330,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </Link>
               
             {/* Board Selector Dropdown */}
-            <div className="relative board-dropdown hidden sm:block">
+            <div className="relative board-dropdown hidden md:block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
                 className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
@@ -346,7 +375,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               className="flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Note</span>
+              <span className="hidden md:inline">Add Note</span>
             </Button>
             
             {/* User Dropdown */}
@@ -360,7 +389,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
                   </span>
                 </div>
-                <span className="text-sm font-medium hidden sm:inline">
+                <span className="text-sm font-medium hidden md:inline">
                   {user?.name?.split(' ')[0] || 'User'}
                 </span>
                 <ChevronDown className="w-4 h-4 ml-1" />
@@ -396,7 +425,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {/* Mobile Board Title */}
-      <div className="sm:hidden bg-white border-b border-gray-200 px-4 py-3">
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3">
         <h2 className="text-lg font-semibold text-gray-900">{board?.name}</h2>
         {board?.description && (
           <p className="text-sm text-gray-500">{board.description}</p>
@@ -406,17 +435,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       {/* Board Area */}
       <div 
         ref={boardRef}
-        className="relative w-full pb-8"
+        className="relative w-full pb-8 bg-gray-50"
         style={{
           minHeight: 'calc(100vh - 64px)', // Account for header height
         }}
       >
         {/* Notes */}
-        <div className="relative">
+        <div className="relative w-full h-full">
           {layoutNotes.map((note) => (
             <div
               key={note.id}
-              className="absolute p-4 rounded-lg shadow-md select-none group transition-all duration-200 flex flex-col"
+              className="absolute p-4 rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200"
               style={{
                 backgroundColor: note.color,
                 left: note.x,
