@@ -1703,7 +1703,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 <div className="flex-1 overflow-hidden flex flex-col space-y-1">
                   {/* Checklist Items */}
                   {note.checklistItems?.map((item) => (
-                    <div key={item.id} className={`flex items-center group/item hover:bg-white hover:bg-opacity-40 rounded-2xl pl-6 pr-3 py-2 -ml-6 -mr-3 transition-all duration-200 ${
+                    <div key={item.id} className={`flex items-center group/item hover:bg-white hover:bg-opacity-40 rounded pr-3 py-1 -ml-0 -mr-0 transition-all duration-200 ${
                       animatingItems.has(item.id) ? 'animate-pulse' : ''
                     }`}>
                       {/* Checkbox */}
