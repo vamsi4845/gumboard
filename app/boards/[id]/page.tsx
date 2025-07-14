@@ -85,7 +85,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [sortBy, setSortBy] = useState<SortOption>('created-desc')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [showDoneNotes, setShowDoneNotes] = useState(false)
-  const [checklistNoteId, setChecklistNoteId] = useState<string | null>(null)
   const [addingChecklistItem, setAddingChecklistItem] = useState<string | null>(null)
   const [newChecklistItemContent, setNewChecklistItemContent] = useState("")
   const [editingChecklistItem, setEditingChecklistItem] = useState<{ noteId: string, itemId: string } | null>(null)
@@ -761,7 +760,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       if (response.ok) {
         const { note } = await response.json()
         setNotes(notes.map(n => n.id === noteId ? note : n))
-        setChecklistNoteId(noteId)
       }
     } catch (error) {
       console.error("Error converting to checklist:", error)
