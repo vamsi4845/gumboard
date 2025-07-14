@@ -786,13 +786,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       
       const updatedItems = [...(currentNote.checklistItems || []), newItem]
       
+      // Check if all items are checked to mark note as done
+      const allItemsChecked = updatedItems.every(item => item.checked)
+      
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          checklistItems: updatedItems
+          checklistItems: updatedItems,
+          done: allItemsChecked
         }),
       })
 
@@ -829,13 +833,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           ...updatedItems.filter(item => item.checked).sort((a, b) => a.order - b.order)
         ]
         
+        // Check if all items are checked to mark note as done
+        const allItemsChecked = sortedItems.every(item => item.checked)
+        
         fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ 
-            checklistItems: sortedItems
+            checklistItems: sortedItems,
+            done: allItemsChecked
           }),
         })
         .then(response => response.json())
@@ -864,13 +872,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       
       const updatedItems = currentNote.checklistItems.filter(item => item.id !== itemId)
       
+      // Check if all remaining items are checked to mark note as done
+      const allItemsChecked = updatedItems.length > 0 ? updatedItems.every(item => item.checked) : false
+      
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          checklistItems: updatedItems
+          checklistItems: updatedItems,
+          done: allItemsChecked
         }),
       })
 
@@ -894,13 +906,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         item.id === itemId ? { ...item, content } : item
       )
       
+      // Check if all items are checked to mark note as done
+      const allItemsChecked = updatedItems.every(item => item.checked)
+      
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          checklistItems: updatedItems
+          checklistItems: updatedItems,
+          done: allItemsChecked
         }),
       })
 
@@ -937,13 +953,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         ...updatedItems.filter(item => item.checked).sort((a, b) => a.order - b.order)
       ]
       
+      // The note should be marked as done if all items are checked
+      const noteIsDone = !allChecked // If all were checked before, we're unchecking them (note becomes undone)
+                                    // If not all were checked before, we're checking them all (note becomes done)
+      
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ 
-          checklistItems: sortedItems
+          checklistItems: sortedItems,
+          done: noteIsDone
         }),
       })
 
@@ -1622,25 +1643,19 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         }}
                         className={`
                           relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 z-10
-                          ${note.isChecklist 
-                            ? (note.checklistItems?.every(item => item.checked) && note.checklistItems.length > 0
-                              ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
-                              : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
-                            )
-                            : (note.done
-                              ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
-                              : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
-                            )
+                          ${note.done
+                            ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
+                            : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
                           }
                         `}
                         title={note.isChecklist 
-                          ? (note.checklistItems?.every(item => item.checked) && note.checklistItems.length > 0 ? "Uncheck all items" : "Check all items")
+                          ? (note.done ? "Uncheck all items" : "Check all items")
                           : (note.done ? "Mark as not done" : "Mark as done")
                         }
                         type="button"
                         style={{ pointerEvents: 'auto' }}
                       >
-                        {((note.isChecklist && note.checklistItems?.every(item => item.checked) && note.checklistItems.length > 0) || (!note.isChecklist && note.done)) && (
+                        {note.done && (
                           <svg
                             className="w-3 h-3 text-white"
                             fill="none"
@@ -1821,10 +1836,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         handleConvertToChecklist(note.id)
                       }
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    className="rounded-full w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-white"
+                    style={{
+                      backgroundColor: note.color
+                    }}
                     title={note.isChecklist ? "Add checklist item" : "Convert to checklist"}
                   >
-                    <Plus className="w-4 h-4" />
+                    <div className="bg-white rounded-full w-8 h-8 flex items-center justify-center">
+                      <Plus className="w-4 h-4 text-blue-500" />
+                    </div>
                   </button>
                 </div>
               )}
