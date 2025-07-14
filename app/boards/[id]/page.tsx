@@ -1584,13 +1584,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                       {note.user.name ? note.user.name.split(' ')[0] : note.user.email.split('@')[0]}
                     </span>
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 opacity-70">
-                        {new Date(note.createdAt).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric',
-                          year: new Date(note.createdAt).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                        })}
-                      </span>
+                      {!note.isChecklist && (
+                        <span className="text-xs text-gray-500 opacity-70">
+                          {new Date(note.createdAt).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric',
+                            year: new Date(note.createdAt).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                          })}
+                        </span>
+                      )}
                       {boardId === 'all-notes' && note.board && (
                         <span className="text-xs text-blue-600 opacity-80 font-medium truncate max-w-20">
                           {note.board.name}
