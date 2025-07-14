@@ -9,6 +9,13 @@ import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 
+interface ChecklistItem {
+  id: string
+  content: string
+  checked: boolean
+  order: number
+}
+
 interface Note {
   id: string
   content: string
@@ -16,6 +23,8 @@ interface Note {
   done: boolean
   createdAt: string
   updatedAt: string
+  isChecklist?: boolean
+  checklistItems?: ChecklistItem[]
   user: {
     id: string
     name: string | null
@@ -76,6 +85,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [sortBy, setSortBy] = useState<SortOption>('created-desc')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [showDoneNotes, setShowDoneNotes] = useState(false)
+  const [checklistNoteId, setChecklistNoteId] = useState<string | null>(null)
+  const [addingChecklistItem, setAddingChecklistItem] = useState<string | null>(null)
+  const [newChecklistItemContent, setNewChecklistItemContent] = useState("")
+  const [editingChecklistItem, setEditingChecklistItem] = useState<{ noteId: string, itemId: string } | null>(null)
+  const [editingChecklistItemContent, setEditingChecklistItemContent] = useState("")
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -369,6 +383,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           setNewNoteContent("")
           setSelectedBoardForNote("")
         }
+        if (editingNote) {
+          setEditingNote(null)
+          setEditContent("")
+        }
+        if (addingChecklistItem) {
+          setAddingChecklistItem(null)
+          setNewChecklistItemContent("")
+        }
+        if (editingChecklistItem) {
+          setEditingChecklistItem(null)
+          setEditingChecklistItemContent("")
+        }
         if (showBoardDropdown) {
           setShowBoardDropdown(false)
         }
@@ -390,7 +416,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showSortDropdown, showAddNote])
+  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showSortDropdown, showAddNote, editingNote, addingChecklistItem, editingChecklistItem])
 
   // Enhanced responsive handling with debounced resize and better breakpoints
   useEffect(() => {
@@ -687,6 +713,178 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
   const handleSignOut = async () => {
     await signOut()
+  }
+
+  // Checklist handlers
+  const handleConvertToChecklist = async (noteId: string) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote) return
+      
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+      
+      // Create first checklist item from existing content
+      const firstItem: ChecklistItem = {
+        id: `item-${Date.now()}`,
+        content: currentNote.content,
+        checked: false,
+        order: 0
+      }
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          isChecklist: true,
+          checklistItems: [firstItem]
+        }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+        setChecklistNoteId(noteId)
+      }
+    } catch (error) {
+      console.error("Error converting to checklist:", error)
+    }
+  }
+
+  const handleAddChecklistItem = async (noteId: string) => {
+    if (!newChecklistItemContent.trim()) return
+    
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote) return
+      
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+      
+      const newItem: ChecklistItem = {
+        id: `item-${Date.now()}`,
+        content: newChecklistItemContent,
+        checked: false,
+        order: (currentNote.checklistItems || []).length
+      }
+      
+      const updatedItems = [...(currentNote.checklistItems || []), newItem]
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          checklistItems: updatedItems
+        }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+        setNewChecklistItemContent("")
+        setAddingChecklistItem(null)
+      }
+    } catch (error) {
+      console.error("Error adding checklist item:", error)
+    }
+  }
+
+  const handleToggleChecklistItem = async (noteId: string, itemId: string) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote || !currentNote.checklistItems) return
+      
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+      
+      const updatedItems = currentNote.checklistItems.map(item => 
+        item.id === itemId ? { ...item, checked: !item.checked } : item
+      )
+      
+      // Sort items: unchecked first, then checked
+      const sortedItems = [
+        ...updatedItems.filter(item => !item.checked).sort((a, b) => a.order - b.order),
+        ...updatedItems.filter(item => item.checked).sort((a, b) => a.order - b.order)
+      ]
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          checklistItems: sortedItems
+        }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+      }
+    } catch (error) {
+      console.error("Error toggling checklist item:", error)
+    }
+  }
+
+  const handleDeleteChecklistItem = async (noteId: string, itemId: string) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote || !currentNote.checklistItems) return
+      
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+      
+      const updatedItems = currentNote.checklistItems.filter(item => item.id !== itemId)
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          checklistItems: updatedItems
+        }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+      }
+    } catch (error) {
+      console.error("Error deleting checklist item:", error)
+    }
+  }
+
+  const handleEditChecklistItem = async (noteId: string, itemId: string, content: string) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote || !currentNote.checklistItems) return
+      
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+      
+      const updatedItems = currentNote.checklistItems.map(item => 
+        item.id === itemId ? { ...item, content } : item
+      )
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          checklistItems: updatedItems
+        }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+        setEditingChecklistItem(null)
+        setEditingChecklistItemContent("")
+      }
+    } catch (error) {
+      console.error("Error editing checklist item:", error)
+    }
   }
 
   if (loading) {
@@ -1314,8 +1512,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* Show edit/delete buttons for note author or admin */}
-                  {(user?.id === note.user.id || user?.isAdmin) && (
+                  {/* Show edit/delete buttons for note author or admin (only if not in checklist mode) */}
+                  {(user?.id === note.user.id || user?.isAdmin) && !note.isChecklist && (
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => {
@@ -1377,7 +1575,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               </div>
               
-              {editingNote === note.id ? (
+              {editingNote === note.id && !note.isChecklist ? (
                 <div className="flex-1 min-h-0">
                   <textarea
                     value={editContent}
@@ -1402,8 +1600,120 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     autoFocus
                   />
                 </div>
+              ) : note.isChecklist ? (
+                <div className="flex-1 overflow-hidden flex flex-col space-y-2">
+                  {/* Checklist Items */}
+                  {note.checklistItems?.map((item) => (
+                    <div key={item.id} className="flex items-center group/item hover:bg-white hover:bg-opacity-20 rounded px-2 py-1 -mx-2">
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => handleToggleChecklistItem(note.id, item.id)}
+                        className={`
+                          relative w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 mr-3 flex-shrink-0
+                          ${item.checked
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400'
+                          }
+                        `}
+                      >
+                        {item.checked && (
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M5 13l4 4L19 7"></path>
+                          </svg>
+                        )}
+                      </button>
+                      
+                      {/* Content */}
+                      {editingChecklistItem?.noteId === note.id && editingChecklistItem?.itemId === item.id ? (
+                        <input
+                          type="text"
+                          value={editingChecklistItemContent}
+                          onChange={(e) => setEditingChecklistItemContent(e.target.value)}
+                          className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800"
+                          onBlur={() => handleEditChecklistItem(note.id, item.id, editingChecklistItemContent)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleEditChecklistItem(note.id, item.id, editingChecklistItemContent)
+                            }
+                            if (e.key === 'Escape') {
+                              setEditingChecklistItem(null)
+                              setEditingChecklistItemContent("")
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <span
+                          className={`flex-1 text-sm leading-6 cursor-pointer ${
+                            item.checked 
+                              ? 'text-gray-500 line-through opacity-70' 
+                              : 'text-gray-800'
+                          }`}
+                          onDoubleClick={() => {
+                            if (user?.id === note.user.id || user?.isAdmin) {
+                              setEditingChecklistItem({ noteId: note.id, itemId: item.id })
+                              setEditingChecklistItemContent(item.content)
+                            }
+                          }}
+                        >
+                          {item.content}
+                        </span>
+                      )}
+                      
+                      {/* Delete button */}
+                      {(user?.id === note.user.id || user?.isAdmin) && (
+                        <button
+                          onClick={() => handleDeleteChecklistItem(note.id, item.id)}
+                          className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-gray-600 hover:text-red-600 rounded ml-2"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Add new item input */}
+                  {addingChecklistItem === note.id && (
+                    <div className="flex items-center mt-2">
+                      <div className="w-4 h-4 mr-3 flex-shrink-0"></div>
+                      <input
+                        type="text"
+                        value={newChecklistItemContent}
+                        onChange={(e) => setNewChecklistItemContent(e.target.value)}
+                        className="flex-1 bg-white bg-opacity-60 border border-gray-300 rounded px-2 py-1 text-sm leading-6 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Add new item..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleAddChecklistItem(note.id)
+                          }
+                          if (e.key === 'Escape') {
+                            setAddingChecklistItem(null)
+                            setNewChecklistItemContent("")
+                          }
+                        }}
+                        onBlur={() => {
+                          if (newChecklistItemContent.trim()) {
+                            handleAddChecklistItem(note.id)
+                          } else {
+                            setAddingChecklistItem(null)
+                            setNewChecklistItemContent("")
+                          }
+                        }}
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden flex flex-col relative">
                   <p className={`text-base whitespace-pre-wrap break-words leading-7 m-0 p-0 flex-1 transition-all duration-200 ${
                     note.done 
                       ? 'text-gray-500 opacity-70 line-through' 
@@ -1411,6 +1721,25 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   }`}>
                     {note.content}
                   </p>
+                </div>
+              )}
+              
+              {/* Add checklist button - positioned at center bottom of note */}
+              {(user?.id === note.user.id || user?.isAdmin) && (
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                  <button
+                    onClick={() => {
+                      if (note.isChecklist) {
+                        setAddingChecklistItem(note.id)
+                      } else {
+                        handleConvertToChecklist(note.id)
+                      }
+                    }}
+                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    title={note.isChecklist ? "Add checklist item" : "Convert to checklist"}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
               )}
             </div>

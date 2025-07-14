@@ -97,6 +97,8 @@ model Note {
   content   String @db.Text
   color     String @default("#fef3c7") // Default yellow color
   done      Boolean @default(false) // Track completion status
+  isChecklist Boolean @default(false) // Track if note is a checklist
+  checklistItems Json? // Store checklist items as JSON
   boardId   String
   board     Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   createdBy String
