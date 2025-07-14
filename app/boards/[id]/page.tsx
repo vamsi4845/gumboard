@@ -90,6 +90,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [newChecklistItemContent, setNewChecklistItemContent] = useState("")
   const [editingChecklistItem, setEditingChecklistItem] = useState<{ noteId: string, itemId: string } | null>(null)
   const [editingChecklistItemContent, setEditingChecklistItemContent] = useState("")
+  const [animatingItems, setAnimatingItems] = useState<Set<string>>(new Set())
   const boardRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -202,40 +203,55 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   }
 
   // Helper function to calculate note height based on content
-  const calculateNoteHeight = (content: string, noteWidth?: number, notePadding?: number) => {
+  const calculateNoteHeight = (note: Note, noteWidth?: number, notePadding?: number) => {
     const config = getResponsiveConfig()
     const actualNotePadding = notePadding || config.notePadding
     const actualNoteWidth = noteWidth || config.noteWidth
     
-    const lines = content.split('\n')
-    
-    // Estimate character width and calculate text wrapping
-    const avgCharWidth = 9 // Average character width in pixels
-    const contentWidth = actualNoteWidth - (actualNotePadding * 2) - 16 // Note width minus padding and margins
-    const charsPerLine = Math.floor(contentWidth / avgCharWidth)
-    
-    // Calculate total lines including wrapped text
-    let totalLines = 0
-    lines.forEach(line => {
-      if (line.length === 0) {
-        totalLines += 1 // Empty line
-      } else {
-        const wrappedLines = Math.ceil(line.length / charsPerLine)
-        totalLines += Math.max(1, wrappedLines)
-      }
-    })
-    
-    // Ensure minimum content
-    totalLines = Math.max(3, totalLines)
-    
-    // Calculate based on actual text content with wrapping
     const headerHeight = 76 // User info header + margins (more accurate)
     const paddingHeight = actualNotePadding * 2 // Top and bottom padding
-    const lineHeight = 28 // Line height for readability (leading-7)
-    const contentHeight = totalLines * lineHeight
     const minContentHeight = 84 // Minimum content area (3 lines)
     
-    return headerHeight + paddingHeight + Math.max(minContentHeight, contentHeight)
+    if (note.isChecklist && note.checklistItems) {
+      // For checklist items, calculate height based on number of items
+      const itemHeight = 32 // Each checklist item is about 32px tall (text + padding)
+      const itemSpacing = 8 // Space between items
+      const checklistItemsCount = note.checklistItems.length
+      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0 // Add height for input field
+      
+      const checklistHeight = (checklistItemsCount * itemHeight) + ((checklistItemsCount - 1) * itemSpacing) + addingItemHeight
+      const totalChecklistHeight = Math.max(minContentHeight, checklistHeight)
+      
+      return headerHeight + paddingHeight + totalChecklistHeight + 40 // Extra space for + button
+    } else {
+      // Original logic for regular notes
+      const lines = note.content.split('\n')
+      
+      // Estimate character width and calculate text wrapping
+      const avgCharWidth = 9 // Average character width in pixels
+      const contentWidth = actualNoteWidth - (actualNotePadding * 2) - 16 // Note width minus padding and margins
+      const charsPerLine = Math.floor(contentWidth / avgCharWidth)
+      
+      // Calculate total lines including wrapped text
+      let totalLines = 0
+      lines.forEach(line => {
+        if (line.length === 0) {
+          totalLines += 1 // Empty line
+        } else {
+          const wrappedLines = Math.ceil(line.length / charsPerLine)
+          totalLines += Math.max(1, wrappedLines)
+        }
+      })
+      
+      // Ensure minimum content
+      totalLines = Math.max(3, totalLines)
+      
+      // Calculate based on actual text content with wrapping
+      const lineHeight = 28 // Line height for readability (leading-7)
+      const contentHeight = totalLines * lineHeight
+      
+      return headerHeight + paddingHeight + Math.max(minContentHeight, contentHeight)
+    }
   }
 
   // Helper function to calculate bin-packed layout for desktop
@@ -263,7 +279,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     const columnBottoms: number[] = new Array(actualColumnsCount).fill(config.containerPadding)
     
     return filteredNotes.map((note) => {
-      const noteHeight = calculateNoteHeight(note.content, adjustedNoteWidth, config.notePadding)
+      const noteHeight = calculateNoteHeight(note, adjustedNoteWidth, config.notePadding)
       
       // Find the column with the lowest bottom position
       let bestColumn = 0
@@ -311,7 +327,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     const columnBottoms: number[] = new Array(actualColumnsCount).fill(config.containerPadding)
     
     return filteredNotes.map((note) => {
-      const noteHeight = calculateNoteHeight(note.content, noteWidth, config.notePadding)
+      const noteHeight = calculateNoteHeight(note, noteWidth, config.notePadding)
       
       // Find the column with the lowest bottom position
       let bestColumn = 0
@@ -802,26 +818,38 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         item.id === itemId ? { ...item, checked: !item.checked } : item
       )
       
-      // Sort items: unchecked first, then checked
-      const sortedItems = [
-        ...updatedItems.filter(item => !item.checked).sort((a, b) => a.order - b.order),
-        ...updatedItems.filter(item => item.checked).sort((a, b) => a.order - b.order)
-      ]
+      // Add item to animating set for visual feedback
+      setAnimatingItems(prev => new Set([...prev, itemId]))
       
-      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ 
-          checklistItems: sortedItems
-        }),
-      })
-
-      if (response.ok) {
-        const { note } = await response.json()
-        setNotes(notes.map(n => n.id === noteId ? note : n))
-      }
+      // Small delay to show animation before reordering
+      setTimeout(() => {
+        // Sort items: unchecked first, then checked
+        const sortedItems = [
+          ...updatedItems.filter(item => !item.checked).sort((a, b) => a.order - b.order),
+          ...updatedItems.filter(item => item.checked).sort((a, b) => a.order - b.order)
+        ]
+        
+        fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ 
+            checklistItems: sortedItems
+          }),
+        })
+        .then(response => response.json())
+        .then(({ note }) => {
+          setNotes(notes.map(n => n.id === noteId ? note : n))
+          // Remove from animating set after update
+          setAnimatingItems(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(itemId)
+            return newSet
+          })
+        })
+      }, 200)
+      
     } catch (error) {
       console.error("Error toggling checklist item:", error)
     }
@@ -884,6 +912,47 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       }
     } catch (error) {
       console.error("Error editing checklist item:", error)
+    }
+  }
+
+  const handleToggleAllChecklistItems = async (noteId: string) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote || !currentNote.checklistItems) return
+      
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+      
+      // Check if all items are checked
+      const allChecked = currentNote.checklistItems.every(item => item.checked)
+      
+      // Toggle all items to opposite state
+      const updatedItems = currentNote.checklistItems.map(item => ({
+        ...item,
+        checked: !allChecked
+      }))
+      
+      // Sort items: unchecked first, then checked
+      const sortedItems = [
+        ...updatedItems.filter(item => !item.checked).sort((a, b) => a.order - b.order),
+        ...updatedItems.filter(item => item.checked).sort((a, b) => a.order - b.order)
+      ]
+      
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          checklistItems: sortedItems
+        }),
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+      }
+    } catch (error) {
+      console.error("Error toggling all checklist items:", error)
     }
   }
 
@@ -1512,19 +1581,21 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* Show edit/delete buttons for note author or admin (only if not in checklist mode) */}
-                  {(user?.id === note.user.id || user?.isAdmin) && !note.isChecklist && (
+                  {/* Show edit/delete buttons for note author or admin */}
+                  {(user?.id === note.user.id || user?.isAdmin) && (
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setEditingNote(note.id)
-                          setEditContent(note.content)
-                        }}
-                        className="p-1 text-gray-600 hover:text-blue-600 rounded"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                      </button>
+                      {!note.isChecklist && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingNote(note.id)
+                            setEditContent(note.content)
+                          }}
+                          className="p-1 text-gray-600 hover:text-blue-600 rounded"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </button>
+                      )}
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -1543,20 +1614,33 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         onClick={(e) => {
                           e.preventDefault()
                           e.stopPropagation()
-                          handleToggleDone(note.id, note.done)
+                          if (note.isChecklist) {
+                            handleToggleAllChecklistItems(note.id)
+                          } else {
+                            handleToggleDone(note.id, note.done)
+                          }
                         }}
                         className={`
                           relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 z-10
-                          ${note.done
-                            ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
-                            : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
+                          ${note.isChecklist 
+                            ? (note.checklistItems?.every(item => item.checked) && note.checklistItems.length > 0
+                              ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
+                              : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
+                            )
+                            : (note.done
+                              ? 'bg-green-500 border-green-500 text-white shadow-lg opacity-100'
+                              : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100'
+                            )
                           }
                         `}
-                        title={note.done ? "Mark as not done" : "Mark as done"}
+                        title={note.isChecklist 
+                          ? (note.checklistItems?.every(item => item.checked) && note.checklistItems.length > 0 ? "Uncheck all items" : "Check all items")
+                          : (note.done ? "Mark as not done" : "Mark as done")
+                        }
                         type="button"
                         style={{ pointerEvents: 'auto' }}
                       >
-                        {note.done && (
+                        {((note.isChecklist && note.checklistItems?.every(item => item.checked) && note.checklistItems.length > 0) || (!note.isChecklist && note.done)) && (
                           <svg
                             className="w-3 h-3 text-white"
                             fill="none"
@@ -1604,7 +1688,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 <div className="flex-1 overflow-hidden flex flex-col space-y-2">
                   {/* Checklist Items */}
                   {note.checklistItems?.map((item) => (
-                    <div key={item.id} className="flex items-center group/item hover:bg-white hover:bg-opacity-20 rounded px-2 py-1 -mx-2">
+                    <div key={item.id} className={`flex items-center group/item hover:bg-white hover:bg-opacity-20 rounded-md px-2 py-1 -mx-2 transition-all duration-200 ${
+                      animatingItems.has(item.id) ? 'animate-pulse' : ''
+                    }`}>
                       {/* Checkbox */}
                       <button
                         onClick={() => handleToggleChecklistItem(note.id, item.id)}
@@ -1682,13 +1768,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   
                   {/* Add new item input */}
                   {addingChecklistItem === note.id && (
-                    <div className="flex items-center mt-2">
-                      <div className="w-4 h-4 mr-3 flex-shrink-0"></div>
+                    <div className="flex items-center group/item hover:bg-white hover:bg-opacity-20 rounded-md px-2 py-1 -mx-2 mt-2 transition-all duration-200">
+                      <div className="w-4 h-4 rounded border-2 border-gray-400 mr-3 flex-shrink-0 bg-white bg-opacity-60"></div>
                       <input
                         type="text"
                         value={newChecklistItemContent}
                         onChange={(e) => setNewChecklistItemContent(e.target.value)}
-                        className="flex-1 bg-white bg-opacity-60 border border-gray-300 rounded px-2 py-1 text-sm leading-6 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 placeholder-gray-500"
                         placeholder="Add new item..."
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -1725,7 +1811,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               )}
               
               {/* Add checklist button - positioned at center bottom of note */}
-              {(user?.id === note.user.id || user?.isAdmin) && (
+              {(user?.id === note.user.id || user?.isAdmin) && addingChecklistItem !== note.id && (
                 <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
                   <button
                     onClick={() => {
