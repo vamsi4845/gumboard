@@ -1700,17 +1700,17 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   />
                 </div>
               ) : note.isChecklist ? (
-                <div className="flex-1 overflow-hidden flex flex-col space-y-2">
+                <div className="flex-1 overflow-hidden flex flex-col space-y-1">
                   {/* Checklist Items */}
                   {note.checklistItems?.map((item) => (
-                    <div key={item.id} className={`flex items-center group/item hover:bg-white hover:bg-opacity-20 rounded-md px-2 py-1 -mx-2 transition-all duration-200 ${
+                    <div key={item.id} className={`flex items-center group/item hover:bg-white hover:bg-opacity-40 rounded-2xl pl-6 pr-3 py-2 -ml-6 -mr-3 transition-all duration-200 ${
                       animatingItems.has(item.id) ? 'animate-pulse' : ''
                     }`}>
                       {/* Checkbox */}
                       <button
                         onClick={() => handleToggleChecklistItem(note.id, item.id)}
                         className={`
-                          relative w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 mr-3 flex-shrink-0
+                          relative w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 mr-3 flex-shrink-0 ml-2
                           ${item.checked
                             ? 'bg-green-500 border-green-500 text-white'
                             : 'bg-white bg-opacity-60 border-gray-400 hover:border-green-400'
@@ -1783,8 +1783,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   
                   {/* Add new item input */}
                   {addingChecklistItem === note.id && (
-                    <div className="flex items-center group/item hover:bg-white hover:bg-opacity-20 rounded-md px-2 py-1 -mx-2 mt-2 transition-all duration-200">
-                      <div className="w-4 h-4 rounded border-2 border-gray-400 mr-3 flex-shrink-0 bg-white bg-opacity-60"></div>
+                    <div className="flex items-center group/item hover:bg-white hover:bg-opacity-40 rounded-2xl pl-6 pr-3 py-2 -ml-6 -mr-3 mt-2 transition-all duration-200">
+                      <div className="w-4 h-4 rounded border-2 border-gray-400 mr-3 flex-shrink-0 bg-white bg-opacity-60 ml-2"></div>
                       <input
                         type="text"
                         value={newChecklistItemContent}
