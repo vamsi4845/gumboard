@@ -802,7 +802,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         const { note } = await response.json()
         setNotes(notes.map(n => n.id === noteId ? note : n))
         setNewChecklistItemContent("")
-        setAddingChecklistItem(null)
+        // Keep addingChecklistItem active so user can continue adding items
+        // setAddingChecklistItem(null) - removed this line
       }
     } catch (error) {
       console.error("Error adding checklist item:", error)
@@ -1803,10 +1804,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         onBlur={() => {
                           if (newChecklistItemContent.trim()) {
                             handleAddChecklistItem(note.id)
-                          } else {
-                            setAddingChecklistItem(null)
-                            setNewChecklistItemContent("")
                           }
+                          // Don't close the input on blur - let user continue adding items
+                          // Only close on explicit Escape key
                         }}
                         autoFocus
                       />
