@@ -66,9 +66,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [allBoards, setAllBoards] = useState<Board[]>([])
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showAddNote, setShowAddNote] = useState(false)
-  const [newNoteContent, setNewNoteContent] = useState("")
-  const [selectedBoardForNote, setSelectedBoardForNote] = useState<string>("")
   const [editingNote, setEditingNote] = useState<string | null>(null)
   const [editContent, setEditContent] = useState("")
   const [showBoardDropdown, setShowBoardDropdown] = useState(false)
@@ -393,11 +390,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (showAddNote) {
-          setShowAddNote(false)
-          setNewNoteContent("")
-          setSelectedBoardForNote("")
-        }
         if (editingNote) {
           setEditingNote(null)
           setEditContent("")
@@ -431,7 +423,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showSortDropdown, showAddNote, editingNote, addingChecklistItem, editingChecklistItem])
+  }, [showBoardDropdown, showUserDropdown, showAuthorDropdown, showSortDropdown, editingNote, addingChecklistItem, editingChecklistItem])
 
   // Enhanced responsive handling with debounced resize and better breakpoints
   useEffect(() => {
@@ -613,37 +605,33 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
-  const handleAddNote = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newNoteContent.trim()) return
-
+  const handleAddNote = async (targetBoardId?: string) => {
     // For all notes view, ensure a board is selected
-    if (boardId === 'all-notes' && !selectedBoardForNote) {
+    if (boardId === 'all-notes' && !targetBoardId) {
       alert("Please select a board to add the note to")
       return
     }
 
     try {
-      const targetBoardId = boardId === 'all-notes' ? selectedBoardForNote : boardId
+      const actualTargetBoardId = boardId === 'all-notes' ? targetBoardId : boardId
       const isAllNotesView = boardId === 'all-notes'
       
-      const response = await fetch(`/api/boards/${isAllNotesView ? 'all-notes' : targetBoardId}/notes`, {
+      const response = await fetch(`/api/boards/${isAllNotesView ? 'all-notes' : actualTargetBoardId}/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          content: newNoteContent,
-          ...(isAllNotesView && { boardId: selectedBoardForNote })
+          content: "",
+          ...(isAllNotesView && { boardId: targetBoardId })
         }),
       })
 
       if (response.ok) {
         const { note } = await response.json()
         setNotes([...notes, note])
-        setNewNoteContent("")
-        setSelectedBoardForNote("")
-        setShowAddNote(false)
+        setEditingNote(note.id)
+        setEditContent("")
       }
     } catch (error) {
       console.error("Error creating note:", error)
@@ -1241,10 +1229,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             
             <Button
               onClick={() => {
-                setShowAddNote(true)
-                // Set default board selection for all notes view
                 if (boardId === 'all-notes' && allBoards.length > 0) {
-                  setSelectedBoardForNote(allBoards[0].id)
+                  handleAddNote(allBoards[0].id)
+                } else {
+                  handleAddNote()
                 }
               }}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
@@ -1895,10 +1883,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             <div className="text-sm mb-4">Click &ldquo;Add Note&rdquo; to get started</div>
             <Button
               onClick={() => {
-                setShowAddNote(true)
-                // Set default board selection for all notes view
                 if (boardId === 'all-notes' && allBoards.length > 0) {
-                  setSelectedBoardForNote(allBoards[0].id)
+                  handleAddNote(allBoards[0].id)
+                } else {
+                  handleAddNote()
                 }
               }}
               className="flex items-center space-x-2"
@@ -1910,74 +1898,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         )}
       </div>
 
-      {/* Add Note Modal */}
-      {showAddNote && (
-        <div 
-          className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-          onClick={() => {
-            setShowAddNote(false)
-            setNewNoteContent("")
-            setSelectedBoardForNote("")
-          }}
-        >
-          <div 
-            className="bg-white bg-opacity-95 backdrop-blur-md rounded-lg p-6 w-full max-w-md shadow-2xl drop-shadow-2xl border border-white border-opacity-30"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold mb-4">Add New Note</h3>
-            <form onSubmit={handleAddNote}>
-              <div className="space-y-4">
-                {boardId === 'all-notes' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Board
-                    </label>
-                    <select
-                      value={selectedBoardForNote}
-                      onChange={(e) => setSelectedBoardForNote(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Choose a board...</option>
-                      {allBoards.map((board) => (
-                        <option key={board.id} value={board.id}>
-                          {board.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Note Content
-                  </label>
-                  <textarea
-                    value={newNoteContent}
-                    onChange={(e) => setNewNoteContent(e.target.value)}
-                    placeholder="Enter your note..."
-                    className="w-full h-32 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowAddNote(false)
-                    setNewNoteContent("")
-                    setSelectedBoardForNote("")
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit">Add Note</Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
-} 
+}    
