@@ -976,6 +976,60 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
+  const handleSplitChecklistItem = async (noteId: string, itemId: string, content: string, cursorPosition: number) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote || !currentNote.checklistItems) return
+
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+
+      const firstHalf = content.substring(0, cursorPosition).trim()
+      const secondHalf = content.substring(cursorPosition).trim()
+
+      if (!secondHalf) {
+        await handleEditChecklistItem(noteId, itemId, firstHalf)
+        return
+      }
+
+      // Update current item with first half
+      const updatedItems = currentNote.checklistItems.map(item => 
+        item.id === itemId ? { ...item, content: firstHalf } : item
+      )
+
+      // Find the current item's order to insert new item after it
+      const currentItem = currentNote.checklistItems.find(item => item.id === itemId)
+      const currentOrder = currentItem?.order || 0
+
+      // Create new item with second half
+      const newItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content: secondHalf,
+        checked: false,
+        order: currentOrder + 0.5
+      }
+
+      const allItems = [...updatedItems, newItem].sort((a, b) => a.order - b.order)
+
+      // Update the note with both changes
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          checklistItems: allItems
+        })
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+        setEditingChecklistItem({ noteId, itemId: newItem.id })
+        setEditingChecklistItemContent(secondHalf)
+      }
+    } catch (error) {
+      console.error("Error splitting checklist item:", error)
+    }
+  }
+
   if (loading) {
     return <FullPageLoader message="Loading board..." />
   }
@@ -1743,7 +1797,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                           onBlur={() => handleEditChecklistItem(note.id, item.id, editingChecklistItemContent)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              handleEditChecklistItem(note.id, item.id, editingChecklistItemContent)
+                              const target = e.target as HTMLInputElement
+                              const cursorPosition = target.selectionStart || 0
+                              handleSplitChecklistItem(note.id, item.id, editingChecklistItemContent, cursorPosition)
                             }
                             if (e.key === 'Escape') {
                               setEditingChecklistItem(null)
@@ -1980,4 +2036,4 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       )}
     </div>
   )
-} 
+}    
