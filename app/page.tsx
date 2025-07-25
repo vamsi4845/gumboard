@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { auth } from "@/auth"
 import { Button } from "@/components/ui/button"
-import { StickyNote, Users, Building2, Zap } from "lucide-react"
+import { StickyNote, Users, Building2 } from "lucide-react"
 import { StickyNotesDemo } from "@/components/sticky-notes-demo"
 import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card"
 
