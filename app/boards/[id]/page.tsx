@@ -726,13 +726,24 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       
       const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
       
-      // Create first checklist item from existing content
-      const firstItem: ChecklistItem = {
-        id: `item-${Date.now()}`,
-        content: currentNote.content,
-        checked: false,
-        order: 0
-      }
+      // Create checklist items from existing content, splitting by newlines
+      const lines = currentNote.content.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+      
+      const checklistItems: ChecklistItem[] = lines.length > 0 
+        ? lines.map((line, index) => ({
+            id: `item-${Date.now()}-${index}`,
+            content: line,
+            checked: false,
+            order: index
+          }))
+        : [{
+            id: `item-${Date.now()}`,
+            content: '',
+            checked: false,
+            order: 0
+          }]
       
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
@@ -741,7 +752,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         },
         body: JSON.stringify({ 
           isChecklist: true,
-          checklistItems: [firstItem]
+          checklistItems: checklistItems
         }),
       })
 
@@ -961,6 +972,60 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       }
     } catch (error) {
       console.error("Error toggling all checklist items:", error)
+    }
+  }
+
+  const handleSplitChecklistItem = async (noteId: string, itemId: string, content: string, cursorPosition: number) => {
+    try {
+      const currentNote = notes.find(n => n.id === noteId)
+      if (!currentNote || !currentNote.checklistItems) return
+
+      const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
+
+      const firstHalf = content.substring(0, cursorPosition).trim()
+      const secondHalf = content.substring(cursorPosition).trim()
+
+      if (!secondHalf) {
+        await handleEditChecklistItem(noteId, itemId, firstHalf)
+        return
+      }
+
+      // Update current item with first half
+      const updatedItems = currentNote.checklistItems.map(item => 
+        item.id === itemId ? { ...item, content: firstHalf } : item
+      )
+
+      // Find the current item's order to insert new item after it
+      const currentItem = currentNote.checklistItems.find(item => item.id === itemId)
+      const currentOrder = currentItem?.order || 0
+
+      // Create new item with second half
+      const newItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content: secondHalf,
+        checked: false,
+        order: currentOrder + 0.5
+      }
+
+      const allItems = [...updatedItems, newItem].sort((a, b) => a.order - b.order)
+
+      // Update the note with both changes
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          checklistItems: allItems
+        })
+      })
+
+      if (response.ok) {
+        const { note } = await response.json()
+        setNotes(notes.map(n => n.id === noteId ? note : n))
+        setEditingChecklistItem({ noteId, itemId: newItem.id })
+        setEditingChecklistItemContent(secondHalf)
+      }
+    } catch (error) {
+      console.error("Error splitting checklist item:", error)
     }
   }
 
@@ -1731,7 +1796,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                           onBlur={() => handleEditChecklistItem(note.id, item.id, editingChecklistItemContent)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              handleEditChecklistItem(note.id, item.id, editingChecklistItemContent)
+                              const target = e.target as HTMLInputElement
+                              const cursorPosition = target.selectionStart || 0
+                              handleSplitChecklistItem(note.id, item.id, editingChecklistItemContent, cursorPosition)
                             }
                             if (e.key === 'Escape') {
                               setEditingChecklistItem(null)
@@ -1900,4 +1967,4 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
     </div>
   )
-}    
+}
