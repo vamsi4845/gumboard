@@ -91,18 +91,6 @@ export default async function HomePage() {
                   </CardDescription>
                 </CardContent>
               </Card>
-              
-              <Card className="text-center">
-                <CardContent className="pt-6">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Zap className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <CardTitle className="mb-2">Interactive demo</CardTitle>
-                  <CardDescription>
-                    Try it out right away with our interactive demo. No signup required to get started.
-                  </CardDescription>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </section>
