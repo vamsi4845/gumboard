@@ -738,13 +738,24 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       
       const targetBoardId = boardId === 'all-notes' && currentNote.board?.id ? currentNote.board.id : boardId
       
-      // Create first checklist item from existing content
-      const firstItem: ChecklistItem = {
-        id: `item-${Date.now()}`,
-        content: currentNote.content,
-        checked: false,
-        order: 0
-      }
+      // Create checklist items from existing content, splitting by newlines
+      const lines = currentNote.content.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+      
+      const checklistItems: ChecklistItem[] = lines.length > 0 
+        ? lines.map((line, index) => ({
+            id: `item-${Date.now()}-${index}`,
+            content: line,
+            checked: false,
+            order: index
+          }))
+        : [{
+            id: `item-${Date.now()}`,
+            content: '',
+            checked: false,
+            order: 0
+          }]
       
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
@@ -753,7 +764,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         },
         body: JSON.stringify({ 
           isChecklist: true,
-          checklistItems: [firstItem]
+          checklistItems: checklistItems
         }),
       })
 
@@ -1980,4 +1991,4 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       )}
     </div>
   )
-} 
+}  
