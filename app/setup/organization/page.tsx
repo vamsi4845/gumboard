@@ -27,10 +27,13 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
     }
   })
 
-  // Update user to belong to this organization
+  // Update user to belong to this organization and make them admin
   await db.user.update({
     where: { id: session.user.id },
-    data: { organizationId: organization.id }
+    data: { 
+      organizationId: organization.id,
+      isAdmin: true
+    }
   })
 
   // Send invites to team members if provided
@@ -133,4 +136,4 @@ export default async function OrganizationSetup() {
       </div>
     </div>
   )
-} 
+}  
