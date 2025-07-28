@@ -1617,7 +1617,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 height: note.height,
                 padding: `${getResponsiveConfig().notePadding}px`,
               }}
-              onDoubleClick={() => {
+              onClick={() => {
                 // Allow editing if user is the note author or admin
                 if (user?.id === note.user.id || user?.isAdmin) {
                   setEditingNote(note.id)
@@ -1814,7 +1814,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                               ? 'text-gray-500 line-through opacity-70' 
                               : 'text-gray-800'
                           }`}
-                          onDoubleClick={() => {
+                          onClick={() => {
                             if (user?.id === note.user.id || user?.isAdmin) {
                               setEditingChecklistItem({ noteId: note.id, itemId: item.id })
                               setEditingChecklistItemContent(item.content)
