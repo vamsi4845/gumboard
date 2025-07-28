@@ -470,7 +470,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   }
 
   // Filter and sort notes based on search term, date range, author, and sort option
-  const filterAndSortNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null, sortOption: SortOption, showDone: boolean): Note[] => {
+  const filterAndSortNotes = (notes: Note[], searchTerm: string, dateRange: { startDate: Date | null; endDate: Date | null }, authorId: string | null, sortOption: SortOption, showDone: boolean, currentUser: User | null): Note[] => {
     let filteredNotes = notes
     
     // Filter by done status
@@ -513,12 +513,25 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     
     // Sort notes
     filteredNotes.sort((a, b) => {
-      // Always prioritize done status first (undone notes first) if showing done notes
+      // First priority: logged-in user's notes come first
+      if (currentUser) {
+        const aIsCurrentUser = a.user.id === currentUser.id
+        const bIsCurrentUser = b.user.id === currentUser.id
+        
+        if (aIsCurrentUser && !bIsCurrentUser) {
+          return -1 // a (current user's note) comes first
+        }
+        if (!aIsCurrentUser && bIsCurrentUser) {
+          return 1 // b (current user's note) comes first
+        }
+      }
+      
+      // Second priority: done status (undone notes first) if showing done notes
       if (showDone && a.done !== b.done) {
         return a.done ? 1 : -1 // Undone notes (false) come first
       }
       
-      // Then sort by the selected option
+      // Third priority: sort by the selected option
       switch (sortOption) {
         case 'created-asc':
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -540,7 +553,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const uniqueAuthors = getUniqueAuthors(notes)
   
   // Get filtered and sorted notes for display
-  const filteredNotes = filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, sortBy, showDoneNotes)
+  const filteredNotes = filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, sortBy, showDoneNotes, user)
 
 
 
