@@ -987,6 +987,33 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
       if (!secondHalf) {
         await handleEditChecklistItem(noteId, itemId, firstHalf)
+        
+        const currentItem = currentNote.checklistItems.find(item => item.id === itemId)
+        const currentOrder = currentItem?.order || 0
+
+        const newItem = {
+          id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          content: "",
+          checked: false,
+          order: currentOrder + 0.5
+        }
+
+        const allItems = [...currentNote.checklistItems, newItem].sort((a, b) => a.order - b.order)
+
+        const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            checklistItems: allItems
+          })
+        })
+
+        if (response.ok) {
+          const { note } = await response.json()
+          setNotes(notes.map(n => n.id === noteId ? note : n))
+          setEditingChecklistItem({ noteId, itemId: newItem.id })
+          setEditingChecklistItemContent("")
+        }
         return
       }
 
