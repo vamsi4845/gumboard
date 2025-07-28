@@ -440,7 +440,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         resizeTimeout = setTimeout(() => {
           // Trigger a state update to force re-calculation of note positions
           setNotes(prevNotes => [...prevNotes])
-        }, 150) // Debounce resize events
+        }, 50) // Debounce resize events - reduced for real-time feel
       }
     }
     
