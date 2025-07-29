@@ -1,6 +1,6 @@
 # Gumboard
 
-Keep on-top of your team's to-dos.
+Keep on top of your team's to-dos.
 
 ## Getting Started
 

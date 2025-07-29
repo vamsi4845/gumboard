@@ -69,7 +69,7 @@ export default function OpenGraphImage() {
               maxWidth: "800px",
             }}
           >
-            Keep on-top of your team&apos;s to-dos
+            Keep on top of your team&apos;s to-dos
           </p>
         </div>
       </div>

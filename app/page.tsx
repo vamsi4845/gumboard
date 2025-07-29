@@ -26,7 +26,7 @@ export default async function HomePage() {
                 </div>
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Keep on-top of your team&apos;s to-dos.
+                    Keep on top of your team&apos;s to-dos.
                   </h1>
                   <p className="max-w-[600px] text-slate-600 md:text-xl">
                     Gumboard is the free, real-time sticky note board that helps your team stay aligned. Try the
@@ -110,4 +110,4 @@ export default async function HomePage() {
       </footer>
     </div>
   )
-}                                          
+}                                                                                    
