@@ -61,32 +61,38 @@ test.describe('Board Management', () => {
   test('should create a new board', async ({ page }) => {
     await page.goto('/dashboard');
 
-    await page.click('button:has-text("+ Add Board")');
+    await page.click('button:has-text("Add Board")');
     
     await page.fill('input[placeholder*="board name"]', 'Test Board');
-    await page.fill('textarea[placeholder*="description"]', 'Test board description');
+    await page.fill('input[placeholder*="board description"]', 'Test board description');
     
     await page.click('button:has-text("Create Board")');
     
-    await expect(page.locator('text=Test Board')).toBeVisible();
+    await expect(page.locator('[data-slot="card-title"]:has-text("Test Board")')).toBeVisible();
   });
 
   test('should display empty state when no boards exist', async ({ page }) => {
     await page.goto('/dashboard');
     
     await expect(page.locator('text=No boards yet')).toBeVisible();
-    await expect(page.locator('button:has-text("+ Add Board")')).toBeVisible();
+    await expect(page.locator('button:has-text("Create your first board")')).toBeVisible();
   });
 
   test('should validate board creation form', async ({ page }) => {
     await page.goto('/dashboard');
     
-    await page.click('button:has-text("+ Add Board")');
+    await page.click('button:has-text("Add Board")');
     
+    // Check that required field validation works
+    const nameInput = page.locator('input[placeholder*="board name"]');
     const createButton = page.locator('button:has-text("Create Board")');
-    await expect(createButton).toBeDisabled();
     
+    // Try to submit empty form
+    await createButton.click();
+    await expect(nameInput).toBeFocused();
+    
+    // Fill name and verify form can be submitted
     await page.fill('input[placeholder*="board name"]', 'Test Board');
-    await expect(createButton).not.toBeDisabled();
+    await expect(createButton).toBeEnabled();
   });
 });

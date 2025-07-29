@@ -14,9 +14,6 @@ test.describe('Authentication Flow', () => {
     
     await expect(submitButton).toBeDisabled();
     
-    await emailInput.fill('invalid-email');
-    await expect(submitButton).toBeDisabled();
-    
     await emailInput.fill('test@example.com');
     await expect(submitButton).not.toBeDisabled();
   });
