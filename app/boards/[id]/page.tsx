@@ -1784,6 +1784,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         setEditingNote(null)
                         setEditContent("")
                       }
+                      if (e.key === 'Backspace' && editContent.trim() === '') {
+                        handleDeleteNote(note.id)
+                      }
                     }}
                     onFocus={(e) => {
                       // Set cursor at the end of the text
@@ -1844,6 +1847,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                               setEditingChecklistItem(null)
                               setEditingChecklistItemContent("")
                             }
+                            if (e.key === 'Backspace' && editingChecklistItemContent.trim() === '') {
+                              handleDeleteChecklistItem(note.id, item.id)
+                            }
                           }}
                           autoFocus
                         />
@@ -1892,6 +1898,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                             handleAddChecklistItem(note.id)
                           }
                           if (e.key === 'Escape') {
+                            setAddingChecklistItem(null)
+                            setNewChecklistItemContent("")
+                          }
+                          if (e.key === 'Backspace' && newChecklistItemContent.trim() === '') {
                             setAddingChecklistItem(null)
                             setNewChecklistItemContent("")
                           }
