@@ -83,15 +83,12 @@ test.describe('Board Management', () => {
     
     await page.click('button:has-text("Add Board")');
     
-    // Check that required field validation works
     const nameInput = page.locator('input[placeholder*="board name"]');
     const createButton = page.locator('button:has-text("Create Board")');
     
-    // Try to submit empty form
     await createButton.click();
     await expect(nameInput).toBeFocused();
     
-    // Fill name and verify form can be submitted
     await page.fill('input[placeholder*="board name"]', 'Test Board');
     await expect(createButton).toBeEnabled();
   });
