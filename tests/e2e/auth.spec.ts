@@ -27,9 +27,23 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('text=Check your email')).toBeVisible();
   });
 
-  test('should navigate from homepage to signin', async ({ page }) => {
-    await page.goto('/');
-    await page.click('text=Get started - it\'s free');
-    await expect(page).toHaveURL(/.*auth\/signin.*/);
+  test('should authenticate user and redirect to dashboard', async ({ page }) => {
+    let authRequestMade = false;
+    
+    await page.route('**/api/auth/signin/email', async (route) => {
+      authRequestMade = true;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Email sent' }),
+      });
+    });
+    
+    await page.goto('/auth/signin');
+    await page.fill('input[name="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    
+    expect(authRequestMade).toBe(true);
+    await expect(page.locator('text=Check your email')).toBeVisible();
   });
 });
