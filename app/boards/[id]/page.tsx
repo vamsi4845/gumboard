@@ -195,6 +195,15 @@ export default function BoardPage({
       key: 'k',
       ctrl: true,
       action: () => {
+        const searchInput = isMobile ? mobileSearchInputRef.current : searchInputRef.current
+        searchInput?.focus()
+        searchInput?.select()
+      },
+      description: 'Focus search'
+    },
+    {
+      key: 'n',
+      action: () => {
         if (boardId === 'all-notes' && allBoards.length > 0) {
           handleAddNote(allBoards[0].id)
         } else {
@@ -2587,4 +2596,4 @@ export default function BoardPage({
       )}
     </div>
   );
-}        
+}          

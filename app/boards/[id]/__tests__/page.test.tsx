@@ -33,9 +33,10 @@ describe('BoardPage Keyboard Shortcuts Integration', () => {
     expect(window.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function))
   })
 
-  it('should trigger create note action when Ctrl+K is pressed', () => {
+  it('should trigger focus search action when Ctrl+K is pressed', () => {
     const shortcuts = [
-      { key: 'k', ctrl: true, action: mockCreateNote },
+      { key: 'k', ctrl: true, action: mockFocusSearch },
+      { key: 'n', action: mockCreateNote },
       { key: '/', action: mockFocusSearch },
       { key: '?', shift: true, action: mockToggleHelp },
       { key: 'Escape', action: mockCloseModal }
@@ -49,12 +50,13 @@ describe('BoardPage Keyboard Shortcuts Integration', () => {
     })
 
     window.dispatchEvent(keydownEvent)
-    expect(mockCreateNote).toHaveBeenCalledTimes(1)
+    expect(mockFocusSearch).toHaveBeenCalledTimes(1)
   })
 
-  it('should trigger create note action when Meta+K is pressed (Mac)', () => {
+  it('should trigger focus search action when Meta+K is pressed (Mac)', () => {
     const shortcuts = [
-      { key: 'k', ctrl: true, action: mockCreateNote },
+      { key: 'k', ctrl: true, action: mockFocusSearch },
+      { key: 'n', action: mockCreateNote },
       { key: '/', action: mockFocusSearch },
       { key: '?', shift: true, action: mockToggleHelp },
       { key: 'Escape', action: mockCloseModal }
@@ -65,6 +67,25 @@ describe('BoardPage Keyboard Shortcuts Integration', () => {
     const keydownEvent = new KeyboardEvent('keydown', {
       key: 'k',
       metaKey: true
+    })
+
+    window.dispatchEvent(keydownEvent)
+    expect(mockFocusSearch).toHaveBeenCalledTimes(1)
+  })
+
+  it('should trigger create note action when n is pressed', () => {
+    const shortcuts = [
+      { key: 'k', ctrl: true, action: mockFocusSearch },
+      { key: 'n', action: mockCreateNote },
+      { key: '/', action: mockFocusSearch },
+      { key: '?', shift: true, action: mockToggleHelp },
+      { key: 'Escape', action: mockCloseModal }
+    ]
+
+    renderHook(() => useKeyboardShortcuts(shortcuts))
+
+    const keydownEvent = new KeyboardEvent('keydown', {
+      key: 'n'
     })
 
     window.dispatchEvent(keydownEvent)

@@ -40,14 +40,24 @@ export default function Dashboard() {
   const [showUserDropdown, setShowUserDropdown] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [isMac, setIsMac] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
   
   const boardNameInputRef = useRef<HTMLInputElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   const shortcuts: KeyboardShortcut[] = [
     {
       key: 'k',
       ctrl: true,
+      action: () => {
+        searchInputRef.current?.focus()
+        searchInputRef.current?.select()
+      },
+      description: 'Focus search'
+    },
+    {
+      key: 'n',
       action: () => {
         setShowAddBoard(true)
         setTimeout(() => {
@@ -220,6 +230,11 @@ export default function Dashboard() {
     await signOut()
   }
 
+  const filteredBoards = boards.filter(board =>
+    board.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (board.description && board.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  )
+
   if (loading) {
     return <FullPageLoader message="Loading dashboard..." />
   }
@@ -295,11 +310,23 @@ export default function Dashboard() {
       <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {boards.length > 0 && (
           <div className="mb-6 sm:mb-8">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Boards</h2>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Manage your organization&apos;s boards
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Boards</h2>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
+                  Manage your organization&apos;s boards
+                </p>
+              </div>
+              <div className="w-full sm:w-64">
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search boards..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -368,26 +395,28 @@ export default function Dashboard() {
         {/* Enhanced Responsive Boards Grid */}
         {boards.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
-            {/* All Notes Card */}
-            <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-              <Link href="/boards/all-notes">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <Grid3x3 className="w-5 h-5 text-blue-600" />
-                        <CardTitle className="text-lg text-blue-900">All Notes</CardTitle>
+            {/* All Notes Card - always show */}
+            {(!searchTerm || "all notes".includes(searchTerm.toLowerCase()) || "view notes from all boards".includes(searchTerm.toLowerCase())) && (
+              <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
+                <Link href="/boards/all-notes">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <Grid3x3 className="w-5 h-5 text-blue-600" />
+                          <CardTitle className="text-lg text-blue-900">All Notes</CardTitle>
+                        </div>
+                        <CardDescription className="text-blue-700">
+                          View notes from all boards
+                        </CardDescription>
                       </div>
-                      <CardDescription className="text-blue-700">
-                        View notes from all boards
-                      </CardDescription>
                     </div>
-                  </div>
-                </CardHeader>
-              </Link>
-            </Card>
+                  </CardHeader>
+                </Link>
+              </Card>
+            )}
             
-            {boards.map((board) => (
+            {filteredBoards.map((board) => (
               <Card key={board.id} className="group hover:shadow-lg transition-shadow cursor-pointer">
                 <Link href={`/boards/${board.id}`}>
                   <CardHeader className="pb-3">
@@ -436,6 +465,21 @@ export default function Dashboard() {
             </Button>
           </div>
         )}
+
+        {boards.length > 0 && filteredBoards.length === 0 && searchTerm && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Grid3x3 className="w-12 h-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No boards found</h3>
+            <p className="text-gray-500 mb-4">
+              No boards match your search for &quot;{searchTerm}&quot;
+            </p>
+            <Button onClick={() => setSearchTerm("")} variant="outline">
+              Clear search
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Keyboard Shortcuts Modal */}
@@ -476,4 +520,4 @@ export default function Dashboard() {
 
     </div>
   )
-}  
+}        

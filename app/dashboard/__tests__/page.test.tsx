@@ -30,9 +30,11 @@ describe('Dashboard Keyboard Shortcuts Integration', () => {
     expect(window.addEventListener).toHaveBeenCalledWith('keydown', expect.any(Function))
   })
 
-  it('should trigger create board action when Ctrl+K is pressed', () => {
+  it('should trigger focus search action when Ctrl+K is pressed', () => {
+    const mockFocusSearch = jest.fn()
     const shortcuts = [
-      { key: 'k', ctrl: true, action: mockCreateBoard },
+      { key: 'k', ctrl: true, action: mockFocusSearch },
+      { key: 'n', action: mockCreateBoard },
       { key: '?', shift: true, action: mockToggleHelp },
       { key: 'Escape', action: mockCloseModal }
     ]
@@ -45,12 +47,14 @@ describe('Dashboard Keyboard Shortcuts Integration', () => {
     })
 
     window.dispatchEvent(keydownEvent)
-    expect(mockCreateBoard).toHaveBeenCalledTimes(1)
+    expect(mockFocusSearch).toHaveBeenCalledTimes(1)
   })
 
-  it('should trigger create board action when Meta+K is pressed (Mac)', () => {
+  it('should trigger focus search action when Meta+K is pressed (Mac)', () => {
+    const mockFocusSearch = jest.fn()
     const shortcuts = [
-      { key: 'k', ctrl: true, action: mockCreateBoard },
+      { key: 'k', ctrl: true, action: mockFocusSearch },
+      { key: 'n', action: mockCreateBoard },
       { key: '?', shift: true, action: mockToggleHelp },
       { key: 'Escape', action: mockCloseModal }
     ]
@@ -60,6 +64,24 @@ describe('Dashboard Keyboard Shortcuts Integration', () => {
     const keydownEvent = new KeyboardEvent('keydown', {
       key: 'k',
       metaKey: true
+    })
+
+    window.dispatchEvent(keydownEvent)
+    expect(mockFocusSearch).toHaveBeenCalledTimes(1)
+  })
+
+  it('should trigger create board action when n is pressed', () => {
+    const shortcuts = [
+      { key: 'k', ctrl: true, action: jest.fn() },
+      { key: 'n', action: mockCreateBoard },
+      { key: '?', shift: true, action: mockToggleHelp },
+      { key: 'Escape', action: mockCloseModal }
+    ]
+
+    renderHook(() => useKeyboardShortcuts(shortcuts))
+
+    const keydownEvent = new KeyboardEvent('keydown', {
+      key: 'n'
     })
 
     window.dispatchEvent(keydownEvent)
