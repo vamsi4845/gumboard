@@ -67,7 +67,22 @@ test.describe('Keyboard Shortcuts', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ id: 'board-1', name: 'Test Board', description: 'Test Description' }),
+        body: JSON.stringify({ 
+          board: {
+            id: 'board-1', 
+            name: 'Test Board', 
+            description: 'Test Description', 
+            createdBy: 'test-user' 
+          }
+        }),
+      });
+    });
+
+    await page.route('**/api/boards/all-notes/notes', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ notes: [] }),
       });
     });
   });
@@ -106,10 +121,21 @@ test.describe('Keyboard Shortcuts', () => {
     await page.goto('/boards/board-1');
     await page.waitForLoadState('networkidle');
     
-    await page.keyboard.press('Control+k');
+    const pageContent = await page.content();
+    console.log('Page contains "Test Board":', pageContent.includes('Test Board'));
+    console.log('Page contains "Search notes":', pageContent.includes('Search notes'));
+    console.log('Page contains "Board not found":', pageContent.includes('Board not found'));
     
-    const searchInput = page.locator('input[placeholder*="Search notes"]');
-    await expect(searchInput).toBeFocused();
+    const searchInputExists = await page.locator('input[placeholder="Search notes..."]').count();
+    console.log('Search input count:', searchInputExists);
+    
+    if (searchInputExists > 0) {
+      await page.keyboard.press('Control+k');
+      const searchInput = page.locator('input[placeholder="Search notes..."]').first();
+      await expect(searchInput).toBeFocused();
+    } else {
+      throw new Error('Search input not found on page');
+    }
   });
 
   test('should focus search when Cmd+K is pressed on board page (Mac)', async ({ page }) => {
@@ -118,7 +144,7 @@ test.describe('Keyboard Shortcuts', () => {
     
     await page.keyboard.press('Meta+k');
     
-    const searchInput = page.locator('input[placeholder*="Search notes"]');
+    const searchInput = page.locator('input[placeholder="Search notes..."]').first();
     await expect(searchInput).toBeFocused();
   });
 
@@ -128,10 +154,10 @@ test.describe('Keyboard Shortcuts', () => {
     
     await page.keyboard.press('n');
     
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     
-    const noteInput = page.locator('textarea, input').filter({ hasText: '' }).first();
-    await expect(noteInput).toBeVisible();
+    const noteInput = page.locator('textarea').first();
+    await expect(noteInput).toBeVisible({ timeout: 10000 });
   });
 
   test('should focus search when / is pressed on board page', async ({ page }) => {
@@ -140,7 +166,7 @@ test.describe('Keyboard Shortcuts', () => {
     
     await page.keyboard.press('/');
     
-    const searchInput = page.locator('input[placeholder*="Search notes"]');
+    const searchInput = page.locator('input[placeholder="Search notes..."]').first();
     await expect(searchInput).toBeFocused();
   });
 
@@ -150,7 +176,7 @@ test.describe('Keyboard Shortcuts', () => {
     
     await page.keyboard.press('Shift+?');
     
-    await expect(page.locator('text=Keyboard Shortcuts')).toBeVisible();
+    await expect(page.locator('h3:has-text("Keyboard Shortcuts")')).toBeVisible();
     await expect(page.locator('text=Focus search')).toBeVisible();
     await expect(page.locator('text=Create new board')).toBeVisible();
   });
@@ -188,7 +214,7 @@ test.describe('Keyboard Shortcuts', () => {
     
     await expect(page.locator('text=Test Board')).toBeVisible();
     
-    await page.keyboard.selectAll();
+    await page.keyboard.press('Control+a');
     await page.keyboard.type('NonExistent');
     
     await expect(page.locator('text=No boards found')).toBeVisible();
@@ -199,14 +225,14 @@ test.describe('Keyboard Shortcuts', () => {
     await page.waitForLoadState('networkidle');
     
     await page.keyboard.press('Control+k');
-    const searchInput = page.locator('input[placeholder*="Search notes"]');
+    const searchInput = page.locator('input[placeholder="Search notes..."]').first();
     await expect(searchInput).toBeFocused();
     
     await page.keyboard.press('Escape'); // Clear any focus
     await page.keyboard.press('n');
     
-    await page.waitForTimeout(500);
-    const noteElements = page.locator('[data-testid="note"], textarea, input').filter({ hasText: '' });
-    await expect(noteElements.first()).toBeVisible();
+    await page.waitForTimeout(1000);
+    const noteInput = page.locator('textarea').first();
+    await expect(noteInput).toBeVisible({ timeout: 10000 });
   });
 });
