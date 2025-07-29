@@ -17,6 +17,7 @@ interface User {
   organization: {
     id: string
     name: string
+    slackWebhookUrl?: string | null
     members: {
       id: string
       name: string | null
@@ -53,6 +54,7 @@ export default function OrganizationSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [orgName, setOrgName] = useState("")
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("")
   const [inviteEmail, setInviteEmail] = useState("")
   const [invites, setInvites] = useState<OrganizationInvite[]>([])
   const [inviting, setInviting] = useState(false)
@@ -77,6 +79,7 @@ export default function OrganizationSettingsPage() {
         const userData = await response.json()
         setUser(userData)
         setOrgName(userData.organization?.name || "")
+        setSlackWebhookUrl(userData.organization?.slackWebhookUrl || "")
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
@@ -125,6 +128,7 @@ export default function OrganizationSettingsPage() {
         },
         body: JSON.stringify({
           name: orgName,
+          slackWebhookUrl: slackWebhookUrl,
         }),
       })
 
@@ -358,6 +362,43 @@ export default function OrganizationSettingsPage() {
               title={!user?.isAdmin ? "Only admins can update organization settings" : undefined}
             >
               {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Slack Integration */}
+      <Card className="p-6">
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Slack Integration</h3>
+            <p className="text-gray-600">Configure Slack notifications for notes and todos.</p>
+          </div>
+
+          <div>
+            <Label htmlFor="slackWebhookUrl">Slack Webhook URL</Label>
+            <Input
+              id="slackWebhookUrl"
+              type="url"
+              value={slackWebhookUrl}
+              onChange={(e) => setSlackWebhookUrl(e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+              className="mt-1"
+              disabled={!user?.isAdmin}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Create a webhook URL in your Slack workspace to receive notifications when notes and todos are created or completed.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t">
+            <Button 
+              onClick={handleSaveOrganization}
+              disabled={saving || (orgName === user?.organization?.name && slackWebhookUrl === (user?.organization?.slackWebhookUrl || "")) || !user?.isAdmin}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              title={!user?.isAdmin ? "Only admins can update organization settings" : undefined}
+            >
+              {saving ? "Saving..." : "Save changes"}
             </Button>
           </div>
         </div>
@@ -620,4 +661,4 @@ export default function OrganizationSettingsPage() {
       </Card>
     </div>
   )
-} 
+}    

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { sendSlackMessage, formatNoteForSlack } from "@/lib/slack"
 
 // Get all notes for a board
 export async function GET(
@@ -128,9 +129,25 @@ export async function POST(
       }
     })
 
+    if (user.organization?.slackWebhookUrl && content?.trim()) {
+      const slackMessage = formatNoteForSlack(note, board.name, user.name || user.email)
+      const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
+        text: slackMessage,
+        username: 'Gumboard',
+        icon_emoji: ':clipboard:'
+      })
+
+      if (messageId) {
+        await db.note.update({
+          where: { id: note.id },
+          data: { slackMessageId: messageId }
+        })
+      }
+    }
+
     return NextResponse.json({ note }, { status: 201 })
   } catch (error) {
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}  
