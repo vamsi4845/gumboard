@@ -686,11 +686,11 @@ export default function BoardPage({
     >();
 
     notes.forEach((note) => {
-      if (!authorsMap.has(note.user.id)) {
+      if (note.user && note.user.id && !authorsMap.has(note.user.id)) {
         authorsMap.set(note.user.id, {
           id: note.user.id,
-          name: note.user.name || note.user.email.split("@")[0],
-          email: note.user.email,
+          name: note.user.name || note.user.email?.split("@")[0] || "Unknown",
+          email: note.user.email || "",
         });
       }
     });
@@ -721,7 +721,7 @@ export default function BoardPage({
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filteredNotes = filteredNotes.filter((note) => {
-        const authorName = (note.user.name || note.user.email).toLowerCase();
+        const authorName = (note.user?.name || note.user?.email || "").toLowerCase();
         const noteContent = note.content.toLowerCase();
         return authorName.includes(search) || noteContent.includes(search);
       });
@@ -2596,4 +2596,4 @@ export default function BoardPage({
       )}
     </div>
   );
-}          
+}            
