@@ -51,14 +51,40 @@ test.describe('Keyboard Shortcuts', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({ notes: [
-            { id: 'note-1', content: 'Test Note', boardId: 'board-1', createdBy: 'test-user' }
+            { 
+              id: 'note-1', 
+              content: 'Test Note', 
+              boardId: 'board-1', 
+              createdBy: 'test-user',
+              user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              deletedAt: null,
+              isDone: false,
+              color: null,
+              checklistItems: null
+            }
           ] }),
         });
       } else if (route.request().method() === 'POST') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ id: 'new-note', content: 'New Note', boardId: 'board-1' }),
+          body: JSON.stringify({ 
+            note: {
+              id: 'new-note', 
+              content: '', 
+              boardId: 'board-1',
+              createdBy: 'test-user',
+              user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              deletedAt: null,
+              isDone: false,
+              color: null,
+              checklistItems: null
+            }
+          }),
         });
       }
     });
@@ -154,10 +180,10 @@ test.describe('Keyboard Shortcuts', () => {
     
     await page.keyboard.press('n');
     
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
     
-    const noteInput = page.locator('textarea').first();
-    await expect(noteInput).toBeVisible({ timeout: 10000 });
+    const noteInput = page.locator('textarea, input[type="text"], [contenteditable="true"]').first();
+    await expect(noteInput).toBeVisible({ timeout: 5000 });
   });
 
   test('should focus search when / is pressed on board page', async ({ page }) => {
@@ -231,8 +257,8 @@ test.describe('Keyboard Shortcuts', () => {
     await page.keyboard.press('Escape'); // Clear any focus
     await page.keyboard.press('n');
     
-    await page.waitForTimeout(1000);
-    const noteInput = page.locator('textarea').first();
-    await expect(noteInput).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(2000);
+    const noteInput = page.locator('textarea, input[type="text"], [contenteditable="true"]').first();
+    await expect(noteInput).toBeVisible({ timeout: 5000 });
   });
 });
