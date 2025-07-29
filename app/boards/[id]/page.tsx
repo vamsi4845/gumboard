@@ -1668,7 +1668,7 @@ export default function BoardPage({
               }}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
             >
-              <Plus className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
             </Button>
 
             {/* User Dropdown */}
@@ -2382,7 +2382,7 @@ export default function BoardPage({
                       }
                     >
                       <div className="bg-white rounded-full w-8 h-8 flex items-center justify-center">
-                        <Plus className="w-4 h-4 text-blue-500" />
+                        <Pencil className="w-4 h-4 text-blue-500" />
                       </div>
                     </button>
                   </div>
@@ -2465,7 +2465,7 @@ export default function BoardPage({
               }}
               className="flex items-center space-x-2"
             >
-              <Plus className="w-4 h-4" />
+              <Pencil className="w-4 h-4" />
               <span>Add Your First Note</span>
             </Button>
           </div>
