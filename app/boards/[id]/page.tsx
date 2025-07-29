@@ -2166,7 +2166,14 @@ export default function BoardPage({
                 <div className="flex-1 min-h-0">
                   <textarea
                     value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setEditContent(newValue);
+                      
+                      if (newValue.includes("[ ]") && !note.isChecklist) {
+                        handleConvertToChecklist(note.id);
+                      }
+                    }}
                     className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7"
                     placeholder="Enter note content..."
                     onBlur={() => handleUpdateNote(note.id, editContent)}
