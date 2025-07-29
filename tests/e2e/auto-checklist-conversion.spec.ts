@@ -99,16 +99,57 @@ test.describe('Auto Checklist Conversion', () => {
   });
 
   test('should auto-convert note to checklist when typing [ ]', async ({ page }) => {
-    let conversionCalled = false;
-    let convertedNote = null;
+    let noteCreated = false;
+    let noteContentUpdated = false;
+    let noteConvertedToChecklist = false;
+    let capturedNoteData: any = null;
+    let capturedContentData: any = null;
+    let capturedChecklistData: any = null;
+
+    await page.route('**/api/boards/test-board/notes', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            notes: [],
+          }),
+        });
+      } else if (route.request().method() === 'POST') {
+        const postData = await route.request().postDataJSON();
+        noteCreated = true;
+        capturedNoteData = postData;
+        
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            note: {
+              id: 'new-note-id',
+              content: '',
+              color: '#fef3c7',
+              done: false,
+              isChecklist: false,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              user: {
+                id: 'test-user',
+                name: 'Test User',
+                email: 'test@example.com',
+              },
+            },
+          }),
+        });
+      }
+    });
 
     await page.route('**/api/boards/test-board/notes/new-note-id', async (route) => {
       if (route.request().method() === 'PUT') {
         const requestBody = await route.request().postDataJSON();
         
         if (requestBody.isChecklist) {
-          conversionCalled = true;
-          convertedNote = requestBody;
+          noteConvertedToChecklist = true;
+          capturedChecklistData = requestBody;
           
           await route.fulfill({
             status: 200,
@@ -131,6 +172,30 @@ test.describe('Auto Checklist Conversion', () => {
               },
             }),
           });
+        } else {
+          noteContentUpdated = true;
+          capturedContentData = requestBody;
+          
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              note: {
+                id: 'new-note-id',
+                content: requestBody.content || '',
+                color: '#fef3c7',
+                done: false,
+                isChecklist: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                user: {
+                  id: 'test-user',
+                  name: 'Test User',
+                  email: 'test@example.com',
+                },
+              },
+            }),
+          });
         }
       }
     });
@@ -138,15 +203,40 @@ test.describe('Auto Checklist Conversion', () => {
     await page.goto('/boards/test-board');
     
     await page.click('button:has-text("Add Your First Note")');
+    expect(noteCreated).toBe(true);
+    
+    expect(capturedNoteData).not.toBeNull();
+    expect(capturedNoteData.content).toBe('');
     
     const textarea = page.locator('textarea[placeholder*="Enter note content"]');
-    await textarea.fill('Task 1\nTask 2\n[ ]');
+    await textarea.fill('stuff to do');
+    await textarea.press('Control+Enter'); // Save content using keyboard shortcut
     
     await page.waitForTimeout(500);
     
-    expect(conversionCalled).toBe(true);
-    expect(convertedNote).not.toBeNull();
-    expect(convertedNote!.isChecklist).toBe(true);
+    expect(noteContentUpdated).toBe(true);
+    expect(capturedContentData).not.toBeNull();
+    expect(capturedContentData.content).toBe('stuff to do');
+    expect(capturedContentData.isChecklist).toBeUndefined();
+    
+    await page.hover('.group');
+    await page.click('button:has(.w-3.h-3)');
+    
+    const editTextarea = page.locator('textarea[placeholder*="Enter note content"]');
+    await editTextarea.fill('[ ] stuff to do');
+    
+    await page.waitForTimeout(500);
+    
+    expect(noteConvertedToChecklist).toBe(true);
+    expect(capturedChecklistData).not.toBeNull();
+    expect(capturedChecklistData.isChecklist).toBe(true);
+    expect(capturedChecklistData.checklistItems).toBeDefined();
+    expect(Array.isArray(capturedChecklistData.checklistItems)).toBe(true);
+    
+    const checklistItems = capturedChecklistData.checklistItems;
+    expect(checklistItems).toHaveLength(1);
+    expect(checklistItems[0].content).toBe('stuff to do');
+    expect(checklistItems[0].checked).toBe(false);
   });
 
   test('should auto-convert with existing content', async ({ page }) => {
