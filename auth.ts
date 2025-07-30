@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import Resend from "next-auth/providers/resend"
 import { PrismaClient } from "@prisma/client"
-import { getEmailFrom } from "@/lib/email";
+
 
 const prisma = new PrismaClient()
 
@@ -10,8 +10,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     Resend({
-      // Dynamically sets the sender email using the EMAIL_FROM env variable.
-      from: getEmailFrom(),
+      from: process.env.EMAIL_FROM!,
     }),
   ],
   pages: {

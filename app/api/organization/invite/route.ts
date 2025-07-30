@@ -2,7 +2,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
-import { getEmailFrom } from "@/lib/email";
+
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
 
@@ -90,8 +90,7 @@ export async function POST(request: NextRequest) {
     // Send invite email
     try {
       await resend.emails.send({
-        // Dynamically sets the sender email using the EMAIL_FROM env variable.
-        from: getEmailFrom(),
+        from: process.env.EMAIL_FROM!,
         to: cleanEmail,
         subject: `${session.user.name} invited you to join ${user.organization.name}`,
         html: `

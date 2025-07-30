@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { Resend } from "resend"
 import OrganizationSetupForm from "./form"
-import { getEmailFrom } from "@/lib/email";
+
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
 
@@ -53,8 +53,7 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
 
         // Send invite email using the invite ID as token
         await resend.emails.send({
-        // Dynamically sets the sender email using the EMAIL_FROM env variable.
-          from: getEmailFrom(),
+          from: process.env.EMAIL_FROM!,
           to: email,
           subject: `${session.user.name} invited you to join ${orgName}`,
           html: `
