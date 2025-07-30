@@ -52,7 +52,7 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
         });
 
         await resend.emails.send({
-          from: "noreply@gumboard.com",
+          from: process.env.EMAIL_FROM!,
           to: email,
           subject: `${session.user.name} invited you to join ${orgName}`,
           html: `
