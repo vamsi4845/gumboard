@@ -4,6 +4,30 @@ interface SlackMessage {
   icon_emoji?: string
 }
 
+export function hasValidContent(content: string | null | undefined): boolean {
+  const isValid = Boolean(content && content.trim().length > 0)
+  console.log(`[Slack] hasValidContent check: "${content}" -> ${isValid}`)
+  return isValid
+}
+
+const notificationDebounce = new Map<string, number>()
+const DEBOUNCE_DURATION = 1000
+
+export function shouldSendNotification(userId: string, boardId: string): boolean {
+  const key = `${userId}-${boardId}`
+  const now = Date.now()
+  const lastNotification = notificationDebounce.get(key)
+  
+  if (lastNotification && now - lastNotification < DEBOUNCE_DURATION) {
+    console.log(`[Slack] Debounced notification for ${key} (${now - lastNotification}ms ago)`)
+    return false
+  }
+  
+  notificationDebounce.set(key, now)
+  console.log(`[Slack] Allowing notification for ${key}`)
+  return true
+}
+
 export async function sendSlackMessage(webhookUrl: string, message: SlackMessage): Promise<string | null> {
   try {
     const response = await fetch(webhookUrl, {

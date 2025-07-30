@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { sendSlackMessage, formatNoteForSlack } from "@/lib/slack"
+import { sendSlackMessage, formatNoteForSlack, hasValidContent, shouldSendNotification } from "@/lib/slack"
 import { NOTE_COLORS } from "@/lib/constants"
 
 // Get all notes for a board
@@ -118,7 +118,7 @@ export async function POST(
       }
     })
 
-    if (user.organization?.slackWebhookUrl && content?.trim()) {
+    if (user.organization?.slackWebhookUrl && hasValidContent(content) && shouldSendNotification(session.user.id, boardId)) {
       const slackMessage = formatNoteForSlack(note, board.name, user.name || user.email)
       const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
         text: slackMessage,
@@ -139,4 +139,4 @@ export async function POST(
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}  
+}    
