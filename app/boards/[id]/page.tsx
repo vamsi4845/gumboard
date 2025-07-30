@@ -1381,71 +1381,73 @@ export default function BoardPage({
   };
 
   return (
-    <div className="min-h-screen max-w-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+    <div className="min-h-screen max-w-screen bg-background dark:bg-zinc-950">
+      <div className="bg-card dark:bg-zinc-900 border-b border-border dark:border-zinc-800 shadow-sm">
         <div className="flex justify-between items-center h-16">
-          {/* Left side - Company name and board selector */}
           <div className="flex items-center space-x-3">
             {/* Company Name */}
             <Link
               href="/dashboard"
               className="flex-shrink-0 pl-4 sm:pl-2 lg:pl-4"
             >
-              <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
+              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                Gumboard
+              </h1>
             </Link>
 
             {/* Board Selector Dropdown */}
             <div className="relative board-dropdown hidden md:block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-                className="flex items-center border border-gray-300 space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-3 py-2 cursor-pointer"
+                className="flex items-center border border-border dark:border-zinc-800 space-x-2 text-foreground dark:text-zinc-100 hover:text-foreground dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 rounded-md px-3 py-2 cursor-pointer"
               >
                 <div>
-                  <div className="text-sm font-semibold text-gray-900">
+                  <div className="text-sm font-semibold text-foreground dark:text-zinc-100">
                     {boardId === "all-notes" ? "All notes" : board?.name}
                   </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform ${
                     showBoardDropdown ? "rotate-180" : ""
-                  }`} />
+                  }`}
+                />
               </button>
 
               {showBoardDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-0 mt-2 w-64 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     {/* All Notes Option */}
                     <Link
                       href="/boards/all-notes"
-                      className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
+                      className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
                         boardId === "all-notes"
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700"
+                          ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                          : "text-foreground dark:text-zinc-100"
                       }`}
                       onClick={() => setShowBoardDropdown(false)}
                     >
                       <div className="font-medium">All notes</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
                         Notes from all boards
                       </div>
                     </Link>
                     {allBoards.length > 0 && (
-                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="border-t border-border dark:border-zinc-800 my-1"></div>
                     )}
                     {allBoards.map((b) => (
                       <Link
                         key={b.id}
                         href={`/boards/${b.id}`}
-                        className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
+                        className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
                           b.id === boardId
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                            : "text-foreground dark:text-zinc-100"
                         }`}
                         onClick={() => setShowBoardDropdown(false)}
                       >
                         <div className="font-medium">{b.name}</div>
                         {b.description && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
                             {b.description}
                           </div>
                         )}
@@ -1479,25 +1481,25 @@ export default function BoardPage({
                   if (isFilterDropDownOpen) {
                     setShowSortDropdown(false);
                   }
-                }} 
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                }}
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-border dark:border-zinc-800 rounded-md bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors"
               >
-                <User className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 truncate max-w-32">
+                <User className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
+                <span className="text-foreground dark:text-zinc-100 truncate max-w-32">
                   {selectedAuthor
                     ? uniqueAuthors.find((a) => a.id === selectedAuthor)
                         ?.name || "Unknown author"
                     : "All authors"}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                  className={`w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform ${
                     showAuthorDropdown ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {showAuthorDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-0 mt-2 w-64 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     <button
                       onClick={() => {
@@ -1505,13 +1507,13 @@ export default function BoardPage({
                         setShowAuthorDropdown(false);
                         updateURL(undefined, undefined, null);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 flex items-center space-x-3 ${
                         !selectedAuthor
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700"
+                          ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                          : "text-foreground dark:text-zinc-100"
                       }`}
                     >
-                      <User className="w-4 h-4 text-gray-500" />
+                      <User className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
                       <span className="font-medium">All authors</span>
                     </button>
                     {uniqueAuthors.map((author) => (
@@ -1522,13 +1524,13 @@ export default function BoardPage({
                           setShowAuthorDropdown(false);
                           updateURL(undefined, undefined, author.id);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 flex items-center space-x-3 ${
                           selectedAuthor === author.id
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                            : "text-foreground dark:text-zinc-100"
                         }`}
                       >
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 bg-blue-500 dark:bg-zinc-800 rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-xs font-medium text-white">
                             {author.name.charAt(0).toUpperCase()}
                           </span>
@@ -1537,7 +1539,7 @@ export default function BoardPage({
                           <div className="font-medium truncate">
                             {author.name}
                           </div>
-                          <div className="text-xs text-gray-500 truncate">
+                          <div className="text-xs text-muted-foreground dark:text-zinc-400 truncate">
                             {author.email}
                           </div>
                         </div>
@@ -1552,28 +1554,28 @@ export default function BoardPage({
             <div className="relative sort-dropdown hidden md:block">
               <button
                 onClick={() => {
-                  const isAuthorDropDownOpen = showAuthorDropdown; 
+                  const isAuthorDropDownOpen = showAuthorDropdown;
                   setShowSortDropdown(!showSortDropdown);
                   if (isAuthorDropDownOpen) {
                     setShowAuthorDropdown(false);
                   }
                 }}
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-border dark:border-zinc-800 rounded-md bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors"
               >
-                <ArrowUpDown className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 truncate max-w-32">
+                <ArrowUpDown className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
+                <span className="text-foreground dark:text-zinc-100 truncate max-w-32">
                   {SORT_OPTIONS.find((option) => option.value === sortBy)
                     ?.label || "Sort"}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                  className={`w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform ${
                     showSortDropdown ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {showSortDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute left-0 mt-2 w-64 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
                   <div className="py-1">
                     {SORT_OPTIONS.map((option) => (
                       <button
@@ -1588,14 +1590,14 @@ export default function BoardPage({
                             option.value
                           );
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
                           sortBy === option.value
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                            : "text-foreground dark:text-zinc-100"
                         }`}
                       >
                         <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
                           {option.description}
                         </div>
                       </button>
@@ -1619,10 +1621,10 @@ export default function BoardPage({
                     newShowDone
                   );
                 }}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`flex items-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors ${
                   showDoneNotes
-                    ? "border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700"
-                    : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                    ? "border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-zinc-900/70 hover:bg-blue-100 dark:hover:bg-zinc-900/80 text-blue-700 dark:text-blue-300"
+                    : "border-border dark:border-zinc-800 bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 text-foreground dark:text-zinc-100"
                 }`}
                 title={
                   showDoneNotes
@@ -1647,7 +1649,7 @@ export default function BoardPage({
             {/* Search Box */}
             <div className="relative hidden sm:block">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+                <Search className="h-4 w-4 text-muted-foreground dark:text-zinc-400" />
               </div>
               <input
                 type="text"
@@ -1657,7 +1659,7 @@ export default function BoardPage({
                   setSearchTerm(e.target.value);
                   updateURL(e.target.value);
                 }}
-                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                className="w-64 pl-10 pr-4 py-2 border border-border dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent text-sm bg-background dark:bg-zinc-900 text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-400"
               />
               {searchTerm && (
                 <button
@@ -1665,7 +1667,7 @@ export default function BoardPage({
                     setSearchTerm("");
                     updateURL("");
                   }}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-100"
                 >
                   ×
                 </button>
@@ -1689,9 +1691,9 @@ export default function BoardPage({
             <div className="relative user-dropdown">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 py-1"
+                className="flex items-center space-x-2 text-foreground dark:text-gray-200 hover:text-foreground dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 rounded-md px-2 py-1"
               >
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
                     {user?.name
                       ? user.name.charAt(0).toUpperCase()
@@ -1701,20 +1703,22 @@ export default function BoardPage({
                 <span className="text-sm font-medium hidden md:inline">
                   {user?.name?.split(" ")[0] || "User"}
                 </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground dark:text-gray-400 transition-transform ${
                     showUserDropdown ? "rotate-180" : ""
-                  }`} />
+                  }`}
+                />
               </button>
 
               {showUserDropdown && (
-                <div className="absolute right-0 mt-2 min-w-fit bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 min-w-fit bg-card dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
                   <div className="py-1">
-                    <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                    <div className="px-4 py-2 text-sm text-muted-foreground dark:text-gray-400 border-b border-border dark:border-gray-600">
                       {user?.email}
                     </div>
                     <Link
                       href="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center px-4 py-2 text-sm text-foreground dark:text-gray-200 hover:bg-accent dark:hover:bg-gray-700"
                       onClick={() => setShowUserDropdown(false)}
                     >
                       <Settings className="w-4 h-4 mr-2" />
@@ -1722,7 +1726,7 @@ export default function BoardPage({
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-gray-200 hover:bg-accent dark:hover:bg-gray-700"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Sign Out
@@ -1736,16 +1740,20 @@ export default function BoardPage({
       </div>
 
       {/* Mobile Board Title */}
-      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-3">
+      <div className="md:hidden bg-card dark:bg-gray-800 border-b border-border dark:border-gray-700 px-4 py-3 space-y-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-foreground dark:text-gray-200">
             {boardId === "all-notes" ? "All notes" : board?.name}
           </h2>
           {boardId === "all-notes" ? (
-            <p className="text-sm text-gray-500">Notes from all boards</p>
+            <p className="text-sm text-muted-foreground dark:text-gray-400">
+              Notes from all boards
+            </p>
           ) : (
             board?.description && (
-              <p className="text-sm text-gray-500">{board.description}</p>
+              <p className="text-sm text-muted-foreground dark:text-gray-400">
+                {board.description}
+              </p>
             )
           )}
         </div>
@@ -1753,7 +1761,7 @@ export default function BoardPage({
         {/* Mobile Search Box */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+            <Search className="h-4 w-4 text-muted-foreground dark:text-gray-400" />
           </div>
           <input
             type="text"
@@ -1763,7 +1771,7 @@ export default function BoardPage({
               setSearchTerm(e.target.value);
               updateURL(e.target.value);
             }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white shadow-sm"
+            className="w-full pl-10 pr-4 py-2 border border-border dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent text-sm bg-background dark:bg-gray-700 text-foreground dark:text-gray-200 placeholder:text-muted-foreground dark:placeholder:text-gray-400 shadow-sm"
           />
           {searchTerm && (
             <button
@@ -1771,7 +1779,7 @@ export default function BoardPage({
                 setSearchTerm("");
                 updateURL("");
               }}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground dark:text-gray-400 hover:text-foreground dark:hover:text-gray-200"
             >
               ×
             </button>
@@ -1796,11 +1804,11 @@ export default function BoardPage({
         <div className="md:hidden relative author-dropdown">
           <button
             onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
-            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-md bg-background dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
           >
             <div className="flex items-center space-x-2">
-              <User className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">
+              <User className="w-4 h-4 text-muted-foreground dark:text-gray-400" />
+              <span className="text-foreground dark:text-gray-200">
                 {selectedAuthor
                   ? uniqueAuthors.find((a) => a.id === selectedAuthor)?.name ||
                     "Unknown author"
@@ -1808,14 +1816,14 @@ export default function BoardPage({
               </span>
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-gray-500 transition-transform ${
+              className={`w-4 h-4 text-muted-foreground dark:text-gray-400 transition-transform ${
                 showAuthorDropdown ? "rotate-180" : ""
               }`}
             />
           </button>
 
           {showAuthorDropdown && (
-            <div className="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 right-0 mt-2 bg-background dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50 max-h-80 overflow-y-auto">
               <div className="py-1">
                 <button
                   onClick={() => {
@@ -1823,13 +1831,13 @@ export default function BoardPage({
                     setShowAuthorDropdown(false);
                     updateURL(undefined, undefined, null);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                  className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-gray-700 flex items-center space-x-3 ${
                     !selectedAuthor
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-gray-700"
+                      ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                      : "text-foreground dark:text-gray-200"
                   }`}
                 >
-                  <User className="w-4 h-4 text-gray-500" />
+                  <User className="w-4 h-4 text-muted-foreground dark:text-gray-400" />
                   <span className="font-medium">All authors</span>
                 </button>
                 {uniqueAuthors.map((author) => (
@@ -1840,20 +1848,20 @@ export default function BoardPage({
                       setShowAuthorDropdown(false);
                       updateURL(undefined, undefined, author.id);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-gray-700 flex items-center space-x-3 ${
                       selectedAuthor === author.id
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700"
+                        ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                        : "text-foreground dark:text-gray-200"
                     }`}
                   >
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-xs font-medium text-white">
                         {author.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-medium truncate">{author.name}</div>
-                      <div className="text-xs text-gray-500 truncate">
+                      <div className="text-xs text-muted-foreground dark:text-gray-400 truncate">
                         {author.email}
                       </div>
                     </div>
@@ -1868,24 +1876,24 @@ export default function BoardPage({
         <div className="md:hidden relative sort-dropdown">
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-md bg-background dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
           >
             <div className="flex items-center space-x-2">
-              <ArrowUpDown className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">
+              <ArrowUpDown className="w-4 h-4 text-muted-foreground dark:text-gray-400" />
+              <span className="text-foreground dark:text-gray-200">
                 {SORT_OPTIONS.find((option) => option.value === sortBy)
                   ?.label || "Sort"}
               </span>
             </div>
             <ChevronDown
-              className={`w-4 h-4 text-gray-500 transition-transform ${
+              className={`w-4 h-4 text-muted-foreground dark:text-gray-400 transition-transform ${
                 showSortDropdown ? "rotate-180" : ""
               }`}
             />
           </button>
 
           {showSortDropdown && (
-            <div className="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+            <div className="absolute left-0 right-0 mt-2 bg-background dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
               <div className="py-1">
                 {SORT_OPTIONS.map((option) => (
                   <button
@@ -1895,14 +1903,14 @@ export default function BoardPage({
                       setShowSortDropdown(false);
                       updateURL(undefined, undefined, undefined, option.value);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-gray-700 ${
                       sortBy === option.value
-                        ? "bg-blue-50 text-blue-700"
-                        : "text-gray-700"
+                        ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+                        : "text-foreground dark:text-gray-200"
                     }`}
                   >
                     <div className="font-medium">{option.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-muted-foreground dark:text-gray-400 mt-1">
                       {option.description}
                     </div>
                   </button>
@@ -1912,7 +1920,6 @@ export default function BoardPage({
           )}
         </div>
 
-        {/* Mobile Show/Hide Completed Notes Toggle */}
         <div className="md:hidden">
           <button
             onClick={() => {
@@ -1926,10 +1933,10 @@ export default function BoardPage({
                 newShowDone
               );
             }}
-            className={`w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+            className={`w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors ${
               showDoneNotes
-                ? "border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700"
-                : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                ? "border-blue-300 dark:border-zinc-700 bg-blue-50 dark:bg-zinc-900 hover:bg-blue-100 dark:hover:bg-zinc-800 text-blue-700 dark:text-zinc-100"
+                : "border-border dark:border-gray-600 bg-background dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 text-foreground dark:text-gray-200"
             }`}
           >
             {showDoneNotes ? (
@@ -1943,11 +1950,10 @@ export default function BoardPage({
           </button>
         </div>
       </div>
-
       {/* Board Area */}
       <div
         ref={boardRef}
-        className="relative w-full bg-gray-50"
+        className="relative w-full bg-gray-50 dark:bg-zinc-950"
         style={{
           height: calculateBoardHeight(),
           minHeight: "calc(100vh - 64px)", // Account for header height
@@ -1960,7 +1966,7 @@ export default function BoardPage({
           selectedAuthor ||
           sortBy !== "created-desc" ||
           showDoneNotes) && (
-          <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 text-sm text-blue-700">
+          <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/50 border-b border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
             <div className="flex flex-wrap items-center gap-2">
               <span>
                 {filteredNotes.length === 1
@@ -1968,19 +1974,19 @@ export default function BoardPage({
                   : `${filteredNotes.length} notes found`}
               </span>
               {searchTerm && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
                   Search: &quot;{searchTerm}&quot;
                 </span>
               )}
               {selectedAuthor && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
                   Author:{" "}
                   {uniqueAuthors.find((a) => a.id === selectedAuthor)?.name ||
                     "Unknown"}
                 </span>
               )}
               {(dateRange.startDate || dateRange.endDate) && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
                   Date:{" "}
                   {dateRange.startDate
                     ? dateRange.startDate.toLocaleDateString("en-US", {
@@ -2000,14 +2006,14 @@ export default function BoardPage({
                 </span>
               )}
               {sortBy !== "created-desc" && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
                   Sort:{" "}
                   {SORT_OPTIONS.find((option) => option.value === sortBy)
                     ?.label || "Custom"}
                 </span>
               )}
               {showDoneNotes && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
                   Completed notes shown
                 </span>
               )}
@@ -2026,7 +2032,7 @@ export default function BoardPage({
                     false
                   );
                 }}
-                className="text-blue-600 hover:text-blue-800 text-xs underline"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-xs underline"
               >
                 Clear all filters
               </button>
@@ -2039,11 +2045,16 @@ export default function BoardPage({
           {layoutNotes.map((note) => (
             <div
               key={note.id}
-              className={`absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 box-border ${
+              className={`absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border ${
                 note.done ? "opacity-80" : ""
               }`}
               style={{
-                backgroundColor: note.color,
+                backgroundColor:
+                  typeof window !== "undefined" &&
+                  window.matchMedia &&
+                  window.matchMedia("(prefers-color-scheme: dark)").matches
+                    ? `${note.color}20`
+                    : note.color,
                 left: note.x,
                 top: note.y,
                 width: note.width,
@@ -2061,22 +2072,22 @@ export default function BoardPage({
               {/* User Info Header */}
               <div className="flex items-start justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 bg-white bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
-                    <span className="text-sm font-semibold text-gray-700">
+                  <div className="w-7 h-7 bg-white bg-opacity-40 dark:bg-gray-800 dark:bg-opacity-40 rounded-full flex items-center justify-center shadow-sm">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                       {note.user.name
                         ? note.user.name.charAt(0).toUpperCase()
                         : note.user.email.charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold text-gray-700 truncate max-w-20">
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-200 truncate max-w-20">
                       {note.user.name
                         ? note.user.name.split(" ")[0]
                         : note.user.email.split("@")[0]}
                     </span>
                     <div className="flex flex-col">
                       {!note.isChecklist && (
-                        <span className="text-xs text-gray-500 opacity-70">
+                        <span className="text-xs text-gray-500 dark:text-gray-400 opacity-70">
                           {new Date(note.createdAt).toLocaleDateString(
                             "en-US",
                             {
@@ -2092,7 +2103,7 @@ export default function BoardPage({
                         </span>
                       )}
                       {boardId === "all-notes" && note.board && (
-                        <span className="text-xs text-blue-600 opacity-80 font-medium truncate max-w-20">
+                        <span className="text-xs text-blue-600 dark:text-blue-400 opacity-80 font-medium truncate max-w-20">
                           {note.board.name}
                         </span>
                       )}
@@ -2110,7 +2121,7 @@ export default function BoardPage({
                             setEditingNote(note.id);
                             setEditContent(note.content);
                           }}
-                          className="p-1 text-gray-600 hover:text-blue-600 rounded"
+                          className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
                         >
                           <Edit3 className="w-3 h-3" />
                         </button>
@@ -2120,7 +2131,7 @@ export default function BoardPage({
                           e.stopPropagation();
                           handleDeleteNote(note.id);
                         }}
-                        className="p-1 text-gray-600 hover:text-red-600 rounded"
+                        className="p-1 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
@@ -2143,8 +2154,8 @@ export default function BoardPage({
                           relative w-5 h-5 rounded-md border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 z-10
                           ${
                             note.done
-                              ? "bg-green-500 border-green-500 text-white shadow-lg opacity-100"
-                              : "bg-white bg-opacity-60 border-gray-400 hover:border-green-400 hover:bg-green-50 opacity-30 group-hover:opacity-100"
+                              ? "bg-green-500 dark:bg-green-600 border-green-500 dark:border-green-600 text-white shadow-lg opacity-100"
+                              : "bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 border-gray-400 dark:border-gray-500 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 opacity-30 group-hover:opacity-100"
                           }
                         `}
                         title={
@@ -2185,12 +2196,12 @@ export default function BoardPage({
                     onChange={(e) => {
                       const newValue = e.target.value;
                       setEditContent(newValue);
-                      
+
                       if (newValue.includes("[ ]") && !note.isChecklist) {
                         handleConvertToChecklist(note.id);
                       }
                     }}
-                    className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7"
+                    className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 text-gray-800 dark:text-gray-200"
                     placeholder="Enter note content..."
                     onBlur={() => handleUpdateNote(note.id, editContent)}
                     onKeyDown={(e) => {
@@ -2219,7 +2230,7 @@ export default function BoardPage({
                   {note.checklistItems?.map((item) => (
                     <div
                       key={item.id}
-                      className={`flex items-center group/item hover:bg-white hover:bg-opacity-40 rounded pr-3 py-1 -ml-0 -mr-0 transition-all duration-200 ${
+                      className={`flex items-center group/item hover:bg-white dark:hover:bg-gray-800 hover:bg-opacity-40 dark:hover:bg-opacity-40 rounded pr-3 py-1 -ml-0 -mr-0 transition-all duration-200 ${
                         animatingItems.has(item.id) ? "animate-pulse" : ""
                       }`}
                     >
@@ -2232,8 +2243,8 @@ export default function BoardPage({
                           relative w-4 h-4 rounded border-2 transition-all duration-200 flex items-center justify-center cursor-pointer hover:scale-110 mr-3 flex-shrink-0 ml-2
                           ${
                             item.checked
-                              ? "bg-green-500 border-green-500 text-white"
-                              : "bg-white bg-opacity-60 border-gray-400 hover:border-green-400"
+                              ? "bg-green-500 dark:bg-green-600 border-green-500 dark:border-green-600 text-white"
+                              : "bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 border-gray-400 dark:border-gray-500 hover:border-green-400 dark:hover:border-green-500"
                           }
                         `}
                       >
@@ -2261,7 +2272,7 @@ export default function BoardPage({
                           onChange={(e) =>
                             setEditingChecklistItemContent(e.target.value)
                           }
-                          className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800"
+                          className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
                           onBlur={() =>
                             handleEditChecklistItem(
                               note.id,
@@ -2297,8 +2308,8 @@ export default function BoardPage({
                         <span
                           className={`flex-1 text-sm leading-6 cursor-pointer ${
                             item.checked
-                              ? "text-gray-500 line-through opacity-70"
-                              : "text-gray-800"
+                              ? "text-gray-500 dark:text-gray-400 line-through opacity-70"
+                              : "text-gray-800 dark:text-gray-200"
                           }`}
                           onClick={() => {
                             if (user?.id === note.user.id || user?.isAdmin) {
@@ -2320,7 +2331,7 @@ export default function BoardPage({
                           onClick={() =>
                             handleDeleteChecklistItem(note.id, item.id)
                           }
-                          className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-gray-600 hover:text-red-600 rounded ml-2"
+                          className="opacity-0 group-hover/item:opacity-100 transition-opacity p-1 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded ml-2"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -2330,15 +2341,15 @@ export default function BoardPage({
 
                   {/* Add new item input */}
                   {addingChecklistItem === note.id && (
-                    <div className="flex items-center group/item hover:bg-white hover:bg-opacity-40 rounded-2xl pl-6 pr-3 py-2 -ml-6 -mr-3 mt-2 transition-all duration-200">
-                      <div className="w-4 h-4 rounded border-2 border-gray-400 mr-3 flex-shrink-0 bg-white bg-opacity-60 ml-2"></div>
+                    <div className="flex items-center group/item hover:bg-white dark:hover:bg-gray-800 hover:bg-opacity-40 dark:hover:bg-opacity-40 rounded-2xl pl-6 pr-3 py-2 -ml-6 -mr-3 mt-2 transition-all duration-200">
+                      <div className="w-4 h-4 rounded border-2 border-gray-400 dark:border-gray-500 mr-3 flex-shrink-0 bg-white dark:bg-gray-800 bg-opacity-60 dark:bg-opacity-60 ml-2"></div>
                       <input
                         type="text"
                         value={newChecklistItemContent}
                         onChange={(e) =>
                           setNewChecklistItemContent(e.target.value)
                         }
-                        className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 placeholder-gray-500"
+                        className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
                         placeholder="Add new item..."
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
@@ -2373,8 +2384,8 @@ export default function BoardPage({
                   <p
                     className={`text-base whitespace-pre-wrap break-words leading-7 m-0 p-0 flex-1 transition-all duration-200 ${
                       note.done
-                        ? "text-gray-500 opacity-70 line-through"
-                        : "text-gray-800"
+                        ? "text-gray-500 dark:text-gray-400 opacity-70 line-through"
+                        : "text-gray-800 dark:text-gray-200"
                     }`}
                   >
                     {note.content}
@@ -2382,7 +2393,6 @@ export default function BoardPage({
                 </div>
               )}
 
-              {/* Add checklist button - positioned at center bottom of note */}
               {(user?.id === note.user.id || user?.isAdmin) &&
                 addingChecklistItem !== note.id && (
                   <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
@@ -2394,9 +2404,15 @@ export default function BoardPage({
                           handleConvertToChecklist(note.id);
                         }
                       }}
-                      className="rounded-full w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-white"
+                      className="rounded-full w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-white dark:border-gray-800"
                       style={{
-                        backgroundColor: note.color,
+                        backgroundColor:
+                          typeof window !== "undefined" &&
+                          window.matchMedia &&
+                          window.matchMedia("(prefers-color-scheme: dark)")
+                            .matches
+                            ? `${note.color}20`
+                            : note.color,
                       }}
                       title={
                         note.isChecklist
@@ -2404,8 +2420,8 @@ export default function BoardPage({
                           : "Convert to checklist"
                       }
                     >
-                      <div className="bg-white rounded-full w-8 h-8 flex items-center justify-center">
-                        <Pencil className="w-4 h-4 text-blue-500" />
+                      <div className="bg-white dark:bg-gray-900 rounded-full w-8 h-8 flex items-center justify-center">
+                        <Pencil className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                       </div>
                     </button>
                   </div>
@@ -2422,8 +2438,8 @@ export default function BoardPage({
             dateRange.endDate ||
             selectedAuthor ||
             !showDoneNotes) && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-              <Search className="w-12 h-12 mb-4 text-gray-400" />
+            <div className="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+              <Search className="w-12 h-12 mb-4 text-gray-400 dark:text-gray-500" />
               <div className="text-xl mb-2">No notes found</div>
               <div className="text-sm mb-4 text-center">
                 No notes match your current filters
@@ -2473,7 +2489,7 @@ export default function BoardPage({
           )}
 
         {notes.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-96 text-gray-500">
+          <div className="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
             <div className="text-xl mb-2">No notes yet</div>
             <div className="text-sm mb-4">
               Click &ldquo;Add Note&rdquo; to get started
