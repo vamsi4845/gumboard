@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { updateSlackMessage, formatNoteForSlack } from "@/lib/slack"
+import { updateSlackMessage, formatNoteForSlack, sendSlackMessage } from "@/lib/slack"
 
 // Update a note
 export async function PUT(
@@ -93,6 +93,29 @@ export async function PUT(
       }
     })
 
+    // Send Slack notification if content is being added to a previously empty note
+    if (content !== undefined && user.organization?.slackWebhookUrl && !note.slackMessageId) {
+      const wasEmpty = !note.content || note.content.trim() === ''
+      const hasContent = content && content.trim() !== ''
+      
+      if (wasEmpty && hasContent) {
+        const slackMessage = formatNoteForSlack(updatedNote, updatedNote.board.name, user.name || user.email || 'Unknown User')
+        const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
+          text: slackMessage,
+          username: 'Gumboard',
+          icon_emoji: ':clipboard:'
+        })
+
+        if (messageId) {
+          await db.note.update({
+            where: { id: noteId },
+            data: { slackMessageId: messageId }
+          })
+        }
+      }
+    }
+
+    // Update existing Slack message when done status changes
     if (done !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
       const originalMessage = formatNoteForSlack(note, note.board.name, note.user?.name || note.user?.email || 'Unknown User')
       await updateSlackMessage(user.organization.slackWebhookUrl, originalMessage, done)
