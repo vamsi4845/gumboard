@@ -55,7 +55,7 @@ export default async function HomePage() {
               </p>
             </div>
             
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
               <Card className="text-center">
                 <CardContent className="pt-6">
                   <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -106,8 +106,17 @@ export default async function HomePage() {
           >
             Antiwork
           </Link>
+          {" • "}
+          <Link
+            href="https://github.com/antiwork/gumboard"
+            className="underline hover:text-slate-900"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View on GitHub
+          </Link>
         </div>
       </footer>
     </div>
   )
-}                                                                                    
+}                                                                                                                                                                                                                                                                                                                                                
