@@ -26,9 +26,11 @@ export async function sendSlackMessage(webhookUrl: string, message: SlackMessage
   }
 }
 
-export async function updateSlackMessage(webhookUrl: string, originalText: string, completed: boolean): Promise<void> {
+export async function updateSlackMessage(webhookUrl: string, originalText: string, completed: boolean, boardName: string, userName: string): Promise<void> {
   try {
-    const updatedText = completed ? `:white_check_mark: ${originalText}` : originalText
+    const updatedText = completed 
+      ? `:white_check_mark: [${userName} in "${boardName}"] ${originalText}`
+      : `:heavy_plus_sign: [${userName} in "${boardName}"] ${originalText}`
     
     await fetch(webhookUrl, {
       method: 'POST',
@@ -47,15 +49,14 @@ export async function updateSlackMessage(webhookUrl: string, originalText: strin
 }
 
 export function formatNoteForSlack(note: { content: string; isChecklist?: boolean }, boardName: string, userName: string): string {
-  const noteType = note.isChecklist ? 'Todo' : 'Note'
-  return `New ${noteType} added to "${boardName}" by ${userName}: ${note.content}`
+  return `:heavy_plus_sign: [${userName} in "${boardName}"] ${note.content}`
 }
 
 export function formatTodoForSlack(todoContent: string, boardName: string, userName: string, action: 'added' | 'completed'): string {
   if (action === 'completed') {
-    return `:white_check_mark: Todo completed in "${boardName}" by ${userName}: ${todoContent}`
+    return `:white_check_mark: [${userName} in "${boardName}"] ${todoContent}`
   }
-  return `New todo added to "${boardName}" by ${userName}: ${todoContent}`
+  return `:heavy_plus_sign: [${userName} in "${boardName}"] ${todoContent}`
 }
 
 export async function sendTodoNotification(webhookUrl: string, todoContent: string, boardName: string, userName: string, action: 'added' | 'completed'): Promise<string | null> {
