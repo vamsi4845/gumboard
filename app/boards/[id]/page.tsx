@@ -1476,7 +1476,9 @@ export default function BoardPage({
                 onClick={() => {
                   const isFilterDropDownOpen = showSortDropdown;
                   setShowAuthorDropdown(!showAuthorDropdown);
-                  isFilterDropDownOpen ? setShowSortDropdown(false) : null
+                  if (isFilterDropDownOpen) {
+                    setShowSortDropdown(false);
+                  }
                 }} 
                 className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
@@ -1551,8 +1553,10 @@ export default function BoardPage({
               <button
                 onClick={() => {
                   const isAuthorDropDownOpen = showAuthorDropdown; 
-                  setShowSortDropdown(!showSortDropdown)
-                  isAuthorDropDownOpen ? setShowAuthorDropdown(false) : null
+                  setShowSortDropdown(!showSortDropdown);
+                  if (isAuthorDropDownOpen) {
+                    setShowAuthorDropdown(false);
+                  }
                 }}
                 className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
