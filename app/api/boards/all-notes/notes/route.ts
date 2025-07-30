@@ -48,7 +48,35 @@ export async function GET() {
       }
     })
 
-    const notes = boardNotes
+    const boardlessNotes = await db.note.findMany({
+      where: {
+        deletedAt: null,
+        boardId: undefined,
+        createdBy: session.user.id
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        },
+        board: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    const notes = [...boardNotes, ...boardlessNotes].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
 
     return NextResponse.json({ notes })
   } catch (error) {
