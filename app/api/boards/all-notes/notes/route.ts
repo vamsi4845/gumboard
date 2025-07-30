@@ -134,4 +134,4 @@ export async function POST(request: NextRequest) {
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}                                        
+}                                            
