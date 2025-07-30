@@ -3,8 +3,6 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NOTE_COLORS } from "@/lib/constants"
 
-// Get all notes from all boards in the organization
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
@@ -12,44 +10,34 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get user with organization
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
 
-    if (!user?.organizationId) {
+    if (!user?.organization) {
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
-    // Get all notes from all boards in the organization, including board-less notes
-    const notes = await db.note.findMany({
+    const boardNotes = await db.note.findMany({
       where: {
-        deletedAt: null, // Only include non-deleted notes
-        OR: [
-          {
-            board: {
-              organizationId: user.organizationId
-            }
-          },
-          {
-            boardId: null,
-            createdBy: session.user.id
-          }
-        ]
+        deletedAt: null,
+        board: {
+          organizationId: user.organizationId
+        }
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
           }
         },
         board: {
           select: {
             id: true,
-            name: true
+            name: true,
           }
         }
       },
@@ -58,6 +46,36 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    const boardlessNotes = await db.note.findMany({
+      where: {
+        deletedAt: null,
+        boardId: null as any,
+        createdBy: session.user.id
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        },
+        board: {
+          select: {
+            id: true,
+            name: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    const notes = [...boardNotes, ...boardlessNotes].sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+
     return NextResponse.json({ notes })
   } catch (error) {
     console.error("Error fetching global notes:", error)
@@ -65,7 +83,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Create a new note (for global view, we need to specify which board)
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
@@ -79,13 +96,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Content is required" }, { status: 400 })
     }
 
-    // Verify user has access to the specified board (same organization)
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
 
-    if (!user?.organizationId) {
+    if (!user?.organization) {
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
@@ -117,13 +133,13 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
           }
         },
         board: {
           select: {
             id: true,
-            name: true
+            name: true,
           }
         }
       }
@@ -134,4 +150,4 @@ export async function POST(request: NextRequest) {
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}                                                      
+}
