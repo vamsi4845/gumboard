@@ -92,7 +92,7 @@ export async function PUT(
       return NextResponse.json({ error: "Note not found" }, { status: 404 })
     }
 
-    if (note.board.organizationId !== user.organizationId || note.boardId !== boardId) {
+    if (!note.board || note.board.organizationId !== user.organizationId || note.boardId !== boardId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
@@ -133,7 +133,7 @@ export async function PUT(
       const { addedItems, completedItems } = detectChecklistChanges(oldItems, newItems)
       
       const userName = user.name || user.email || 'Unknown User'
-      const boardName = updatedNote.board.name
+      const boardName = updatedNote.board?.name || 'Unknown Board'
       
       // Send notifications for newly added todos
       for (const addedItem of addedItems) {
@@ -164,7 +164,7 @@ export async function PUT(
       const hasContent = content && content.trim() !== ''
       
       if (wasEmpty && hasContent) {
-        const slackMessage = formatNoteForSlack(updatedNote, updatedNote.board.name, user.name || user.email || 'Unknown User')
+        const slackMessage = formatNoteForSlack(updatedNote, updatedNote.board?.name || 'Unknown Board', user.name || user.email || 'Unknown User')
         const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
           text: slackMessage,
           username: 'Gumboard',
@@ -183,7 +183,7 @@ export async function PUT(
     // Update existing Slack message when done status changes
     if (done !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
       const userName = note.user?.name || note.user?.email || 'Unknown User'
-      const boardName = note.board.name
+      const boardName = note.board?.name || 'Unknown Board'
       await updateSlackMessage(user.organization.slackWebhookUrl, note.content, done, boardName, userName)
     }
 
@@ -232,7 +232,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Note not found" }, { status: 404 })
     }
 
-    if (note.board.organizationId !== user.organizationId || note.boardId !== boardId) {
+    if (!note.board || note.board.organizationId !== user.organizationId || note.boardId !== boardId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
@@ -254,4 +254,4 @@ export async function DELETE(
     console.error("Error deleting note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}    
+}                        

@@ -3,7 +3,9 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NOTE_COLORS } from "@/lib/constants"
 
-export async function GET(request: NextRequest) {
+// Get all notes from all boards in the organization
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET() {
   try {
     const session = await auth()
     if (!session?.user?.id) {
@@ -46,35 +48,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const boardlessNotes = await db.note.findMany({
-      where: {
-        deletedAt: null,
-        boardId: { equals: null },
-        createdBy: session.user.id
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          }
-        },
-        board: {
-          select: {
-            id: true,
-            name: true,
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    const notes = [...boardNotes, ...boardlessNotes].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
+    const notes = boardNotes
 
     return NextResponse.json({ notes })
   } catch (error) {
