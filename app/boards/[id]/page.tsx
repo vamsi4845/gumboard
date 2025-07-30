@@ -1670,7 +1670,9 @@ export default function BoardPage({
 
             <Button
               onClick={() => {
-                if (boardId === "all-notes" && allBoards.length > 0) {
+                if (boardId === "all-notes") {
+                  handleAddNote();
+                } else if (allBoards.length > 0) {
                   handleAddNote(allBoards[0].id);
                 } else {
                   handleAddNote();
@@ -2476,7 +2478,9 @@ export default function BoardPage({
             </div>
             <Button
               onClick={() => {
-                if (boardId === "all-notes" && allBoards.length > 0) {
+                if (boardId === "all-notes") {
+                  handleAddNote();
+                } else if (allBoards.length > 0) {
                   handleAddNote(allBoards[0].id);
                 } else {
                   handleAddNote();
