@@ -22,7 +22,6 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Pre-fill email from URL params (e.g., when coming from invite)
   useEffect(() => {
     const emailParam = searchParams.get("email");
     if (emailParam) {
@@ -52,26 +51,26 @@ function SignInContent() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
-        <Card className="w-full max-w-sm sm:max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-950 dark:to-zinc-900 p-4 sm:p-6">
+        <Card className="w-full max-w-sm sm:max-w-md dark:bg-zinc-900 dark:border-zinc-800">
           <CardHeader className="text-center">
             <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-2xl">Check your email</CardTitle>
-            <CardDescription>
-              We&apos;ve sent a magic link to <strong>{email}</strong>
+            <CardTitle className="text-2xl dark:text-zinc-100">Check your email</CardTitle>
+            <CardDescription className="dark:text-zinc-400">
+              We&apos;ve sent a magic link to <strong className="dark:text-zinc-100">{email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground text-center mb-4">
+            <p className="text-sm text-muted-foreground text-center mb-4 dark:text-zinc-400">
               Click the link in the email to sign in to your account. The link
               will expire in 24 hours.
             </p>
             <div className="space-y-2">
               <Button
                 variant="outline"
-                className="w-full justify-between"
+                className="w-full justify-between dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
                 onClick={() => window.open("https://mail.google.com", "_blank")}
               >
                 Open Gmail
@@ -79,7 +78,7 @@ function SignInContent() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full justify-between"
+                className="w-full justify-between dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
                 onClick={() =>
                   window.open("https://outlook.live.com", "_blank")
                 }
@@ -92,7 +91,7 @@ function SignInContent() {
           <CardFooter>
             <Button
               variant="outline"
-              className="w-full"
+              className="w-full dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
               onClick={() => {
                 setIsSubmitted(false);
                 setEmail("");
@@ -107,16 +106,16 @@ function SignInContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
-      <Card className="w-full max-w-sm sm:max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-950 dark:to-zinc-900 p-4 sm:p-6">
+      <Card className="w-full max-w-sm sm:max-w-md dark:bg-zinc-900 dark:border-zinc-800">
         <CardHeader className="text-center">
           <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
             <Mail className="w-6 h-6 text-blue-600 dark:text-blue-400" />
           </div>
-          <CardTitle className="text-xl sm:text-2xl font-bold">
+          <CardTitle className="text-xl sm:text-2xl font-bold dark:text-zinc-100">
             Welcome to Gumboard
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-zinc-400">
             {searchParams.get("email")
               ? "we'll send you a magic link to verify your email address"
               : "Enter your email address and we'll send you a magic link to sign in"}
@@ -132,7 +131,7 @@ function SignInContent() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email" className="dark:text-zinc-200">Email address</Label>
               <Input
                 id="email"
                 type="email"
@@ -141,14 +140,14 @@ function SignInContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading || !!searchParams.get("email")}
                 required
-                className="h-12"
+                className="h-12 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
               />
             </div>
           </CardContent>
           <CardFooter>
             <Button
               type="submit"
-              className="w-full h-12 font-medium mt-4"
+              className="w-full h-12 font-medium mt-4 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
               disabled={isLoading || !email}
             >
               {isLoading ? (
@@ -172,14 +171,14 @@ function SignInContent() {
 
 function LoadingFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
-      <Card className="w-full max-w-sm sm:max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-950 dark:to-zinc-900 p-4 sm:p-6">
+      <Card className="w-full max-w-sm sm:max-w-md dark:bg-zinc-900 dark:border-zinc-800">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
-            <div className="w-6 h-6 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
+          <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4 dark:bg-zinc-800">
+            <div className="w-6 h-6 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground dark:border-zinc-700 dark:border-t-zinc-100" />
           </div>
-          <CardTitle className="text-xl sm:text-2xl">Loading...</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl sm:text-2xl dark:text-zinc-100">Loading...</CardTitle>
+          <CardDescription className="dark:text-zinc-400">
             Please wait while we prepare the sign in page
           </CardDescription>
         </CardHeader>
