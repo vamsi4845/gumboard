@@ -175,8 +175,8 @@ function LoadingFallback() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4 sm:p-6">
       <Card className="w-full max-w-sm sm:max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-            <div className="w-6 h-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+          <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+            <div className="w-6 h-6 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground" />
           </div>
           <CardTitle className="text-xl sm:text-2xl">Loading...</CardTitle>
           <CardDescription>
