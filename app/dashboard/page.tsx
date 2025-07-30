@@ -3,12 +3,13 @@
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { signOut } from "next-auth/react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { Plus, Trash2, Settings, LogOut, ChevronDown, Grid3x3 } from "lucide-react"
+import { signOut } from "next-auth/react"
+import { Plus, Trash2, Grid3x3, Settings, LogOut, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { FullPageLoader } from "@/components/ui/loader"
+import { AppLayout } from "@/components/app-layout"
 
 interface Board {
   id: string
@@ -41,6 +42,13 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchUserAndBoards()
+    
+    const handleOpenAddBoard = () => {
+      setShowAddBoard(true)
+    }
+    
+    window.addEventListener('openAddBoard', handleOpenAddBoard)
+    return () => window.removeEventListener('openAddBoard', handleOpenAddBoard)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -115,8 +123,8 @@ export default function Dashboard() {
     }
   }
 
-  const handleAddBoard = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddBoard = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     if (!newBoardName.trim()) return
 
     try {
@@ -168,7 +176,7 @@ export default function Dashboard() {
   }
 
   const handleSignOut = async () => {
-    await signOut()
+    await signOut({ callbackUrl: "/" })
   }
 
   if (loading) {
@@ -176,74 +184,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Enhanced Responsive Top Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-          {/* Logo */}
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-blue-600">Gumboard</h1>
-            </div>
-          </div>
-
-          {/* Add Board Button and User Dropdown */}
-          <div className="flex items-center space-x-2 sm:space-x-4">
-            <Button
-              onClick={() => setShowAddBoard(true)}
-              className="flex items-center space-x-1 sm:space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium px-3 sm:px-4 py-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Board</span>
-            </Button>
-            
-            <div className="relative user-dropdown">
-                          <button
-                onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 sm:px-3 py-2"
-              >
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-sm font-medium text-white">
-                    {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <span className="text-sm font-medium hidden sm:inline">
-                  {user?.name?.split(' ')[0] || 'User'}
-                </span>
-                <ChevronDown className="w-4 h-4 ml-1 hidden sm:inline" />
-              </button>
-
-            {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
-                <div className="py-1">
-                  <div className="px-4 py-2 text-sm text-gray-500 border-b">
-                    {user?.email}
-                  </div>
-                  <Link
-                    href="/settings"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setShowUserDropdown(false)}
-                  >
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                  </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </button>
-                </div>
-              </div>
-            )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Enhanced Responsive Main Content */}
-      <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <AppLayout>
+      <div className="min-h-screen bg-gray-50 -m-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {boards.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div>
@@ -386,7 +329,8 @@ export default function Dashboard() {
             </Button>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </AppLayout>
   )
-}  
+}                                

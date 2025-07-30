@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { FullPageLoader } from "@/components/ui/loader";
+import { AppLayout } from "@/components/app-layout";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 interface ChecklistItem {
@@ -1381,31 +1382,24 @@ export default function BoardPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex justify-between items-center h-16">
-          {/* Left side - Company name and board selector */}
-          <div className="flex items-center space-x-3">
-            {/* Company Name */}
-            <Link
-              href="/dashboard"
-              className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8"
-            >
-              <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
-            </Link>
+    <AppLayout>
+      <div className="min-h-screen bg-gray-50 -m-4">
+        <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-3 pl-4 sm:pl-6 lg:pl-8"></div>
 
-            {/* Board Selector Dropdown */}
+            <div className="flex items-center space-x-3">
+              <div className="text-lg font-semibold text-gray-900">
+                {boardId === "all-notes" ? "All notes" : board?.name}
+              </div>
+            </div>
+
             <div className="relative board-dropdown hidden md:block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
                 className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
               >
-                <div>
-                  <div className="text-lg font-semibold text-gray-900">
-                    {boardId === "all-notes" ? "All notes" : board?.name}
-                  </div>
-                </div>
+                <span>Switch board</span>
                 <ChevronDown className="w-4 h-4 ml-1" />
               </button>
 
@@ -2477,7 +2471,8 @@ export default function BoardPage({
             </Button>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </AppLayout>
   );
 }
