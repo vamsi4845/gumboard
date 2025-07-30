@@ -101,8 +101,8 @@ model Note {
   isChecklist Boolean @default(false) // Track if note is a checklist
   checklistItems Json? // Store checklist items as JSON
   slackMessageId String?
-  boardId   String
-  board     Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  boardId   String?
+  board     Board?  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   createdBy String
   user      User   @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())

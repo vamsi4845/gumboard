@@ -22,13 +22,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
-    // Get all notes from all boards in the organization
+    // Get all notes from all boards in the organization, including board-less notes
     const notes = await db.note.findMany({
       where: {
         deletedAt: null, // Only include non-deleted notes
-        board: {
-          organizationId: user.organizationId
-        }
+        OR: [
+          {
+            board: {
+              organizationId: user.organizationId
+            }
+          },
+          {
+            boardId: null,
+            createdBy: session.user.id
+          }
+        ]
       },
       include: {
         user: {
@@ -67,8 +75,8 @@ export async function POST(request: NextRequest) {
 
     const { content, color, boardId } = await request.json()
 
-    if (!content || !boardId) {
-      return NextResponse.json({ error: "Content and board ID are required" }, { status: 400 })
+    if (!content) {
+      return NextResponse.json({ error: "Content is required" }, { status: 400 })
     }
 
     // Verify user has access to the specified board (same organization)
@@ -81,16 +89,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No organization found" }, { status: 403 })
     }
 
-    const board = await db.board.findUnique({
-      where: { id: boardId }
-    })
+    if (boardId) {
+      const board = await db.board.findUnique({
+        where: { id: boardId }
+      })
 
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 })
-    }
+      if (!board) {
+        return NextResponse.json({ error: "Board not found" }, { status: 404 })
+      }
 
-    if (board.organizationId !== user.organizationId) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 })
+      if (board.organizationId !== user.organizationId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 })
+      }
     }
 
     const randomColor = color || NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)]
@@ -99,7 +109,7 @@ export async function POST(request: NextRequest) {
       data: {
         content,
         color: randomColor,
-        boardId,
+        boardId: boardId || null,
         createdBy: session.user.id,
       },
       include: {
@@ -124,4 +134,4 @@ export async function POST(request: NextRequest) {
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}                                

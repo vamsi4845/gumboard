@@ -226,4 +226,56 @@ test.describe('Note Management with Newlines', () => {
     await expect(page.locator('text=No notes yet')).toBeVisible();
     await expect(page.locator('button:has-text("Add Your First Note")')).toBeVisible();
   });
+
+  test('should create notes without board assignment from all-notes view', async ({ page }) => {
+    let noteCreated = false;
+    let noteData: { content: string, boardId?: string } | null = null;
+
+    await page.route('**/api/boards/all-notes/notes', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ notes: [] }),
+        });
+      } else if (route.request().method() === 'POST') {
+        noteCreated = true;
+        const postData = await route.request().postDataJSON();
+        noteData = postData;
+        
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            note: {
+              id: 'board-less-note-id',
+              content: postData.content,
+              color: '#fef3c7',
+              done: false,
+              isChecklist: false,
+              boardId: null,
+              board: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              user: {
+                id: 'test-user',
+                name: 'Test User',
+                email: 'test@example.com',
+              },
+            },
+          }),
+        });
+      }
+    });
+
+    await page.goto('/boards/all-notes');
+    
+    await page.click('button:has-text("Add Your First Note")');
+    
+    await page.waitForTimeout(100);
+    
+    expect(noteCreated).toBe(true);
+    expect(noteData).not.toBeNull();
+    expect(noteData!.boardId).toBeUndefined(); // Should not have boardId
+  });
 });

@@ -798,11 +798,7 @@ export default function BoardPage({
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
-    // For all notes view, ensure a board is selected
-    if (boardId === "all-notes" && !targetBoardId) {
-      alert("Please select a board to add the note to");
-      return;
-    }
+    // For all notes view, allow creating notes without board assignment
 
     try {
       const actualTargetBoardId =
@@ -818,7 +814,7 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             content: "",
-            ...(isAllNotesView && { boardId: targetBoardId }),
+            ...(targetBoardId && { boardId: targetBoardId }),
           }),
         }
       );
