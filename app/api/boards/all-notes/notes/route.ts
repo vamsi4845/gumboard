@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       where: {
         deletedAt: null,
         board: {
-          organizationId: user.organizationId
+          organizationId: user.organizationId!
         }
       },
       include: {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     const boardlessNotes = await db.note.findMany({
       where: {
         deletedAt: null,
-        boardId: null as any,
+        boardId: { equals: null },
         createdBy: session.user.id
       },
       include: {
