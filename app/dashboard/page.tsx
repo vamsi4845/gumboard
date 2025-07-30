@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { useState, useEffect } from "react"
-import { signOut } from "next-auth/react"
-import { Plus, Trash2, Grid3x3, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Grid3x3 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { FullPageLoader } from "@/components/ui/loader"
 import { AppLayout } from "@/components/app-layout"
@@ -178,9 +177,6 @@ export default function Dashboard() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/" })
-  }
 
   if (loading) {
     return <FullPageLoader message="Loading dashboard..." />

@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Settings, Plus, User, LogOut } from "lucide-react"
+import { Home, Settings, Plus, LogOut } from "lucide-react"
 import Link from "next/link"
 import { signOut, useSession } from "next-auth/react"
 import {
