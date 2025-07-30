@@ -33,10 +33,8 @@ export async function GET(request: NextRequest) {
             }
           },
           {
-            AND: [
-              { boardId: null },
-              { createdBy: session.user.id }
-            ]
+            boardId: null,
+            createdBy: session.user.id
           }
         ]
       },
@@ -136,4 +134,4 @@ export async function POST(request: NextRequest) {
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}                                                    
+}                                                      
