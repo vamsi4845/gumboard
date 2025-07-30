@@ -1386,9 +1386,7 @@ export default function BoardPage({
       <div className="min-h-screen bg-gray-50 -m-4">
         <div className="bg-white border-b border-gray-200 shadow-sm">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3 pl-4 sm:pl-6 lg:pl-8"></div>
-
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 pl-4 sm:pl-6 lg:pl-8">
               <div className="text-lg font-semibold text-gray-900">
                 {boardId === "all-notes" ? "All notes" : board?.name}
               </div>
@@ -1397,10 +1395,16 @@ export default function BoardPage({
             <div className="relative board-dropdown hidden md:block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                className="flex items-center border border-gray-300 space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-3 py-2 cursor-pointer"
               >
-                <span>Switch board</span>
-                <ChevronDown className="w-4 h-4 ml-1" />
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">
+                    {boardId === "all-notes" ? "All notes" : board?.name}
+                  </div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                    showBoardDropdown ? "rotate-180" : ""
+                  }`} />
               </button>
 
               {showBoardDropdown && (
@@ -1465,7 +1469,13 @@ export default function BoardPage({
             {/* Author Filter Dropdown */}
             <div className="relative author-dropdown hidden md:block">
               <button
-                onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
+                onClick={() => {
+                  const isFilterDropDownOpen = showSortDropdown;
+                  setShowAuthorDropdown(!showAuthorDropdown);
+                  if (isFilterDropDownOpen) {
+                    setShowSortDropdown(false);
+                  }
+                }} 
                 className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <User className="w-4 h-4 text-gray-500" />
@@ -1537,7 +1547,13 @@ export default function BoardPage({
             {/* Sort Dropdown */}
             <div className="relative sort-dropdown hidden md:block">
               <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                onClick={() => {
+                  const isAuthorDropDownOpen = showAuthorDropdown; 
+                  setShowSortDropdown(!showSortDropdown);
+                  if (isAuthorDropDownOpen) {
+                    setShowAuthorDropdown(false);
+                  }
+                }}
                 className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <ArrowUpDown className="w-4 h-4 text-gray-500" />
@@ -1623,7 +1639,7 @@ export default function BoardPage({
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
-          <div className="flex items-center space-x-4 px-4 sm:pr-6 lg:pr-8">
+          <div className="flex items-center space-x-2 px-3 ">
             {/* Search Box */}
             <div className="relative hidden sm:block">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1660,7 +1676,7 @@ export default function BoardPage({
                   handleAddNote();
                 }
               }}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer font-medium"
             >
               <Pencil className="w-4 h-4" />
             </Button>
@@ -1669,7 +1685,7 @@ export default function BoardPage({
             <div className="relative user-dropdown">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 py-1"
               >
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
@@ -1681,11 +1697,13 @@ export default function BoardPage({
                 <span className="text-sm font-medium hidden md:inline">
                   {user?.name?.split(" ")[0] || "User"}
                 </span>
-                <ChevronDown className="w-4 h-4 ml-1" />
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${
+                    showUserDropdown ? "rotate-180" : ""
+                  }`} />
               </button>
 
               {showUserDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 min-w-fit bg-white rounded-md shadow-lg border border-gray-200 z-50">
                   <div className="py-1">
                     <div className="px-4 py-2 text-sm text-gray-500 border-b">
                       {user?.email}

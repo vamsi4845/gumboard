@@ -18,6 +18,9 @@ interface Board {
   createdBy: string
   createdAt: string
   updatedAt: string
+  _count: {
+    notes: number
+  }
 }
 
 interface User {
@@ -184,9 +187,151 @@ export default function Dashboard() {
   }
 
   return (
+<<<<<<< HEAD
     <AppLayout>
       <div className="min-h-screen bg-gray-50 -m-4">
         <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+||||||| 136e885
+    <div className="min-h-screen bg-gray-50">
+      {/* Enhanced Responsive Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600">Gumboard</h1>
+            </div>
+          </div>
+
+          {/* Add Board Button and User Dropdown */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <Button
+              onClick={() => setShowAddBoard(true)}
+              className="flex items-center space-x-1 sm:space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium px-3 sm:px-4 py-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Board</span>
+            </Button>
+            
+            <div className="relative user-dropdown">
+                          <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 sm:px-3 py-2"
+              >
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-white">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-sm font-medium hidden sm:inline">
+                  {user?.name?.split(' ')[0] || 'User'}
+                </span>
+                <ChevronDown className="w-4 h-4 ml-1 hidden sm:inline" />
+              </button>
+
+            {showUserDropdown && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="py-1">
+                  <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                    {user?.email}
+                  </div>
+                  <Link
+                    href="/settings"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowUserDropdown(false)}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Enhanced Responsive Main Content */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+=======
+    <div className="min-h-screen bg-gray-50">
+      {/* Enhanced Responsive Top Navigation Bar */}
+      <nav className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600">Gumboard</h1>
+            </div>
+          </div>
+
+          {/* Add Board Button and User Dropdown */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <Button
+              onClick={() => setShowAddBoard(true)}
+              className="flex items-center space-x-1 sm:space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium px-3 sm:px-4 py-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Board</span>
+            </Button>
+            
+            <div className="relative user-dropdown">
+                          <button
+                onClick={() => setShowUserDropdown(!showUserDropdown)}
+                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 sm:px-3 py-2"
+              >
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-white">
+                    {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <span className="text-sm font-medium hidden sm:inline">
+                  {user?.name?.split(' ')[0] || 'User'}
+                </span>
+                <ChevronDown className="w-4 h-4 ml-1 hidden sm:inline" />
+              </button>
+
+            {showUserDropdown && (
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="py-1">
+                  <div className="px-4 py-2 text-sm text-gray-500 border-b break-all overflow-hidden">
+                    <span className="block truncate" title={user?.email}>
+                      {user?.email}
+                    </span>
+                  </div>
+                  <Link
+                    href="/settings"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setShowUserDropdown(false)}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Enhanced Responsive Main Content */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+>>>>>>> origin/main
         {boards.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div>
@@ -286,7 +431,12 @@ export default function Dashboard() {
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">{board.name}</CardTitle>
+                        <div className="flex items-center justify-between mb-1">
+                          <CardTitle className="text-lg">{board.name}</CardTitle>
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {board._count.notes} {board._count.notes === 1 ? 'note' : 'notes'}
+                          </span>
+                        </div>
                         {board.description && (
                           <CardDescription className="mt-1">
                             {board.description}
@@ -301,7 +451,7 @@ export default function Dashboard() {
                             e.stopPropagation()
                             handleDeleteBoard(board.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity ml-2"
                           title={user?.id === board.createdBy ? "Delete board" : "Delete board (Admin)"}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -329,8 +479,64 @@ export default function Dashboard() {
             </Button>
           </div>
         )}
+
+        {/* Enhanced Add Board Modal */}
+        {showAddBoard && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Create new board</h3>
+                <form onSubmit={handleAddBoard} className="space-y-4">
+                  <div>
+                    <label htmlFor="boardName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Board name
+                    </label>
+                    <Input
+                      id="boardName"
+                      type="text"
+                      value={newBoardName}
+                      onChange={(e) => setNewBoardName(e.target.value)}
+                      placeholder="Enter board name"
+                      className="w-full"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="boardDescription" className="block text-sm font-medium text-gray-700 mb-1">
+                      Description (optional)
+                    </label>
+                    <Input
+                      id="boardDescription"
+                      type="text"
+                      value={newBoardDescription}
+                      onChange={(e) => setNewBoardDescription(e.target.value)}
+                      placeholder="Enter board description"
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowAddBoard(false)}
+                      className="px-4 py-2"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2"
+                    >
+                      Create board
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
     </AppLayout>
   )
-}                                
+}
