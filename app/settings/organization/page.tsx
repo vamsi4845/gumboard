@@ -54,7 +54,9 @@ export default function OrganizationSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [orgName, setOrgName] = useState("")
+  const [originalOrgName, setOriginalOrgName] = useState("")
   const [slackWebhookUrl, setSlackWebhookUrl] = useState("")
+  const [originalSlackWebhookUrl, setOriginalSlackWebhookUrl] = useState("")
   const [inviteEmail, setInviteEmail] = useState("")
   const [invites, setInvites] = useState<OrganizationInvite[]>([])
   const [inviting, setInviting] = useState(false)
@@ -78,8 +80,12 @@ export default function OrganizationSettingsPage() {
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)
-        setOrgName(userData.organization?.name || "")
-        setSlackWebhookUrl(userData.organization?.slackWebhookUrl || "")
+        const orgNameValue = userData.organization?.name || ""
+        const slackWebhookValue = userData.organization?.slackWebhookUrl || ""
+        setOrgName(orgNameValue)
+        setOriginalOrgName(orgNameValue)
+        setSlackWebhookUrl(slackWebhookValue)
+        setOriginalSlackWebhookUrl(slackWebhookValue)
       }
     } catch (error) {
       console.error("Error fetching user data:", error)
@@ -135,6 +141,9 @@ export default function OrganizationSettingsPage() {
       if (response.ok) {
         const updatedUser = await response.json()
         setUser(updatedUser)
+        // Update the original values to reflect the saved state
+        setOriginalOrgName(orgName)
+        setOriginalSlackWebhookUrl(slackWebhookUrl)
       } else {
         const errorData = await response.json()
         alert(errorData.error || "Failed to update organization")
@@ -357,7 +366,7 @@ export default function OrganizationSettingsPage() {
           <div className="pt-4 border-t">
             <Button 
               onClick={handleSaveOrganization}
-              disabled={saving || (orgName === user?.organization?.name && slackWebhookUrl === (user?.organization?.slackWebhookUrl || "")) || !user?.isAdmin}
+              disabled={saving || orgName === originalOrgName || !user?.isAdmin}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               title={!user?.isAdmin ? "Only admins can update organization settings" : undefined}
             >
@@ -394,7 +403,7 @@ export default function OrganizationSettingsPage() {
           <div className="pt-4 border-t">
             <Button 
               onClick={handleSaveOrganization}
-              disabled={saving || (orgName === user?.organization?.name && slackWebhookUrl === (user?.organization?.slackWebhookUrl || "")) || !user?.isAdmin}
+              disabled={saving || slackWebhookUrl === originalSlackWebhookUrl || !user?.isAdmin}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               title={!user?.isAdmin ? "Only admins can update organization settings" : undefined}
             >
