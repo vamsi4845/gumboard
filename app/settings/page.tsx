@@ -91,8 +91,8 @@ export default function ProfileSettingsPage() {
     <Card className="p-6">
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile Settings</h2>
-          <p className="text-gray-600">Manage your personal information and preferences.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Profile Settings</h2>
+          <p className="text-muted-foreground">Manage your personal information and preferences.</p>
         </div>
 
         <div className="space-y-4">
@@ -116,9 +116,9 @@ export default function ProfileSettingsPage() {
                 type="email"
                 value={user?.email || ""}
                 disabled
-                className="bg-gray-50 cursor-not-allowed"
+                className="bg-muted cursor-not-allowed"
               />
-              <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             </div>
           </div>
         </div>
@@ -135,4 +135,4 @@ export default function ProfileSettingsPage() {
       </div>
     </Card>
   )
-} 
+}  

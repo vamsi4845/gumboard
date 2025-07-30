@@ -176,9 +176,9 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Enhanced Responsive Top Navigation Bar */}
-      <nav className="bg-white border-b border-gray-200 shadow-sm">
+      <nav className="bg-card border-b border-border shadow-sm">
         <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <div className="flex items-center">
@@ -200,7 +200,7 @@ export default function Dashboard() {
             <div className="relative user-dropdown">
                           <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 sm:px-3 py-2"
+                className="flex items-center space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 sm:px-3 py-2"
               >
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
@@ -214,14 +214,14 @@ export default function Dashboard() {
               </button>
 
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-card rounded-md shadow-lg border border-border z-50">
                 <div className="py-1">
-                  <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                  <div className="px-4 py-2 text-sm text-muted-foreground border-b">
                     {user?.email}
                   </div>
                   <Link
                     href="/settings"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent"
                     onClick={() => setShowUserDropdown(false)}
                   >
                     <Settings className="w-4 h-4 mr-2" />
@@ -229,7 +229,7 @@ export default function Dashboard() {
                   </Link>
                   <button
                     onClick={handleSignOut}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
@@ -247,8 +247,8 @@ export default function Dashboard() {
         {boards.length > 0 && (
           <div className="mb-6 sm:mb-8">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Boards</h2>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Boards</h2>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
                 Manage your organization&apos;s boards
               </p>
             </div>
@@ -266,14 +266,14 @@ export default function Dashboard() {
             }}
           >
             <div 
-              className="bg-white bg-opacity-95 backdrop-blur-md rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl drop-shadow-2xl border border-white border-opacity-30"
+              className="bg-card bg-opacity-95 backdrop-blur-md rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl drop-shadow-2xl border border-border"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="text-lg font-semibold mb-4">Create New Board</h3>
               <form onSubmit={handleAddBoard}>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Board Name
                     </label>
                     <Input
@@ -285,7 +285,7 @@ export default function Dashboard() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Description (Optional)
                     </label>
                     <Input
@@ -358,7 +358,7 @@ export default function Dashboard() {
                             e.stopPropagation()
                             handleDeleteBoard(board.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 p-1 rounded transition-opacity"
                           title={user?.id === board.createdBy ? "Delete board" : "Delete board (Admin)"}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -374,11 +374,11 @@ export default function Dashboard() {
 
         {boards.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
+            <div className="text-muted-foreground mb-4">
               <Plus className="w-12 h-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No boards yet</h3>
-            <p className="text-gray-500 mb-4">
+            <h3 className="text-lg font-medium text-foreground mb-2">No boards yet</h3>
+            <p className="text-muted-foreground mb-4">
               Get started by creating your first board
             </p>
             <Button onClick={() => setShowAddBoard(true)}>
@@ -389,4 +389,4 @@ export default function Dashboard() {
       </div>
     </div>
   )
-}  
+}        

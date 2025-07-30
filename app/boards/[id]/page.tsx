@@ -1381,9 +1381,9 @@ export default function BoardPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className="bg-card border-b border-border shadow-sm">
         <div className="flex justify-between items-center h-16">
           {/* Left side - Company name and board selector */}
           <div className="flex items-center space-x-3">
@@ -1399,10 +1399,10 @@ export default function BoardPage({
             <div className="relative board-dropdown hidden md:block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                className="flex items-center space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
               >
                 <div>
-                  <div className="text-lg font-semibold text-gray-900">
+                  <div className="text-lg font-semibold text-foreground">
                     {boardId === "all-notes" ? "All notes" : board?.name}
                   </div>
                 </div>
@@ -1410,40 +1410,40 @@ export default function BoardPage({
               </button>
 
               {showBoardDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-0 mt-2 w-64 bg-card rounded-md shadow-lg border border-border z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     {/* All Notes Option */}
                     <Link
                       href="/boards/all-notes"
-                      className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
+                      className={`block px-4 py-2 text-sm hover:bg-accent ${
                         boardId === "all-notes"
                           ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700"
+                          : "text-foreground"
                       }`}
                       onClick={() => setShowBoardDropdown(false)}
                     >
                       <div className="font-medium">All notes</div>
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         Notes from all boards
                       </div>
                     </Link>
                     {allBoards.length > 0 && (
-                      <div className="border-t border-gray-200 my-1"></div>
+                      <div className="border-t border-border my-1"></div>
                     )}
                     {allBoards.map((b) => (
                       <Link
                         key={b.id}
                         href={`/boards/${b.id}`}
-                        className={`block px-4 py-2 text-sm hover:bg-gray-100 ${
+                        className={`block px-4 py-2 text-sm hover:bg-accent ${
                           b.id === boardId
                             ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            : "text-foreground"
                         }`}
                         onClick={() => setShowBoardDropdown(false)}
                       >
                         <div className="font-medium">{b.name}</div>
                         {b.description && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-muted-foreground mt-1">
                             {b.description}
                           </div>
                         )}
@@ -1472,24 +1472,24 @@ export default function BoardPage({
             <div className="relative author-dropdown hidden md:block">
               <button
                 onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-border rounded-md bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
-                <User className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 truncate max-w-32">
+                <User className="w-4 h-4 text-muted-foreground" />
+                <span className="text-foreground truncate max-w-32">
                   {selectedAuthor
                     ? uniqueAuthors.find((a) => a.id === selectedAuthor)
                         ?.name || "Unknown author"
                     : "All authors"}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${
                     showAuthorDropdown ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {showAuthorDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-0 mt-2 w-64 bg-card rounded-md shadow-lg border border-border z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     <button
                       onClick={() => {
@@ -1497,13 +1497,13 @@ export default function BoardPage({
                         setShowAuthorDropdown(false);
                         updateURL(undefined, undefined, null);
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center space-x-3 ${
                         !selectedAuthor
                           ? "bg-blue-50 text-blue-700"
-                          : "text-gray-700"
+                          : "text-foreground"
                       }`}
                     >
-                      <User className="w-4 h-4 text-gray-500" />
+                      <User className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">All authors</span>
                     </button>
                     {uniqueAuthors.map((author) => (
@@ -1514,10 +1514,10 @@ export default function BoardPage({
                           setShowAuthorDropdown(false);
                           updateURL(undefined, undefined, author.id);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center space-x-3 ${
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-accent flex items-center space-x-3 ${
                           selectedAuthor === author.id
                             ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            : "text-foreground"
                         }`}
                       >
                         <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1529,7 +1529,7 @@ export default function BoardPage({
                           <div className="font-medium truncate">
                             {author.name}
                           </div>
-                          <div className="text-xs text-gray-500 truncate">
+                          <div className="text-xs text-muted-foreground truncate">
                             {author.email}
                           </div>
                         </div>
@@ -1544,15 +1544,15 @@ export default function BoardPage({
             <div className="relative sort-dropdown hidden md:block">
               <button
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="flex items-center space-x-2 px-3 py-2 text-sm border border-border rounded-md bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <ArrowUpDown className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-700 truncate max-w-32">
+                <span className="text-foreground truncate max-w-32">
                   {SORT_OPTIONS.find((option) => option.value === sortBy)
                     ?.label || "Sort"}
                 </span>
                 <ChevronDown
-                  className={`w-4 h-4 text-gray-500 transition-transform ${
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${
                     showSortDropdown ? "rotate-180" : ""
                   }`}
                 />
@@ -1581,7 +1581,7 @@ export default function BoardPage({
                         }`}
                       >
                         <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {option.description}
                         </div>
                       </button>
@@ -1675,7 +1675,7 @@ export default function BoardPage({
             <div className="relative user-dropdown">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                className="flex items-center space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
               >
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
@@ -1691,14 +1691,14 @@ export default function BoardPage({
               </button>
 
               {showUserDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-card rounded-md shadow-lg border border-border z-50">
                   <div className="py-1">
-                    <div className="px-4 py-2 text-sm text-gray-500 border-b">
+                    <div className="px-4 py-2 text-sm text-muted-foreground border-b">
                       {user?.email}
                     </div>
                     <Link
                       href="/settings"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center px-4 py-2 text-sm text-foreground hover:bg-accent"
                       onClick={() => setShowUserDropdown(false)}
                     >
                       <Settings className="w-4 h-4 mr-2" />
@@ -1706,7 +1706,7 @@ export default function BoardPage({
                     </Link>
                     <button
                       onClick={handleSignOut}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Sign Out
@@ -1813,7 +1813,7 @@ export default function BoardPage({
                       : "text-gray-700"
                   }`}
                 >
-                  <User className="w-4 h-4 text-gray-500" />
+                  <User className="w-4 h-4 text-muted-foreground" />
                   <span className="font-medium">All authors</span>
                 </button>
                 {uniqueAuthors.map((author) => (

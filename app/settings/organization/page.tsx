@@ -346,8 +346,8 @@ export default function OrganizationSettingsPage() {
       <Card className="p-6">
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Organization Settings</h2>
-            <p className="text-gray-600">Manage your organization and team members.</p>
+            <h2 className="text-xl font-semibold text-foreground mb-2">Organization Settings</h2>
+            <p className="text-muted-foreground">Manage your organization and team members.</p>
           </div>
 
           <div>
@@ -380,8 +380,8 @@ export default function OrganizationSettingsPage() {
       <Card className="p-6">
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Slack Integration</h3>
-            <p className="text-gray-600">Configure Slack notifications for notes and todos.</p>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Slack Integration</h3>
+            <p className="text-muted-foreground">Configure Slack notifications for notes and todos.</p>
           </div>
 
           <div>
@@ -395,7 +395,7 @@ export default function OrganizationSettingsPage() {
               className="mt-1"
               disabled={!user?.isAdmin}
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Create a webhook URL in your Slack workspace to receive notifications when notes and todos are created or completed.
             </p>
           </div>
@@ -417,8 +417,8 @@ export default function OrganizationSettingsPage() {
       <Card className="p-6">
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Team Members</h3>
-            <p className="text-gray-600">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Team Members</h3>
+            <p className="text-muted-foreground">
               {user?.isAdmin 
                 ? `Manage your organization's team members.` 
                 : `View your organization's team members.`
@@ -428,7 +428,7 @@ export default function OrganizationSettingsPage() {
 
           <div className="space-y-3">
             {user?.organization?.members?.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div key={member.id} className="flex items-center justify-between p-4 bg-accent rounded-lg">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 ${member.isAdmin ? 'bg-purple-500' : 'bg-blue-500'} rounded-full flex items-center justify-center`}>
                     <span className="text-white font-medium">
@@ -437,7 +437,7 @@ export default function OrganizationSettingsPage() {
                   </div>
                   <div>
                     <div className="flex items-center space-x-2">
-                      <p className="font-medium text-gray-900">{member.name || "Unnamed User"}</p>
+                      <p className="font-medium text-foreground">{member.name || "Unnamed User"}</p>
                       {member.isAdmin && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                           <ShieldCheck className="w-3 h-3 mr-1" />
@@ -445,7 +445,7 @@ export default function OrganizationSettingsPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">{member.email}</p>
+                    <p className="text-sm text-muted-foreground">{member.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -458,7 +458,7 @@ export default function OrganizationSettingsPage() {
                       className={`${
                         member.isAdmin 
                           ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-50' 
-                          : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
+                          : 'text-muted-foreground hover:text-purple-600 hover:bg-purple-50'
                       }`}
                       title={member.isAdmin ? "Remove admin role" : "Make admin"}
                     >
@@ -486,8 +486,8 @@ export default function OrganizationSettingsPage() {
       <Card className="p-6">
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Invite Team Members</h3>
-            <p className="text-gray-600">Send invitations to new team members.</p>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Invite Team Members</h3>
+            <p className="text-muted-foreground">Send invitations to new team members.</p>
           </div>
 
           <form onSubmit={handleInviteMember} className="flex space-x-4">
@@ -515,12 +515,12 @@ export default function OrganizationSettingsPage() {
           {/* Pending Invites */}
           {invites.length > 0 && (
             <div className="space-y-3">
-              <h4 className="font-medium text-gray-900">Pending Invites</h4>
+              <h4 className="font-medium text-foreground">Pending Invites</h4>
               {invites.map((invite) => (
                 <div key={invite.id} className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                   <div>
-                    <p className="font-medium text-gray-900">{invite.email}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium text-foreground">{invite.email}</p>
+                    <p className="text-sm text-muted-foreground">
                       Invited on {new Date(invite.createdAt).toLocaleDateString()}
                     </p>
                   </div>
@@ -670,4 +670,4 @@ export default function OrganizationSettingsPage() {
       </Card>
     </div>
   )
-}    
+}        
