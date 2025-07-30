@@ -74,6 +74,7 @@ export async function PUT(request: NextRequest) {
       organization: updatedUser!.organization ? {
         id: updatedUser!.organization.id,
         name: updatedUser!.organization.name,
+        slackWebhookUrl: updatedUser!.organization.slackWebhookUrl,
         members: updatedUser!.organization.members
       } : null
     })

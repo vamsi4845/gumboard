@@ -357,7 +357,7 @@ export default function OrganizationSettingsPage() {
           <div className="pt-4 border-t">
             <Button 
               onClick={handleSaveOrganization}
-              disabled={saving || orgName === user?.organization?.name || !user?.isAdmin}
+              disabled={saving || (orgName === user?.organization?.name && slackWebhookUrl === (user?.organization?.slackWebhookUrl || "")) || !user?.isAdmin}
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
               title={!user?.isAdmin ? "Only admins can update organization settings" : undefined}
             >
