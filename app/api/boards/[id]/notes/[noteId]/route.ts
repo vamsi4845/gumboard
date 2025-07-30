@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { updateSlackMessage, formatNoteForSlack, sendSlackMessage } from "@/lib/slack"
+import { updateSlackMessage, formatNoteForSlack, sendSlackMessage, formatChecklistItemForSlack, updateChecklistItemSlackMessage } from "@/lib/slack"
 
 // Update a note
 export async function PUT(
@@ -115,6 +115,81 @@ export async function PUT(
       }
     }
 
+    if (checklistItems !== undefined && user.organization?.slackWebhookUrl) {
+      const oldItems = note.checklistItems || []
+      const newItems = checklistItems || []
+      
+      const addedItems = newItems.filter(newItem => 
+        !oldItems.some(oldItem => oldItem.id === newItem.id)
+      )
+      
+      // Send Slack notifications for new checklist items
+      for (const item of addedItems) {
+        if (item.content?.trim()) {
+          const slackMessage = formatChecklistItemForSlack(
+            item, 
+            updatedNote.content || 'Untitled Note',
+            updatedNote.board.name, 
+            user.name || user.email || 'Unknown User'
+          )
+          const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
+            text: slackMessage,
+            username: 'Gumboard',
+            icon_emoji: ':white_check_mark:'
+          })
+          
+          if (messageId) {
+            // Update the item with the Slack message ID
+            const itemIndex = newItems.findIndex(i => i.id === item.id)
+            if (itemIndex !== -1) {
+              newItems[itemIndex].slackMessageId = messageId
+            }
+          }
+        }
+      }
+      
+      for (const newItem of newItems) {
+        const oldItem = oldItems.find(old => old.id === newItem.id)
+        if (oldItem && oldItem.checked !== newItem.checked && newItem.slackMessageId) {
+          const originalMessage = formatChecklistItemForSlack(
+            newItem,
+            updatedNote.content || 'Untitled Note',
+            updatedNote.board.name,
+            user.name || user.email || 'Unknown User'
+          )
+          await updateChecklistItemSlackMessage(
+            user.organization.slackWebhookUrl,
+            originalMessage,
+            newItem.checked
+          )
+        }
+      }
+      
+      // Update the note with the modified checklist items (including Slack message IDs)
+      if (addedItems.length > 0) {
+        const finalUpdatedNote = await db.note.update({
+          where: { id: noteId },
+          data: { checklistItems: newItems },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            },
+            board: {
+              select: {
+                name: true
+              }
+            }
+          }
+        })
+        
+        return NextResponse.json({ note: finalUpdatedNote })
+      }
+    }
+
     // Update existing Slack message when done status changes
     if (done !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
       const originalMessage = formatNoteForSlack(note, note.board.name, note.user?.name || note.user?.email || 'Unknown User')
@@ -188,4 +263,4 @@ export async function DELETE(
     console.error("Error deleting note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}    
+}        

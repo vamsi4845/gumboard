@@ -50,3 +50,36 @@ export function formatNoteForSlack(note: { content: string; isChecklist?: boolea
   const noteType = note.isChecklist ? 'Todo' : 'Note'
   return `New ${noteType} added to "${boardName}" by ${userName}: ${note.content}`
 }
+
+export function formatChecklistItemForSlack(
+  item: { content: string }, 
+  noteName: string, 
+  boardName: string, 
+  userName: string
+): string {
+  return `New checklist item added to "${noteName}" in "${boardName}" by ${userName}: ${item.content}`
+}
+
+export async function updateChecklistItemSlackMessage(
+  webhookUrl: string, 
+  originalText: string, 
+  completed: boolean
+): Promise<void> {
+  try {
+    const updatedText = completed ? `~${originalText}~` : originalText
+    
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: updatedText,
+        username: 'Gumboard',
+        icon_emoji: ':white_check_mark:'
+      }),
+    })
+  } catch (error) {
+    console.error('Error updating checklist item Slack message:', error)
+  }
+}

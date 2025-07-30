@@ -26,6 +26,7 @@ interface ChecklistItem {
   content: string;
   checked: boolean;
   order: number;
+  slackMessageId?: string;
 }
 
 interface Note {
