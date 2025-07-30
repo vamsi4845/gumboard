@@ -15,6 +15,7 @@ import {
   Copy,
   Calendar,
   Users,
+  ExternalLink,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 
@@ -436,7 +437,16 @@ export default function OrganizationSettingsPage() {
             />
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
               Create a webhook URL in your Slack workspace to receive
-              notifications when notes and todos are created or completed.
+              notifications when notes and todos are created or completed.{" "}
+              <a
+                href="https://api.slack.com/apps"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
+              >
+                Create Slack App
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </a>
             </p>
           </div>
 
