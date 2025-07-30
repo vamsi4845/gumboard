@@ -17,6 +17,9 @@ interface Board {
   createdBy: string
   createdAt: string
   updatedAt: string
+  _count: {
+    notes: number
+  }
 }
 
 interface User {
@@ -343,7 +346,12 @@ export default function Dashboard() {
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">{board.name}</CardTitle>
+                        <div className="flex items-center justify-between mb-1">
+                          <CardTitle className="text-lg">{board.name}</CardTitle>
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {board._count.notes} {board._count.notes === 1 ? 'note' : 'notes'}
+                          </span>
+                        </div>
                         {board.description && (
                           <CardDescription className="mt-1">
                             {board.description}
@@ -358,7 +366,7 @@ export default function Dashboard() {
                             e.stopPropagation()
                             handleDeleteBoard(board.id)
                           }}
-                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity ml-2"
                           title={user?.id === board.createdBy ? "Delete board" : "Delete board (Admin)"}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -389,4 +397,4 @@ export default function Dashboard() {
       </div>
     </div>
   )
-}  
+}    
