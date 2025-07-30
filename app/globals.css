@@ -126,25 +126,25 @@
   .responsive-padding {
     @apply px-4 sm:px-6 lg:px-8;
   }
-  
+
   .responsive-text-lg {
     @apply text-lg sm:text-xl lg:text-2xl;
   }
-  
+
   .responsive-text-sm {
     @apply text-sm sm:text-base;
   }
-  
+
   /* Smooth transitions for responsive changes */
   .smooth-responsive {
     transition: all 0.2s ease-in-out;
   }
-  
+
   /* Mobile-first grid utilities */
   .responsive-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6;
   }
-  
+
   /* Touch-friendly sizing */
   .touch-target {
     @apply min-h-[44px] min-w-[44px];
