@@ -182,8 +182,9 @@ export async function PUT(
 
     // Update existing Slack message when done status changes
     if (done !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
-      const originalMessage = formatNoteForSlack(note, note.board.name, note.user?.name || note.user?.email || 'Unknown User')
-      await updateSlackMessage(user.organization.slackWebhookUrl, originalMessage, done)
+      const userName = note.user?.name || note.user?.email || 'Unknown User'
+      const boardName = note.board.name
+      await updateSlackMessage(user.organization.slackWebhookUrl, note.content, done, boardName, userName)
     }
 
     return NextResponse.json({ note: updatedNote })
