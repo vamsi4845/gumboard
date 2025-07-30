@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
+import { updateSlackMessage, formatNoteForSlack, sendSlackMessage } from "@/lib/slack"
 
 // Update a note
 export async function PUT(
@@ -19,7 +20,15 @@ export async function PUT(
     // Verify user has access to this board (same organization)
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { organization: true }
+      include: { 
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slackWebhookUrl: true
+          }
+        }
+      }
     })
 
     if (!user?.organizationId) {
@@ -29,7 +38,16 @@ export async function PUT(
     // Verify the note belongs to a board in the user's organization
     const note = await db.note.findUnique({
       where: { id: noteId },
-      include: { board: true }
+      include: { 
+        board: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
     })
 
     if (!note) {
@@ -66,9 +84,42 @@ export async function PUT(
             name: true,
             email: true
           }
+        },
+        board: {
+          select: {
+            name: true
+          }
         }
       }
     })
+
+    // Send Slack notification if content is being added to a previously empty note
+    if (content !== undefined && user.organization?.slackWebhookUrl && !note.slackMessageId) {
+      const wasEmpty = !note.content || note.content.trim() === ''
+      const hasContent = content && content.trim() !== ''
+      
+      if (wasEmpty && hasContent) {
+        const slackMessage = formatNoteForSlack(updatedNote, updatedNote.board.name, user.name || user.email || 'Unknown User')
+        const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
+          text: slackMessage,
+          username: 'Gumboard',
+          icon_emoji: ':clipboard:'
+        })
+
+        if (messageId) {
+          await db.note.update({
+            where: { id: noteId },
+            data: { slackMessageId: messageId }
+          })
+        }
+      }
+    }
+
+    // Update existing Slack message when done status changes
+    if (done !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
+      const originalMessage = formatNoteForSlack(note, note.board.name, note.user?.name || note.user?.email || 'Unknown User')
+      await updateSlackMessage(user.organization.slackWebhookUrl, originalMessage, done)
+    }
 
     return NextResponse.json({ note: updatedNote })
   } catch (error) {
@@ -137,4 +188,4 @@ export async function DELETE(
     console.error("Error deleting note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}    
