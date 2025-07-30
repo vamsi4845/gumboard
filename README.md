@@ -36,7 +36,7 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000) in your browser to access the application.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/antiwork/gumboard&env=AUTH_SECRET,AUTH_RESEND_KEY,EMAIL_FROM,DATABASE_URL)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/antiwork/gumboard)
 
 ## Database Commands
 
