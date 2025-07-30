@@ -28,7 +28,7 @@ export async function sendSlackMessage(webhookUrl: string, message: SlackMessage
 
 export async function updateSlackMessage(webhookUrl: string, originalText: string, completed: boolean): Promise<void> {
   try {
-    const updatedText = completed ? `~${originalText}~` : originalText
+    const updatedText = completed ? `:white_check_mark: ${originalText}` : originalText
     
     await fetch(webhookUrl, {
       method: 'POST',
@@ -49,4 +49,20 @@ export async function updateSlackMessage(webhookUrl: string, originalText: strin
 export function formatNoteForSlack(note: { content: string; isChecklist?: boolean }, boardName: string, userName: string): string {
   const noteType = note.isChecklist ? 'Todo' : 'Note'
   return `New ${noteType} added to "${boardName}" by ${userName}: ${note.content}`
+}
+
+export function formatTodoForSlack(todoContent: string, boardName: string, userName: string, action: 'added' | 'completed'): string {
+  if (action === 'completed') {
+    return `:white_check_mark: Todo completed in "${boardName}" by ${userName}: ${todoContent}`
+  }
+  return `New todo added to "${boardName}" by ${userName}: ${todoContent}`
+}
+
+export async function sendTodoNotification(webhookUrl: string, todoContent: string, boardName: string, userName: string, action: 'added' | 'completed'): Promise<string | null> {
+  const message = formatTodoForSlack(todoContent, boardName, userName, action)
+  return await sendSlackMessage(webhookUrl, {
+    text: message,
+    username: 'Gumboard',
+    icon_emoji: ':clipboard:'
+  })
 }

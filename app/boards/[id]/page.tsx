@@ -1381,7 +1381,7 @@ export default function BoardPage({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen max-w-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border shadow-sm">
         <div className="flex justify-between items-center h-16">
@@ -1390,7 +1390,7 @@ export default function BoardPage({
             {/* Company Name */}
             <Link
               href="/dashboard"
-              className="flex-shrink-0 pl-4 sm:pl-6 lg:pl-8"
+              className="flex-shrink-0 pl-4 sm:pl-2 lg:pl-4"
             >
               <h1 className="text-2xl font-bold text-blue-600">Gumboard</h1>
             </Link>
@@ -1399,14 +1399,16 @@ export default function BoardPage({
             <div className="relative board-dropdown hidden md:block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-                className="flex items-center space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                className="flex items-center border border-border space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-3 py-2 cursor-pointer"
               >
                 <div>
-                  <div className="text-lg font-semibold text-foreground">
+                  <div className="text-sm font-semibold text-foreground">
                     {boardId === "all-notes" ? "All notes" : board?.name}
                   </div>
                 </div>
-                <ChevronDown className="w-4 h-4 ml-1" />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${
+                    showBoardDropdown ? "rotate-180" : ""
+                  }`} />
               </button>
 
               {showBoardDropdown && (
@@ -1471,7 +1473,13 @@ export default function BoardPage({
             {/* Author Filter Dropdown */}
             <div className="relative author-dropdown hidden md:block">
               <button
-                onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
+                onClick={() => {
+                  const isFilterDropDownOpen = showSortDropdown;
+                  setShowAuthorDropdown(!showAuthorDropdown);
+                  if (isFilterDropDownOpen) {
+                    setShowSortDropdown(false);
+                  }
+                }} 
                 className="flex items-center space-x-2 px-3 py-2 text-sm border border-border rounded-md bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <User className="w-4 h-4 text-muted-foreground" />
@@ -1543,10 +1551,16 @@ export default function BoardPage({
             {/* Sort Dropdown */}
             <div className="relative sort-dropdown hidden md:block">
               <button
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                onClick={() => {
+                  const isAuthorDropDownOpen = showAuthorDropdown; 
+                  setShowSortDropdown(!showSortDropdown);
+                  if (isAuthorDropDownOpen) {
+                    setShowAuthorDropdown(false);
+                  }
+                }}
                 className="flex items-center space-x-2 px-3 py-2 text-sm border border-border rounded-md bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
-                <ArrowUpDown className="w-4 h-4 text-gray-500" />
+                <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
                 <span className="text-foreground truncate max-w-32">
                   {SORT_OPTIONS.find((option) => option.value === sortBy)
                     ?.label || "Sort"}
@@ -1559,7 +1573,7 @@ export default function BoardPage({
               </button>
 
               {showSortDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div className="absolute left-0 mt-2 w-64 bg-card rounded-md shadow-lg border border-border z-50">
                   <div className="py-1">
                     {SORT_OPTIONS.map((option) => (
                       <button
@@ -1574,10 +1588,10 @@ export default function BoardPage({
                             option.value
                           );
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                        className={`w-full text-left px-4 py-2 text-sm hover:bg-accent ${
                           sortBy === option.value
                             ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700"
+                            : "text-foreground"
                         }`}
                       >
                         <div className="font-medium">{option.label}</div>
@@ -1608,7 +1622,7 @@ export default function BoardPage({
                 className={`flex items-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   showDoneNotes
                     ? "border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700"
-                    : "border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+                    : "border-border bg-card hover:bg-accent text-foreground"
                 }`}
                 title={
                   showDoneNotes
@@ -1629,11 +1643,11 @@ export default function BoardPage({
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
-          <div className="flex items-center space-x-4 px-4 sm:pr-6 lg:pr-8">
+          <div className="flex items-center space-x-2 px-3 ">
             {/* Search Box */}
             <div className="relative hidden sm:block">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+                <Search className="h-4 w-4 text-muted-foreground" />
               </div>
               <input
                 type="text"
@@ -1643,7 +1657,7 @@ export default function BoardPage({
                   setSearchTerm(e.target.value);
                   updateURL(e.target.value);
                 }}
-                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                className="w-64 pl-10 pr-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-background"
               />
               {searchTerm && (
                 <button
@@ -1651,7 +1665,7 @@ export default function BoardPage({
                     setSearchTerm("");
                     updateURL("");
                   }}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
                 >
                   ×
                 </button>
@@ -1666,7 +1680,7 @@ export default function BoardPage({
                   handleAddNote();
                 }
               }}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 border-0 font-medium"
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer font-medium"
             >
               <Pencil className="w-4 h-4" />
             </Button>
@@ -1675,7 +1689,7 @@ export default function BoardPage({
             <div className="relative user-dropdown">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-3 py-2"
+                className="flex items-center space-x-2 text-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md px-2 py-1"
               >
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
@@ -1687,11 +1701,13 @@ export default function BoardPage({
                 <span className="text-sm font-medium hidden md:inline">
                   {user?.name?.split(" ")[0] || "User"}
                 </span>
-                <ChevronDown className="w-4 h-4 ml-1" />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${
+                    showUserDropdown ? "rotate-180" : ""
+                  }`} />
               </button>
 
               {showUserDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-card rounded-md shadow-lg border border-border z-50">
+                <div className="absolute right-0 mt-2 min-w-fit bg-card rounded-md shadow-lg border border-border z-50">
                   <div className="py-1">
                     <div className="px-4 py-2 text-sm text-muted-foreground border-b">
                       {user?.email}
@@ -1720,16 +1736,16 @@ export default function BoardPage({
       </div>
 
       {/* Mobile Board Title */}
-      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 space-y-3">
+      <div className="md:hidden bg-card border-b border-border px-4 py-3 space-y-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-lg font-semibold text-foreground">
             {boardId === "all-notes" ? "All notes" : board?.name}
           </h2>
           {boardId === "all-notes" ? (
-            <p className="text-sm text-gray-500">Notes from all boards</p>
+            <p className="text-sm text-muted-foreground">Notes from all boards</p>
           ) : (
             board?.description && (
-              <p className="text-sm text-gray-500">{board.description}</p>
+              <p className="text-sm text-muted-foreground">{board.description}</p>
             )
           )}
         </div>
@@ -1737,7 +1753,7 @@ export default function BoardPage({
         {/* Mobile Search Box */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
+            <Search className="h-4 w-4 text-muted-foreground" />
           </div>
           <input
             type="text"
@@ -1747,7 +1763,7 @@ export default function BoardPage({
               setSearchTerm(e.target.value);
               updateURL(e.target.value);
             }}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white shadow-sm"
+            className="w-full pl-10 pr-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-background shadow-sm"
           />
           {searchTerm && (
             <button
@@ -1755,7 +1771,7 @@ export default function BoardPage({
                 setSearchTerm("");
                 updateURL("");
               }}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
             >
               ×
             </button>
