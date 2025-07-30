@@ -2471,7 +2471,6 @@ export default function BoardPage({
             </Button>
           </div>
         )}
-        </div>
       </div>
     </AppLayout>
   );
