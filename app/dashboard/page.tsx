@@ -197,65 +197,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Enhanced Responsive Add Board Modal */}
-        {showAddBoard && (
-          <div 
-            className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-            onClick={() => {
-              setShowAddBoard(false)
-              setNewBoardName("")
-              setNewBoardDescription("")
-            }}
-          >
-            <div 
-              className="bg-white bg-opacity-95 backdrop-blur-md rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl drop-shadow-2xl border border-white border-opacity-30"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold mb-4">Create New Board</h3>
-              <form onSubmit={handleAddBoard}>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Board Name
-                    </label>
-                    <Input
-                      type="text"
-                      value={newBoardName}
-                      onChange={(e) => setNewBoardName(e.target.value)}
-                      placeholder="Enter board name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description (Optional)
-                    </label>
-                    <Input
-                      type="text"
-                      value={newBoardDescription}
-                      onChange={(e) => setNewBoardDescription(e.target.value)}
-                      placeholder="Enter board description"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-3 mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowAddBoard(false)
-                      setNewBoardName("")
-                      setNewBoardDescription("")
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit">Create Board</Button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
 
         {/* Enhanced Responsive Boards Grid */}
         {boards.length > 0 && (
