@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { updateSlackMessage, formatNoteForSlack, sendSlackMessage, sendTodoNotification } from "@/lib/slack"
+import { updateSlackMessage, formatNoteForSlack, sendSlackMessage, sendTodoNotification, hasValidContent, shouldSendNotification } from "@/lib/slack"
 
 interface ChecklistItem {
   id: string
@@ -137,13 +137,15 @@ export async function PUT(
       
       // Send notifications for newly added todos
       for (const addedItem of addedItems) {
-        await sendTodoNotification(
-          user.organization.slackWebhookUrl,
-          addedItem.content,
-          boardName,
-          userName,
-          'added'
-        )
+        if (hasValidContent(addedItem.content) && shouldSendNotification(session.user.id, boardId)) {
+          await sendTodoNotification(
+            user.organization.slackWebhookUrl,
+            addedItem.content,
+            boardName,
+            userName,
+            'added'
+          )
+        }
       }
       
       // Send notifications for newly completed todos
@@ -160,10 +162,10 @@ export async function PUT(
 
     // Send Slack notification if content is being added to a previously empty note
     if (content !== undefined && user.organization?.slackWebhookUrl && !note.slackMessageId) {
-      const wasEmpty = !note.content || note.content.trim() === ''
-      const hasContent = content && content.trim() !== ''
+      const wasEmpty = !hasValidContent(note.content)
+      const hasContent = hasValidContent(content)
       
-      if (wasEmpty && hasContent) {
+      if (wasEmpty && hasContent && shouldSendNotification(session.user.id, boardId)) {
         const slackMessage = formatNoteForSlack(updatedNote, updatedNote.board.name, user.name || user.email || 'Unknown User')
         const messageId = await sendSlackMessage(user.organization.slackWebhookUrl, {
           text: slackMessage,
@@ -254,4 +256,4 @@ export async function DELETE(
     console.error("Error deleting note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}    
+}        
