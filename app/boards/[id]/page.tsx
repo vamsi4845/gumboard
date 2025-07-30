@@ -790,6 +790,14 @@ export default function BoardPage({
           setNotes(notes);
         }
       }
+
+      if (boardId && boardId !== "all-notes") {
+        try {
+          localStorage.setItem("gumboard-last-visited-board", boardId);
+        } catch (error) {
+          console.warn("Failed to save last visited board:", error);
+        }
+      }
     } catch (error) {
       console.error("Error fetching board data:", error);
     } finally {
