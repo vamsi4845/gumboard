@@ -81,7 +81,12 @@ export async function POST(request: NextRequest) {
         description,
         organizationId: user.organization.id,
         createdBy: session.user.id
-      }
+      },
+      include: {
+        _count: {
+          select: { notes: true },
+        },
+      },
     })
 
     return NextResponse.json({ board }, { status: 201 })
