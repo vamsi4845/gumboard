@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -21,6 +21,8 @@ function SignInContent() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const router = useRouter();
+  const error = searchParams.get("error");
 
   useEffect(() => {
     const emailParam = searchParams.get("email");
@@ -28,6 +30,14 @@ function SignInContent() {
       setEmail(emailParam);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      router.replace(`/auth/error?error=${errorParam}`);
+    }
+  }, [searchParams, router]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,7 +154,7 @@ function SignInContent() {
               />
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col">
             <Button
               type="submit"
               className="w-full h-12 font-medium mt-4 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
@@ -161,6 +171,39 @@ function SignInContent() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
+            </Button>
+
+            {/* Divider */}
+            <div className="relative mt-6 w-full">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-gray-300 dark:border-zinc-700" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-muted-foreground dark:bg-zinc-900 dark:text-zinc-400">
+                  or continue with
+                </span>
+              </div>
+            </div>
+
+            {/* Google Button */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 mt-4 justify-center dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 cursor-pointer dark:hover:bg-zinc-900"
+              onClick={() => signIn("google", { callbackUrl: "/" })}
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M44.5 20H24v8.5h11.9C34.3 32.4 29.8 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8.1 3.1l6-6C34.1 4.3 29.3 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11.3 0 20.8-8.2 22-19h-1.5z" fill="#FFC107" />
+                <path d="M6.3 14.7l7 5.1C14.5 16.4 18.9 14 24 14c3.1 0 5.9 1.2 8.1 3.1l6-6C34.1 4.3 29.3 2 24 2c-7.7 0-14.3 3.7-18.3 9.5l.6 3.2z" fill="#FF3D00" />
+                <path d="M24 46c5.8 0 11.1-2.2 15.1-5.7l-7-5.7c-2 1.4-4.6 2.2-8.1 2.2-5.8 0-10.6-3.9-12.3-9.2l-7.1 5.5C7.6 41.5 15.2 46 24 46z" fill="#4CAF50" />
+                <path d="M44.5 20H24v8.5h11.9c-1.1 3.2-3.5 5.8-6.6 7.2l7 5.7c4.1-3.4 6.8-8.5 6.8-14.4 0-1.3-.1-2.5-.3-3.7z" fill="#1976D2" />
+              </svg>
+              Continue with Google
             </Button>
           </CardFooter>
         </form>

@@ -11,8 +11,10 @@ const errorMessages: Record<string, string> = {
   Configuration: "There is a problem with the server configuration.",
   AccessDenied: "Access denied. You do not have permission to sign in.",
   Verification: "The verification token has expired or has already been used.",
+  OAuthAccountNotLinked: "To confirm your identity, sign in with the same provider you used originally.",
   Default: "An unexpected error occurred. Please try again.",
 }
+
 
 function AuthErrorContent() {
   const searchParams = useSearchParams()
