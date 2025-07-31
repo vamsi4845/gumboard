@@ -374,6 +374,45 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId])
 
+  // Polling
+  useEffect(() => {
+    if (!boardId) return;             // nothing to poll yet
+
+    let cancelled = false;            // guards stale updates
+    let inFlight = false;             // prevents overlapping fetches
+
+    const fetchNotes = async () => {
+      if (inFlight) return;           // skip if the last call hasn’t finished
+      inFlight = true;
+
+      try {
+        const res = await fetch(
+          boardId === "all-notes"
+            ? `/api/boards/all-notes/notes`
+            : `/api/boards/${boardId}/notes`
+        );
+        if (!cancelled && res.ok) {
+          const { notes } = await res.json();
+          setNotes(notes);
+        }
+      } catch (err) {
+        console.error("polling error", err);
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    // kick off immediately, then every 5 s
+    fetchNotes();
+    const id = setInterval(fetchNotes, 5_000);
+
+    // cancel on unmount / id change
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [boardId]);
+
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
