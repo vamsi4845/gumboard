@@ -47,3 +47,51 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser to access t
 - `npm run db:migrate` - Run database migrations
 - `npm run db:studio` - Open Prisma Studio (database GUI)
 - `npm run db:reset` - Reset database and run migrations
+
+---
+
+## 🔐 Google OAuth Setup
+
+To enable login with Google, follow these steps:
+
+### 1. Create Google OAuth Credentials
+
+1. Visit [Google Cloud Console](https://console.cloud.google.com/).
+2. Navigate to:  
+   `APIs & Services` → `Credentials` → `Create Credentials` → `OAuth Client ID`
+3. Choose **Web Application** as the application type.
+4. Add this to **Authorized redirect URIs**:
+   ```
+   http://localhost:3000/api/auth/callback/google
+   ```
+   *(Replace with your production URL if deploying)*
+
+---
+
+### 2. Add Environment Variables
+
+In your `.env.local` file, add:
+
+```env
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+```
+
+These must be kept secret and should not be committed to Git.
+
+---
+
+### 3. Test Locally
+
+- Run: `npm run dev`
+- Open `http://localhost:3000`
+- Click **“Continue with Google”**
+- Complete the sign-in flow and verify the login works
+
+---
+
+### ✅ Notes for E2E Testing
+
+If running E2E tests:
+- Use a test Google account
+- Or mock/stub the OAuth callback if automation is needed
