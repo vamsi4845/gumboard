@@ -2211,9 +2211,8 @@ export default function BoardPage({
                     }}
                     className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 text-gray-800 dark:text-gray-200"
                     placeholder="Enter note content..."
-                    onBlur={() => handleUpdateNote(note.id, editContent)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && e.ctrlKey) {
+                      if (e.key === "Enter") {
                         handleUpdateNote(note.id, editContent);
                       }
                       if (e.key === "Escape") {
@@ -2281,15 +2280,13 @@ export default function BoardPage({
                             setEditingChecklistItemContent(e.target.value)
                           }
                           className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
-                          onBlur={() =>
-                            handleEditChecklistItem(
-                              note.id,
-                              item.id,
-                              editingChecklistItemContent
-                            )
-                          }
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
+                              handleEditChecklistItem(
+                                note.id,
+                                item.id,
+                                editingChecklistItemContent
+                              );
                               const target = e.target as HTMLInputElement;
                               const cursorPosition = target.selectionStart || 0;
                               handleSplitChecklistItem(
@@ -2374,13 +2371,6 @@ export default function BoardPage({
                             setAddingChecklistItem(null);
                             setNewChecklistItemContent("");
                           }
-                        }}
-                        onBlur={() => {
-                          if (newChecklistItemContent.trim()) {
-                            handleAddChecklistItem(note.id);
-                          }
-                          // Don't close the input on blur - let user continue adding items
-                          // Only close on explicit Escape key
                         }}
                         autoFocus
                       />
