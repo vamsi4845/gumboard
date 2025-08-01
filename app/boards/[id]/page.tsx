@@ -374,44 +374,31 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boardId])
 
-  // Polling
+  const isEditingRef = useRef(false);           // always up‑to‑date in the interval
+
   useEffect(() => {
-    if (!boardId) return;             // nothing to poll yet
-
-    let cancelled = false;            // guards stale updates
-    let inFlight = false;             // prevents overlapping fetches
-
-    const fetchNotes = async () => {
-      if (inFlight) return;           // skip if the last call hasn’t finished
-      inFlight = true;
-
+    isEditingRef.current = editingNote !== null; // editingNote already exists in state
+  }, [editingNote]);
+  useEffect(() => {
+    let cancelled = false;
+    const inFlight = { v: false };
+  
+    const tick = async () => {
+      if (cancelled || isEditingRef.current || inFlight.v) return;  // 🔐 bail out
+      inFlight.v = true;
       try {
-        const res = await fetch(
-          boardId === "all-notes"
-            ? `/api/boards/all-notes/notes`
-            : `/api/boards/${boardId}/notes`
-        );
-        if (!cancelled && res.ok) {
-          const { notes } = await res.json();
-          setNotes(notes);
-        }
-      } catch (err) {
-        console.error("polling error", err);
+        await fetchBoardData();   // same helper you added earlier
       } finally {
-        inFlight = false;
+        inFlight.v = false;
       }
     };
-
-    // kick off immediately, then every 5 s
-    fetchNotes();
-    const id = setInterval(fetchNotes, 5_000);
-
-    // cancel on unmount / id change
+  
+    const id = setInterval(tick, 5_000);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [boardId]);
+  }, [boardId]);   // restart when the user switches boards
 
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
