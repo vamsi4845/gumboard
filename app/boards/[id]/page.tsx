@@ -2282,11 +2282,6 @@ export default function BoardPage({
                           className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
-                              handleEditChecklistItem(
-                                note.id,
-                                item.id,
-                                editingChecklistItemContent
-                              );
                               const target = e.target as HTMLInputElement;
                               const cursorPosition = target.selectionStart || 0;
                               handleSplitChecklistItem(
