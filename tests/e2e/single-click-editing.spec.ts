@@ -458,7 +458,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await input.clear();
     await input.fill('Updated item content');
-    await input.press('Enter');
+    await input.blur();
     
     await page.waitForTimeout(500);
     
