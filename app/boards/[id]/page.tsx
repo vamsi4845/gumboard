@@ -954,6 +954,40 @@ export default function BoardPage({
     await signOut();
   };
 
+  const handleAddBoard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBoardName.trim()) return;
+
+    try {
+      const response = await fetch("/api/boards", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newBoardName,
+          description: newBoardDescription,
+        }),
+      });
+
+      if (response.ok) {
+        const { board } = await response.json();
+        setAllBoards([board, ...allBoards]);
+        setNewBoardName("");
+        setNewBoardDescription("");
+        setShowAddBoard(false);
+        setShowBoardDropdown(false);
+        router.push(`/boards/${board.id}`);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to create board");
+      }
+    } catch (error) {
+      console.error("Error creating board:", error);
+      alert("Failed to create board");
+    }
+  };
+
   // Checklist handlers
   const handleConvertToChecklist = async (noteId: string) => {
     try {
@@ -1359,41 +1393,6 @@ export default function BoardPage({
       );
 
       if (response.ok) {
-
-  const handleAddBoard = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBoardName.trim()) return;
-
-    try {
-      const response = await fetch("/api/boards", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: newBoardName,
-          description: newBoardDescription,
-        }),
-      });
-
-      if (response.ok) {
-        const { board } = await response.json();
-        setAllBoards([board, ...allBoards]);
-        setNewBoardName("");
-        setNewBoardDescription("");
-        setShowAddBoard(false);
-        setShowBoardDropdown(false);
-        router.push(`/boards/${board.id}`);
-      } else {
-        const errorData = await response.json();
-        alert(errorData.error || "Failed to create board");
-      }
-    } catch (error) {
-      console.error("Error creating board:", error);
-      alert("Failed to create board");
-    }
-  };
-
         const { note } = await response.json();
         setNotes(notes.map((n) => (n.id === noteId ? note : n)));
         setEditingChecklistItem({ noteId, itemId: newItem.id });
