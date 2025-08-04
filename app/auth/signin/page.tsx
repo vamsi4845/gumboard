@@ -21,6 +21,8 @@ function SignInContent() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [isResent, setIsResent] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,6 +59,26 @@ function SignInContent() {
     }
   };
 
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    try {
+      const callbackUrl = searchParams.get("callbackUrl") || "/";
+      await signIn("resend", {
+        email,
+        redirect: false,
+        callbackUrl,
+      });
+      setIsResent(true);
+      setTimeout(() => {
+        setIsResent(false);
+      }, 2500);
+    } catch (error) {
+      console.error("Resend email error:", error);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   if (isSubmitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-950 dark:to-zinc-900 p-4 sm:p-6">
@@ -77,6 +99,9 @@ function SignInContent() {
             <p className="text-sm text-muted-foreground text-center mb-4 dark:text-zinc-400">
               Click the link in the email to sign in to your account. The link
               will expire in 24 hours.
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 text-center mb-4">
+              It may take up to 2 minutes for the email to arrive.
             </p>
             <div className="space-y-2">
               <Button
@@ -103,12 +128,19 @@ function SignInContent() {
             <Button
               variant="outline"
               className="w-full dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-900"
-              onClick={() => {
-                setIsSubmitted(false);
-                setEmail("");
-              }}
+              onClick={handleResendEmail}
+              disabled={isResending}
             >
-              Send another email
+              {isResending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending another email...
+                </>
+              ) : isResent ? (
+                "Sent!"
+              ) : (
+                "Send another email"
+              )}
             </Button>
           </CardFooter>
         </Card>
