@@ -1422,7 +1422,7 @@ export default function BoardPage({
               </button>
 
               {showBoardDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     {/* All Notes Option */}
                     <Link
@@ -1507,7 +1507,7 @@ export default function BoardPage({
               </button>
 
               {showAuthorDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
+                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     <button
                       onClick={() => {
@@ -1583,7 +1583,7 @@ export default function BoardPage({
               </button>
 
               {showSortDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
+                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
                   <div className="py-1">
                     {SORT_OPTIONS.map((option) => (
                       <button
@@ -1719,7 +1719,7 @@ export default function BoardPage({
               </button>
 
               {showUserDropdown && (
-                <div className="absolute right-0 mt-2 min-w-fit bg-card dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
+                <div className="absolute right-0 mt-2 min-w-fit bg-white dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
                   <div className="py-1">
                     <div className="px-4 py-2 text-sm text-muted-foreground dark:text-gray-400 border-b border-border dark:border-gray-600">
                       {user?.email}
@@ -1831,7 +1831,7 @@ export default function BoardPage({
           </button>
 
           {showAuthorDropdown && (
-            <div className="absolute left-0 right-0 mt-2 bg-background dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50 max-h-80 overflow-y-auto">
+            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50 max-h-80 overflow-y-auto">
               <div className="py-1">
                 <button
                   onClick={() => {
@@ -1901,7 +1901,7 @@ export default function BoardPage({
           </button>
 
           {showSortDropdown && (
-            <div className="absolute left-0 right-0 mt-2 bg-background dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
+            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
               <div className="py-1">
                 {SORT_OPTIONS.map((option) => (
                   <button

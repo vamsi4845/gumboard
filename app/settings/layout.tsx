@@ -107,7 +107,7 @@ export default function SettingsLayout({
             </button>
 
             {showUserDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-card dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
                 <div className="py-1">
                   <div className="px-4 py-2 text-sm text-muted-foreground dark:text-zinc-400 border-b dark:border-zinc-800">
                     {user?.email}
