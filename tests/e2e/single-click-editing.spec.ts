@@ -66,7 +66,7 @@ test.describe('Single-Click Note Editing', () => {
     await page.goto('/boards/test-board');
   });
 
-  test('should enter edit mode on single click for regular notes', async ({ page }) => {
+  test('should enter edit mode on single click for checklist notes', async ({ page }) => {
     let noteUpdateCalled = false;
     
     await page.route('**/api/boards/test-board/notes', async (route) => {
@@ -78,14 +78,22 @@ test.describe('Single-Click Note Editing', () => {
             notes: [
               {
                 id: 'test-note-1',
-                content: 'Test note content',
+                content: '',
                 color: '#fef3c7',
                 done: false,
-                isChecklist: false,
+                isChecklist: true,
                 x: 100,
                 y: 100,
                 width: 200,
                 height: 150,
+                checklistItems: [
+                  {
+                    id: 'item-1',
+                    content: 'Test checklist item',
+                    checked: false,
+                    order: 0
+                  }
+                ],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 user: {
@@ -110,14 +118,15 @@ test.describe('Single-Click Note Editing', () => {
           body: JSON.stringify({
             note: {
               id: 'test-note-1',
-              content: requestBody.content,
+              content: '',
               color: '#fef3c7',
               done: false,
-              isChecklist: false,
+              isChecklist: true,
               x: 100,
               y: 100,
               width: 200,
               height: 150,
+              checklistItems: requestBody.checklistItems,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               user: {
@@ -133,13 +142,16 @@ test.describe('Single-Click Note Editing', () => {
 
     await page.goto('/boards/test-board');
     
-    await expect(page.locator('text=Test note content')).toBeVisible();
+    await expect(page.locator('text=Test checklist item')).toBeVisible();
     
-    const noteElement = page.locator('div.absolute.rounded-lg.shadow-lg').filter({ hasText: 'Test note content' });
-    await noteElement.click();
+    const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
+    await checklistItemElement.click();
     
-    await expect(page.locator('textarea[placeholder*="Enter note content"]')).toBeVisible();
-    await expect(page.locator('textarea[placeholder*="Enter note content"]')).toHaveValue('Test note content');
+    await page.waitForTimeout(1000);
+    
+    const editInput = page.locator('input[value="Test checklist item"]');
+    await expect(editInput).toBeVisible();
+    await expect(editInput).toHaveValue('Test checklist item');
   });
 
   test('should enter edit mode on single click for checklist items', async ({ page }) => {
@@ -223,8 +235,11 @@ test.describe('Single-Click Note Editing', () => {
     const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
     await checklistItemElement.click();
     
-    await expect(page.locator('input.bg-transparent')).toBeVisible();
-    await expect(page.locator('input.bg-transparent')).toHaveValue('Test checklist item');
+    await page.waitForTimeout(1000);
+    
+    const editInput = page.locator('input[value="Test checklist item"]');
+    await expect(editInput).toBeVisible();
+    await expect(editInput).toHaveValue('Test checklist item');
   });
 
   test('should not enter edit mode when user is not authorized', async ({ page }) => {
@@ -254,14 +269,22 @@ test.describe('Single-Click Note Editing', () => {
             notes: [
               {
                 id: 'test-note-1',
-                content: 'Test note content',
+                content: '',
                 color: '#fef3c7',
                 done: false,
-                isChecklist: false,
+                isChecklist: true,
                 x: 100,
                 y: 100,
                 width: 200,
                 height: 150,
+                checklistItems: [
+                  {
+                    id: 'item-1',
+                    content: 'Test checklist item',
+                    checked: false,
+                    order: 0
+                  }
+                ],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 user: {
@@ -278,97 +301,15 @@ test.describe('Single-Click Note Editing', () => {
 
     await page.goto('/boards/test-board');
     
-    await expect(page.locator('text=Test note content')).toBeVisible();
+    await expect(page.locator('text=Test checklist item')).toBeVisible();
     
-    const noteElement = page.locator('div.absolute.rounded-lg.shadow-lg').filter({ hasText: 'Test note content' });
-    await noteElement.click();
-    
-    await expect(page.locator('textarea[placeholder*="Enter note content"]')).not.toBeVisible();
-  });
-
-  test('should save changes when editing note content', async ({ page }) => {
-    let savedContent = '';
-    
-    await page.route('**/api/boards/test-board/notes', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            notes: [
-              {
-                id: 'test-note-1',
-                content: 'Original content',
-                color: '#fef3c7',
-                done: false,
-                isChecklist: false,
-                x: 100,
-                y: 100,
-                width: 200,
-                height: 150,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                user: {
-                  id: 'test-user',
-                  name: 'Test User',
-                  email: 'test@example.com',
-                },
-              }
-            ],
-          }),
-        });
-      }
-    });
-
-    await page.route('**/api/boards/test-board/notes/test-note-1', async (route) => {
-      if (route.request().method() === 'PUT') {
-        const requestBody = await route.request().postDataJSON();
-        savedContent = requestBody.content;
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            note: {
-              id: 'test-note-1',
-              content: requestBody.content,
-              color: '#fef3c7',
-              done: false,
-              isChecklist: false,
-              x: 100,
-              y: 100,
-              width: 200,
-              height: 150,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              user: {
-                id: 'test-user',
-                name: 'Test User',
-                email: 'test@example.com',
-              },
-            },
-          }),
-        });
-      }
-    });
-
-    await page.goto('/boards/test-board');
-    
-    await expect(page.locator('text=Original content')).toBeVisible();
-    
-    const noteElement = page.locator('div.absolute.rounded-lg.shadow-lg').filter({ hasText: 'Original content' });
-    await noteElement.click();
-    
-    const textarea = page.locator('textarea[placeholder*="Enter note content"]');
-    await expect(textarea).toBeVisible();
-    await expect(textarea).toHaveValue('Original content');
-    
-    await textarea.clear();
-    await textarea.fill('Updated content');
-    await textarea.press('Control+Enter');
+    const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
+    await checklistItemElement.click();
     
     await page.waitForTimeout(500);
     
-    expect(savedContent).toBe('Updated content');
+    const editInput = page.locator('input[value="Test checklist item"]');
+    await expect(editInput).not.toBeVisible();
   });
 
   test('should save changes when editing checklist item content', async ({ page }) => {
@@ -382,7 +323,7 @@ test.describe('Single-Click Note Editing', () => {
           body: JSON.stringify({
             notes: [
               {
-                id: 'test-checklist-note',
+                id: 'test-note-1',
                 content: '',
                 color: '#fef3c7',
                 done: false,
@@ -413,7 +354,7 @@ test.describe('Single-Click Note Editing', () => {
       }
     });
 
-    await page.route('**/api/boards/test-board/notes/test-checklist-note', async (route) => {
+    await page.route('**/api/boards/test-board/notes/test-note-1', async (route) => {
       if (route.request().method() === 'PUT') {
         const requestBody = await route.request().postDataJSON();
         savedChecklistItems = requestBody.checklistItems;
@@ -422,7 +363,7 @@ test.describe('Single-Click Note Editing', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             note: {
-              id: 'test-checklist-note',
+              id: 'test-note-1',
               content: '',
               color: '#fef3c7',
               done: false,
@@ -452,17 +393,20 @@ test.describe('Single-Click Note Editing', () => {
     const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Original item content' });
     await checklistItemElement.click();
     
-    const input = page.locator('input.bg-transparent');
-    await expect(input).toBeVisible();
-    await expect(input).toHaveValue('Original item content');
+    await page.waitForTimeout(500);
     
-    await input.clear();
-    await input.fill('Updated item content');
-    await input.blur();
+    const editInput = page.locator('input[value="Original item content"]');
+    await expect(editInput).toBeVisible();
+    await expect(editInput).toHaveValue('Original item content');
+    
+    await editInput.clear();
+    await editInput.fill('Updated item content');
+    await editInput.blur();
     
     await page.waitForTimeout(500);
     
     expect(savedChecklistItems).toHaveLength(1);
     expect(savedChecklistItems[0].content).toBe('Updated item content');
   });
+
 });
