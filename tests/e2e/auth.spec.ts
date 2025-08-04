@@ -90,4 +90,47 @@ test.describe('Authentication Flow', () => {
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/.*auth.*signin/);
   });
+    test('should authenticate user via Google OAuth and access dashboard', async ({ page }) => {
+    await page.route('**/api/auth/session', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: {
+            id: 'google-user',
+            name: 'Google User',
+            email: 'google@example.com',
+            image: 'https://example.com/avatar.jpg',
+          },
+        }),
+      });
+    });
+
+    await page.route('**/api/user', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: {
+            id: 'google-user',
+            name: 'Google User',
+            email: 'google@example.com',
+          },
+        }),
+      });
+    });
+
+    await page.route('**/api/boards', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ boards: [] }),
+      });
+    });
+
+    await page.goto('/dashboard');
+
+    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page.locator('text=No boards yet')).toBeVisible();
+  });
 });
