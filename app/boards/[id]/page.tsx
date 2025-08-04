@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Pencil,
   Trash2,
   Edit3,
+  Plus,
   ChevronDown,
   Settings,
   LogOut,
@@ -98,6 +100,9 @@ export default function BoardPage({
   const [editContent, setEditContent] = useState("");
   const [showBoardDropdown, setShowBoardDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showAddBoard, setShowAddBoard] = useState(false);
+  const [newBoardName, setNewBoardName] = useState("");
+  const [newBoardDescription, setNewBoardDescription] = useState("");
   const [boardId, setBoardId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -504,19 +509,22 @@ export default function BoardPage({
         showBoardDropdown ||
         showUserDropdown ||
         showAuthorDropdown ||
-        showSortDropdown
+        showSortDropdown ||
+        showAddBoard
       ) {
         const target = event.target as Element;
         if (
           !target.closest(".board-dropdown") &&
           !target.closest(".user-dropdown") &&
           !target.closest(".author-dropdown") &&
-          !target.closest(".sort-dropdown")
+          !target.closest(".sort-dropdown") &&
+          !target.closest(".add-board-modal")
         ) {
           setShowBoardDropdown(false);
           setShowUserDropdown(false);
           setShowAuthorDropdown(false);
           setShowSortDropdown(false);
+          setShowAddBoard(false);
         }
       }
     };
@@ -547,6 +555,11 @@ export default function BoardPage({
         if (showSortDropdown) {
           setShowSortDropdown(false);
         }
+        if (showAddBoard) {
+          setShowAddBoard(false);
+          setNewBoardName("");
+          setNewBoardDescription("");
+        }
       }
     };
 
@@ -561,6 +574,7 @@ export default function BoardPage({
     showUserDropdown,
     showAuthorDropdown,
     showSortDropdown,
+    showAddBoard,
     editingNote,
     addingChecklistItem,
     editingChecklistItem,
@@ -1345,6 +1359,41 @@ export default function BoardPage({
       );
 
       if (response.ok) {
+
+  const handleAddBoard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBoardName.trim()) return;
+
+    try {
+      const response = await fetch("/api/boards", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: newBoardName,
+          description: newBoardDescription,
+        }),
+      });
+
+      if (response.ok) {
+        const { board } = await response.json();
+        setAllBoards([board, ...allBoards]);
+        setNewBoardName("");
+        setNewBoardDescription("");
+        setShowAddBoard(false);
+        setShowBoardDropdown(false);
+        router.push(`/boards/${board.id}`);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to create board");
+      }
+    } catch (error) {
+      console.error("Error creating board:", error);
+      alert("Failed to create board");
+    }
+  };
+
         const { note } = await response.json();
         setNotes(notes.map((n) => (n.id === noteId ? note : n)));
         setEditingChecklistItem({ noteId, itemId: newItem.id });
@@ -1461,6 +1510,32 @@ export default function BoardPage({
                         )}
                       </Link>
                     ))}
+                    {allBoards.length > 0 && (
+                      <div className="border-t border-border dark:border-zinc-800 my-1"></div>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowAddBoard(true);
+                        setShowBoardDropdown(false);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      <span className="font-medium">Create new board</span>
+                    </button>
+                    {allBoards.length > 0 && (
+                      <div className="border-t border-border dark:border-zinc-800 my-1"></div>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowAddBoard(true);
+                        setShowBoardDropdown(false);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      <span className="font-medium">Create new board</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -2518,6 +2593,75 @@ export default function BoardPage({
           </div>
         )}
       </div>
+
+      {showAddBoard && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black/40 dark:bg-black/70 backdrop-blur-sm add-board-modal"
+          onClick={() => {
+            setShowAddBoard(false);
+            setNewBoardName("");
+            setNewBoardDescription("");
+          }}
+        >
+          <div
+            className="bg-white dark:bg-zinc-950 bg-opacity-95 dark:bg-opacity-95 rounded-xl p-5 sm:p-7 w-full max-w-sm sm:max-w-md shadow-2xl border border-border dark:border-zinc-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-zinc-100">
+              Create new board
+            </h3>
+            <form onSubmit={handleAddBoard}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground dark:text-zinc-200 mb-1">
+                    Board name
+                  </label>
+                  <Input
+                    type="text"
+                    value={newBoardName}
+                    onChange={(e) => setNewBoardName(e.target.value)}
+                    placeholder="Enter board name"
+                    required
+                    className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-border dark:border-zinc-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground dark:text-zinc-200 mb-1">
+                    Description (optional)
+                  </label>
+                  <Input
+                    type="text"
+                    value={newBoardDescription}
+                    onChange={(e) => setNewBoardDescription(e.target.value)}
+                    placeholder="Enter board description"
+                    className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-border dark:border-zinc-700"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddBoard(false);
+                    setNewBoardName("");
+                    setNewBoardDescription("");
+                  }}
+                  className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-border dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 dark:text-zinc-100"
+                >
+                  Create board
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
