@@ -1548,19 +1548,6 @@ export default function BoardPage({
                       <Plus className="w-4 h-4 mr-2" />
                       <span className="font-medium">Create new board</span>
                     </button>
-                    {allBoards.length > 0 && (
-                      <div className="border-t border-border dark:border-zinc-800 my-1"></div>
-                    )}
-                    <button
-                      onClick={() => {
-                        setShowAddBoard(true);
-                        setShowBoardDropdown(false);
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      <span className="font-medium">Create new board</span>
-                    </button>
                   </div>
                 </div>
               )}

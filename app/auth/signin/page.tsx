@@ -22,7 +22,6 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const router = useRouter();
-  const error = searchParams.get("error");
 
   useEffect(() => {
     const emailParam = searchParams.get("email");
