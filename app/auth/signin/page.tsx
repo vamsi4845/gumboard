@@ -22,7 +22,6 @@ function SignInContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const router = useRouter();
-  const error = searchParams.get("error");
 
   useEffect(() => {
     const emailParam = searchParams.get("email");
@@ -37,7 +36,6 @@ function SignInContent() {
       router.replace(`/auth/error?error=${errorParam}`);
     }
   }, [searchParams, router]);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,9 +65,12 @@ function SignInContent() {
             <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
               <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-2xl dark:text-zinc-100">Check your email</CardTitle>
+            <CardTitle className="text-2xl dark:text-zinc-100">
+              Check your email
+            </CardTitle>
             <CardDescription className="dark:text-zinc-400">
-              We&apos;ve sent a magic link to <strong className="dark:text-zinc-100">{email}</strong>
+              We&apos;ve sent a magic link to{" "}
+              <strong className="dark:text-zinc-100">{email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -141,7 +142,9 @@ function SignInContent() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email" className="dark:text-zinc-200">Email address</Label>
+              <Label htmlFor="email" className="dark:text-zinc-200">
+                Email address
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -198,10 +201,22 @@ function SignInContent() {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <path d="M44.5 20H24v8.5h11.9C34.3 32.4 29.8 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8.1 3.1l6-6C34.1 4.3 29.3 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11.3 0 20.8-8.2 22-19h-1.5z" fill="#FFC107" />
-                <path d="M6.3 14.7l7 5.1C14.5 16.4 18.9 14 24 14c3.1 0 5.9 1.2 8.1 3.1l6-6C34.1 4.3 29.3 2 24 2c-7.7 0-14.3 3.7-18.3 9.5l.6 3.2z" fill="#FF3D00" />
-                <path d="M24 46c5.8 0 11.1-2.2 15.1-5.7l-7-5.7c-2 1.4-4.6 2.2-8.1 2.2-5.8 0-10.6-3.9-12.3-9.2l-7.1 5.5C7.6 41.5 15.2 46 24 46z" fill="#4CAF50" />
-                <path d="M44.5 20H24v8.5h11.9c-1.1 3.2-3.5 5.8-6.6 7.2l7 5.7c4.1-3.4 6.8-8.5 6.8-14.4 0-1.3-.1-2.5-.3-3.7z" fill="#1976D2" />
+                <path
+                  d="M44.5 20H24v8.5h11.9C34.3 32.4 29.8 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8.1 3.1l6-6C34.1 4.3 29.3 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c11.3 0 20.8-8.2 22-19h-1.5z"
+                  fill="#FFC107"
+                />
+                <path
+                  d="M6.3 14.7l7 5.1C14.5 16.4 18.9 14 24 14c3.1 0 5.9 1.2 8.1 3.1l6-6C34.1 4.3 29.3 2 24 2c-7.7 0-14.3 3.7-18.3 9.5l.6 3.2z"
+                  fill="#FF3D00"
+                />
+                <path
+                  d="M24 46c5.8 0 11.1-2.2 15.1-5.7l-7-5.7c-2 1.4-4.6 2.2-8.1 2.2-5.8 0-10.6-3.9-12.3-9.2l-7.1 5.5C7.6 41.5 15.2 46 24 46z"
+                  fill="#4CAF50"
+                />
+                <path
+                  d="M44.5 20H24v8.5h11.9c-1.1 3.2-3.5 5.8-6.6 7.2l7 5.7c4.1-3.4 6.8-8.5 6.8-14.4 0-1.3-.1-2.5-.3-3.7z"
+                  fill="#1976D2"
+                />
               </svg>
               Continue with Google
             </Button>
@@ -220,7 +235,9 @@ function LoadingFallback() {
           <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4 dark:bg-zinc-800">
             <div className="w-6 h-6 animate-spin rounded-full border-2 border-muted-foreground border-t-foreground dark:border-zinc-700 dark:border-t-zinc-100" />
           </div>
-          <CardTitle className="text-xl sm:text-2xl dark:text-zinc-100">Loading...</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl dark:text-zinc-100">
+            Loading...
+          </CardTitle>
           <CardDescription className="dark:text-zinc-400">
             Please wait while we prepare the sign in page
           </CardDescription>
