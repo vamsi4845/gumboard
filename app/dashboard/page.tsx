@@ -115,20 +115,6 @@ export default function Dashboard() {
         const { boards } = await boardsResponse.json();
         setBoards(boards);
 
-        try {
-          const lastVisitedBoardId = localStorage.getItem("gumboard-last-visited-board");
-          if (lastVisitedBoardId) {
-            const boardExists = boards.some((board: Board) => board.id === lastVisitedBoardId);
-            if (boardExists) {
-              router.push(`/boards/${lastVisitedBoardId}`);
-              return;
-            } else {
-              localStorage.removeItem("gumboard-last-visited-board");
-            }
-          }
-        } catch (error) {
-          console.warn("Failed to check last visited board:", error);
-        }
       }
     } catch (error) {
       console.error("Error fetching data:", error);
