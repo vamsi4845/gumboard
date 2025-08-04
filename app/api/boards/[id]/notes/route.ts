@@ -73,7 +73,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { content, color } = await request.json()
+    const { content, color, isChecklist, checklistItems } = await request.json()
     const boardId = (await params).id
 
     // Verify user has access to this board (same organization)
@@ -106,6 +106,8 @@ export async function POST(
         color: randomColor,
         boardId,
         createdBy: session.user.id,
+        ...(isChecklist !== undefined && { isChecklist }),
+        ...(checklistItems !== undefined && { checklistItems }),
       },
       include: {
         user: {
@@ -139,4 +141,4 @@ export async function POST(
     console.error("Error creating note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}    
+}                

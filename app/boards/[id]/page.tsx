@@ -866,6 +866,13 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             content: "",
+            isChecklist: true,
+            checklistItems: [{
+              id: `item-${Date.now()}`,
+              content: "",
+              checked: false,
+              order: 0,
+            }],
             ...(isAllNotesView && { boardId: targetBoardId }),
           }),
         }
@@ -874,8 +881,8 @@ export default function BoardPage({
       if (response.ok) {
         const { note } = await response.json();
         setNotes([...notes, note]);
-        setEditingNote(note.id);
-        setEditContent("");
+        setAddingChecklistItem(note.id);
+        setNewChecklistItemContent("");
       }
     } catch (error) {
       console.error("Error creating note:", error);
@@ -1113,8 +1120,6 @@ export default function BoardPage({
         const { note } = await response.json();
         setNotes(notes.map((n) => (n.id === noteId ? note : n)));
         setNewChecklistItemContent("");
-        // Keep addingChecklistItem active so user can continue adding items
-        // setAddingChecklistItem(null) - removed this line
       }
     } catch (error) {
       console.error("Error adding checklist item:", error);
@@ -2140,7 +2145,7 @@ export default function BoardPage({
           {layoutNotes.map((note) => (
             <div
               key={note.id}
-              className={`absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border ${
+              className={`absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border note-background ${
                 note.done ? "opacity-80" : ""
               }`}
               style={{
@@ -2156,11 +2161,21 @@ export default function BoardPage({
                 height: note.height,
                 padding: `${getResponsiveConfig().notePadding}px`,
               }}
-              onClick={() => {
+              onClick={(e) => {
                 // Allow editing if user is the note author or admin
                 if (user?.id === note.user.id || user?.isAdmin) {
-                  setEditingNote(note.id);
-                  setEditContent(note.content);
+                  // Check if click was on background (not on existing content)
+                  const target = e.target as HTMLElement;
+                  const isBackgroundClick = target.classList.contains('note-background') || 
+                                          target.closest('.note-background') === e.currentTarget;
+                  
+                  if (note.isChecklist && isBackgroundClick && addingChecklistItem !== note.id) {
+                    // Create new checklist item on background click
+                    setAddingChecklistItem(note.id);
+                  } else if (!note.isChecklist || !isBackgroundClick) {
+                    setEditingNote(note.id);
+                    setEditContent(note.content);
+                  }
                 }
               }}
             >
@@ -2488,39 +2503,6 @@ export default function BoardPage({
                 </div>
               )}
 
-              {(user?.id === note.user.id || user?.isAdmin) &&
-                addingChecklistItem !== note.id && (
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                    <button
-                      onClick={() => {
-                        if (note.isChecklist) {
-                          setAddingChecklistItem(note.id);
-                        } else {
-                          handleConvertToChecklist(note.id);
-                        }
-                      }}
-                      className="rounded-full w-10 h-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:shadow-xl border-2 border-white dark:border-gray-800"
-                      style={{
-                        backgroundColor:
-                          typeof window !== "undefined" &&
-                          window.matchMedia &&
-                          window.matchMedia("(prefers-color-scheme: dark)")
-                            .matches
-                            ? `${note.color}20`
-                            : note.color,
-                      }}
-                      title={
-                        note.isChecklist
-                          ? "Add checklist item"
-                          : "Convert to checklist"
-                      }
-                    >
-                      <div className="bg-white dark:bg-gray-900 rounded-full w-8 h-8 flex items-center justify-center">
-                        <Pencil className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                      </div>
-                    </button>
-                  </div>
-                )}
             </div>
           ))}
         </div>
