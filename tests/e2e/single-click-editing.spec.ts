@@ -149,7 +149,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await page.waitForTimeout(1000);
     
-    const editInput = page.locator('input[value="Test checklist item"]');
+    const editInput = page.locator('input.flex-1.bg-transparent.border-none.outline-none:not([placeholder])');
     await expect(editInput).toBeVisible();
     await expect(editInput).toHaveValue('Test checklist item');
   });
@@ -237,7 +237,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await page.waitForTimeout(1000);
     
-    const editInput = page.locator('input[value="Test checklist item"]');
+    const editInput = page.locator('input.flex-1.bg-transparent.border-none.outline-none:not([placeholder])');
     await expect(editInput).toBeVisible();
     await expect(editInput).toHaveValue('Test checklist item');
   });
@@ -308,7 +308,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await page.waitForTimeout(500);
     
-    const editInput = page.locator('input[value="Test checklist item"]');
+    const editInput = page.locator('input.flex-1.bg-transparent.border-none.outline-none:not([placeholder])');
     await expect(editInput).not.toBeVisible();
   });
 
@@ -395,7 +395,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await page.waitForTimeout(500);
     
-    const editInput = page.locator('input[value="Original item content"]');
+    const editInput = page.locator('input.flex-1.bg-transparent.border-none.outline-none:not([placeholder])');
     await expect(editInput).toBeVisible();
     await expect(editInput).toHaveValue('Original item content');
     
