@@ -76,22 +76,3 @@ In your `.env.local` file, add:
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
 ```
-
-These must be kept secret and should not be committed to Git.
-
----
-
-### 3. Test Locally
-
-- Run: `npm run dev`
-- Open `http://localhost:3000`
-- Click **“Continue with Google”**
-- Complete the sign-in flow and verify the login works
-
----
-
-### ✅ Notes for E2E Testing
-
-If running E2E tests:
-- Use a test Google account
-- Or mock/stub the OAuth callback if automation is needed
