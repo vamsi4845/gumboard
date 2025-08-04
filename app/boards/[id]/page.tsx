@@ -1021,62 +1021,6 @@ export default function BoardPage({
     }
   };
 
-  // Checklist handlers
-  const handleConvertToChecklist = async (noteId: string) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote) return;
-
-      const targetBoardId =
-        boardId === "all-notes" && currentNote.board?.id
-          ? currentNote.board.id
-          : boardId;
-
-      // Create checklist items from existing content, splitting by newlines
-      const lines = currentNote.content
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0);
-
-      const checklistItems: ChecklistItem[] =
-        lines.length > 0
-          ? lines.map((line, index) => ({
-              id: `item-${Date.now()}-${index}`,
-              content: line,
-              checked: false,
-              order: index,
-            }))
-          : [
-              {
-                id: `item-${Date.now()}`,
-                content: "",
-                checked: false,
-                order: 0,
-              },
-            ];
-
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            isChecklist: true,
-            checklistItems: checklistItems,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      }
-    } catch (error) {
-      console.error("Error converting to checklist:", error);
-    }
-  };
 
   const handleAddChecklistItem = async (noteId: string) => {
     if (!newChecklistItemContent.trim()) return;
@@ -2306,10 +2250,6 @@ export default function BoardPage({
                     onChange={(e) => {
                       const newValue = e.target.value;
                       setEditContent(newValue);
-
-                      if (newValue.includes("[ ]") && !note.isChecklist) {
-                        handleConvertToChecklist(note.id);
-                      }
                     }}
                     className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 text-gray-800 dark:text-gray-200"
                     placeholder="Enter note content..."
