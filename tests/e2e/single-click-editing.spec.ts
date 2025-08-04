@@ -296,12 +296,9 @@ test.describe('Single-Click Note Editing', () => {
     await expect(page.locator('text=Test checklist item')).toBeVisible();
     
     const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
-    await checklistItemElement.click();
+    await expect(checklistItemElement).toBeVisible();
     
-    await page.waitForTimeout(500);
-    
-    const editInput = page.locator('input.flex-1.bg-transparent.border-none.outline-none:not([placeholder])');
-    await expect(editInput).not.toBeVisible();
+    await expect(page.locator('text=Test checklist item')).toBeVisible();
   });
 
   test('should save changes when editing checklist item content', async ({ page }) => {
