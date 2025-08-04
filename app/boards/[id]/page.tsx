@@ -14,14 +14,11 @@ import {
   LogOut,
   Search,
   User,
-  ArrowUpDown,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { FullPageLoader } from "@/components/ui/loader";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { FilterPopover } from "@/components/ui/filter-popover";
 
 interface ChecklistItem {
   id: string;
@@ -66,25 +63,6 @@ interface User {
   } | null;
 }
 
-type SortOption = "created-desc" | "created-asc" | "author-name";
-
-const SORT_OPTIONS = [
-  {
-    value: "created-desc" as SortOption,
-    label: "Newest first",
-    description: "Created at (descending)",
-  },
-  {
-    value: "created-asc" as SortOption,
-    label: "Oldest first",
-    description: "Created at (ascending)",
-  },
-  {
-    value: "author-name" as SortOption,
-    label: "Author name",
-    description: "Alphabetical by name",
-  },
-] as const;
 
 export default function BoardPage({
   params,
@@ -114,9 +92,6 @@ export default function BoardPage({
     endDate: null,
   });
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
-  const [showAuthorDropdown, setShowAuthorDropdown] = useState(false);
-  const [sortBy, setSortBy] = useState<SortOption>("created-desc");
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showDoneNotes, setShowDoneNotes] = useState(false);
   const [addingChecklistItem, setAddingChecklistItem] = useState<string | null>(
     null
@@ -138,7 +113,6 @@ export default function BoardPage({
     newSearchTerm?: string,
     newDateRange?: { startDate: Date | null; endDate: Date | null },
     newAuthor?: string | null,
-    newSort?: SortOption,
     newShowDone?: boolean
   ) => {
     const params = new URLSearchParams();
@@ -148,7 +122,6 @@ export default function BoardPage({
     const currentDateRange =
       newDateRange !== undefined ? newDateRange : dateRange;
     const currentAuthor = newAuthor !== undefined ? newAuthor : selectedAuthor;
-    const currentSort = newSort !== undefined ? newSort : sortBy;
     const currentShowDone =
       newShowDone !== undefined ? newShowDone : showDoneNotes;
 
@@ -174,10 +147,6 @@ export default function BoardPage({
       params.set("author", currentAuthor);
     }
 
-    if (currentSort !== "created-desc") {
-      params.set("sort", currentSort);
-    }
-
     if (currentShowDone) {
       // Only add if not default (false)
       params.set("showDone", "true");
@@ -194,18 +163,7 @@ export default function BoardPage({
     const urlStartDate = searchParams.get("startDate");
     const urlEndDate = searchParams.get("endDate");
     const urlAuthor = searchParams.get("author");
-    const urlSort = (searchParams.get("sort") as SortOption) || "created-desc";
     const urlShowDone = searchParams.get("showDone");
-
-    // Validate sort option
-    const validSortOptions: SortOption[] = [
-      "created-desc",
-      "created-asc",
-      "author-name",
-    ];
-    const validSort = validSortOptions.includes(urlSort)
-      ? urlSort
-      : "created-desc";
 
     setSearchTerm(urlSearchTerm);
 
@@ -229,7 +187,6 @@ export default function BoardPage({
 
     setDateRange({ startDate, endDate });
     setSelectedAuthor(urlAuthor);
-    setSortBy(validSort);
     // Default to false if not specified, otherwise parse the boolean
     setShowDoneNotes(urlShowDone === null ? false : urlShowDone === "true");
   };
@@ -534,22 +491,16 @@ export default function BoardPage({
       if (
         showBoardDropdown ||
         showUserDropdown ||
-        showAuthorDropdown ||
-        showSortDropdown ||
         showAddBoard
       ) {
         const target = event.target as Element;
         if (
           !target.closest(".board-dropdown") &&
           !target.closest(".user-dropdown") &&
-          !target.closest(".author-dropdown") &&
-          !target.closest(".sort-dropdown") &&
           !target.closest(".add-board-modal")
         ) {
           setShowBoardDropdown(false);
           setShowUserDropdown(false);
-          setShowAuthorDropdown(false);
-          setShowSortDropdown(false);
           setShowAddBoard(false);
         }
       }
@@ -575,12 +526,6 @@ export default function BoardPage({
         if (showUserDropdown) {
           setShowUserDropdown(false);
         }
-        if (showAuthorDropdown) {
-          setShowAuthorDropdown(false);
-        }
-        if (showSortDropdown) {
-          setShowSortDropdown(false);
-        }
         if (showAddBoard) {
           setShowAddBoard(false);
           setNewBoardName("");
@@ -598,8 +543,6 @@ export default function BoardPage({
   }, [
     showBoardDropdown,
     showUserDropdown,
-    showAuthorDropdown,
-    showSortDropdown,
     showAddBoard,
     editingNote,
     addingChecklistItem,
@@ -655,13 +598,12 @@ export default function BoardPage({
     );
   };
 
-  // Filter and sort notes based on search term, date range, author, and sort option
+  // Filter notes based on search term, date range, author, and done status
   const filterAndSortNotes = (
     notes: Note[],
     searchTerm: string,
     dateRange: { startDate: Date | null; endDate: Date | null },
     authorId: string | null,
-    sortOption: SortOption,
     showDone: boolean,
     currentUser: User | null
   ): Note[] => {
@@ -718,7 +660,7 @@ export default function BoardPage({
       });
     }
 
-    // Sort notes
+    // Sort notes with user priority (current user's notes first) and then by creation date (newest first)
     filteredNotes.sort((a, b) => {
       // First priority: logged-in user's notes come first
       if (currentUser) {
@@ -738,25 +680,10 @@ export default function BoardPage({
         return a.done ? 1 : -1; // Undone notes (false) come first
       }
 
-      // Third priority: sort by the selected option
-      switch (sortOption) {
-        case "created-asc":
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-        case "created-desc":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-        case "author-name":
-          const authorNameA = (a.user.name || a.user.email).toLowerCase();
-          const authorNameB = (b.user.name || b.user.email).toLowerCase();
-          return authorNameA.localeCompare(authorNameB);
-        default:
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-      }
+      // Third priority: newest first
+      return (
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
     });
 
     return filteredNotes;
@@ -771,7 +698,6 @@ export default function BoardPage({
     searchTerm,
     dateRange,
     selectedAuthor,
-    sortBy,
     showDoneNotes,
     user
   );
@@ -1566,9 +1492,9 @@ export default function BoardPage({
               )}
             </div>
 
-            {/* Date Range Picker */}
-            <div className="hidden lg:block">
-              <DateRangePicker
+            {/* Filter Popover */}
+            <div className="hidden md:block">
+              <FilterPopover
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
                 onDateRangeChange={(startDate, endDate) => {
@@ -1576,179 +1502,19 @@ export default function BoardPage({
                   setDateRange(newDateRange);
                   updateURL(undefined, newDateRange);
                 }}
+                selectedAuthor={selectedAuthor}
+                authors={uniqueAuthors}
+                onAuthorChange={(authorId) => {
+                  setSelectedAuthor(authorId);
+                  updateURL(undefined, undefined, authorId);
+                }}
+                showCompleted={showDoneNotes}
+                onShowCompletedChange={(show) => {
+                  setShowDoneNotes(show);
+                  updateURL(undefined, undefined, undefined, show);
+                }}
                 className="min-w-fit"
               />
-            </div>
-
-            {/* Author Filter Dropdown */}
-            <div className="relative author-dropdown hidden md:block">
-              <button
-                onClick={() => {
-                  const isFilterDropDownOpen = showSortDropdown;
-                  setShowAuthorDropdown(!showAuthorDropdown);
-                  if (isFilterDropDownOpen) {
-                    setShowSortDropdown(false);
-                  }
-                }}
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-border dark:border-zinc-800 rounded-md bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors"
-              >
-                <User className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
-                <span className="text-foreground dark:text-zinc-100 truncate max-w-32">
-                  {selectedAuthor
-                    ? uniqueAuthors.find((a) => a.id === selectedAuthor)
-                        ?.name || "Unknown author"
-                    : "All authors"}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform ${
-                    showAuthorDropdown ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {showAuthorDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setSelectedAuthor(null);
-                        setShowAuthorDropdown(false);
-                        updateURL(undefined, undefined, null);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 flex items-center space-x-3 ${
-                        !selectedAuthor
-                          ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
-                          : "text-foreground dark:text-zinc-100"
-                      }`}
-                    >
-                      <User className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
-                      <span className="font-medium">All authors</span>
-                    </button>
-                    {uniqueAuthors.map((author) => (
-                      <button
-                        key={author.id}
-                        onClick={() => {
-                          setSelectedAuthor(author.id);
-                          setShowAuthorDropdown(false);
-                          updateURL(undefined, undefined, author.id);
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 flex items-center space-x-3 ${
-                          selectedAuthor === author.id
-                            ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
-                            : "text-foreground dark:text-zinc-100"
-                        }`}
-                      >
-                        <div className="w-8 h-8 bg-blue-500 dark:bg-zinc-800 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-medium text-white">
-                            {author.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium truncate">
-                            {author.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground dark:text-zinc-400 truncate">
-                            {author.email}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="relative sort-dropdown hidden md:block">
-              <button
-                onClick={() => {
-                  const isAuthorDropDownOpen = showAuthorDropdown;
-                  setShowSortDropdown(!showSortDropdown);
-                  if (isAuthorDropDownOpen) {
-                    setShowAuthorDropdown(false);
-                  }
-                }}
-                className="flex items-center space-x-2 px-3 py-2 text-sm border border-border dark:border-zinc-800 rounded-md bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors"
-              >
-                <ArrowUpDown className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
-                <span className="text-foreground dark:text-zinc-100 truncate max-w-32">
-                  {SORT_OPTIONS.find((option) => option.value === sortBy)
-                    ?.label || "Sort"}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform ${
-                    showSortDropdown ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {showSortDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
-                  <div className="py-1">
-                    {SORT_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setSortBy(option.value);
-                          setShowSortDropdown(false);
-                          updateURL(
-                            undefined,
-                            undefined,
-                            undefined,
-                            option.value
-                          );
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
-                          sortBy === option.value
-                            ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
-                            : "text-foreground dark:text-zinc-100"
-                        }`}
-                      >
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
-                          {option.description}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Show/Hide Completed Notes Toggle */}
-            <div className="hidden md:block">
-              <button
-                onClick={() => {
-                  const newShowDone = !showDoneNotes;
-                  setShowDoneNotes(newShowDone);
-                  updateURL(
-                    undefined,
-                    undefined,
-                    undefined,
-                    undefined,
-                    newShowDone
-                  );
-                }}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors ${
-                  showDoneNotes
-                    ? "border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-zinc-900/70 hover:bg-blue-100 dark:hover:bg-zinc-900/80 text-blue-700 dark:text-blue-300"
-                    : "border-border dark:border-zinc-800 bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 text-foreground dark:text-zinc-100"
-                }`}
-                title={
-                  showDoneNotes
-                    ? "Hide completed notes"
-                    : "Show completed notes"
-                }
-              >
-                {showDoneNotes ? (
-                  <EyeOff className="w-4 h-4" />
-                ) : (
-                  <Eye className="w-4 h-4" />
-                )}
-                <span className="truncate max-w-28">
-                  {showDoneNotes ? "Hide completed" : "Show completed"}
-                </span>
-              </button>
             </div>
           </div>
 
@@ -1894,9 +1660,9 @@ export default function BoardPage({
           )}
         </div>
 
-        {/* Mobile Date Range Picker */}
-        <div className="lg:hidden">
-          <DateRangePicker
+        {/* Mobile Filter Popover */}
+        <div className="md:hidden">
+          <FilterPopover
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
             onDateRangeChange={(startDate, endDate) => {
@@ -1904,158 +1670,19 @@ export default function BoardPage({
               setDateRange(newDateRange);
               updateURL(undefined, newDateRange);
             }}
+            selectedAuthor={selectedAuthor}
+            authors={uniqueAuthors}
+            onAuthorChange={(authorId) => {
+              setSelectedAuthor(authorId);
+              updateURL(undefined, undefined, authorId);
+            }}
+            showCompleted={showDoneNotes}
+            onShowCompletedChange={(show) => {
+              setShowDoneNotes(show);
+              updateURL(undefined, undefined, undefined, show);
+            }}
             className="w-full"
           />
-        </div>
-
-        {/* Mobile Author Filter */}
-        <div className="md:hidden relative author-dropdown">
-          <button
-            onClick={() => setShowAuthorDropdown(!showAuthorDropdown)}
-            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-md bg-background dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
-          >
-            <div className="flex items-center space-x-2">
-              <User className="w-4 h-4 text-muted-foreground dark:text-gray-400" />
-              <span className="text-foreground dark:text-gray-200">
-                {selectedAuthor
-                  ? uniqueAuthors.find((a) => a.id === selectedAuthor)?.name ||
-                    "Unknown author"
-                  : "All authors"}
-              </span>
-            </div>
-            <ChevronDown
-              className={`w-4 h-4 text-muted-foreground dark:text-gray-400 transition-transform ${
-                showAuthorDropdown ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          {showAuthorDropdown && (
-            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50 max-h-80 overflow-y-auto">
-              <div className="py-1">
-                <button
-                  onClick={() => {
-                    setSelectedAuthor(null);
-                    setShowAuthorDropdown(false);
-                    updateURL(undefined, undefined, null);
-                  }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-gray-700 flex items-center space-x-3 ${
-                    !selectedAuthor
-                      ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                      : "text-foreground dark:text-gray-200"
-                  }`}
-                >
-                  <User className="w-4 h-4 text-muted-foreground dark:text-gray-400" />
-                  <span className="font-medium">All authors</span>
-                </button>
-                {uniqueAuthors.map((author) => (
-                  <button
-                    key={author.id}
-                    onClick={() => {
-                      setSelectedAuthor(author.id);
-                      setShowAuthorDropdown(false);
-                      updateURL(undefined, undefined, author.id);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-gray-700 flex items-center space-x-3 ${
-                      selectedAuthor === author.id
-                        ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                        : "text-foreground dark:text-gray-200"
-                    }`}
-                  >
-                    <div className="w-8 h-8 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium text-white">
-                        {author.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-medium truncate">{author.name}</div>
-                      <div className="text-xs text-muted-foreground dark:text-gray-400 truncate">
-                        {author.email}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Sort Dropdown */}
-        <div className="md:hidden relative sort-dropdown">
-          <button
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className="w-full flex items-center justify-between px-3 py-2 text-sm border border-border dark:border-gray-600 rounded-md bg-background dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors"
-          >
-            <div className="flex items-center space-x-2">
-              <ArrowUpDown className="w-4 h-4 text-muted-foreground dark:text-gray-400" />
-              <span className="text-foreground dark:text-gray-200">
-                {SORT_OPTIONS.find((option) => option.value === sortBy)
-                  ?.label || "Sort"}
-              </span>
-            </div>
-            <ChevronDown
-              className={`w-4 h-4 text-muted-foreground dark:text-gray-400 transition-transform ${
-                showSortDropdown ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          {showSortDropdown && (
-            <div className="absolute left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-border dark:border-gray-600 z-50">
-              <div className="py-1">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => {
-                      setSortBy(option.value);
-                      setShowSortDropdown(false);
-                      updateURL(undefined, undefined, undefined, option.value);
-                    }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-accent dark:hover:bg-gray-700 ${
-                      sortBy === option.value
-                        ? "bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-                        : "text-foreground dark:text-gray-200"
-                    }`}
-                  >
-                    <div className="font-medium">{option.label}</div>
-                    <div className="text-xs text-muted-foreground dark:text-gray-400 mt-1">
-                      {option.description}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="md:hidden">
-          <button
-            onClick={() => {
-              const newShowDone = !showDoneNotes;
-              setShowDoneNotes(newShowDone);
-              updateURL(
-                undefined,
-                undefined,
-                undefined,
-                undefined,
-                newShowDone
-              );
-            }}
-            className={`w-full flex items-center justify-center space-x-2 px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-colors ${
-              showDoneNotes
-                ? "border-blue-300 dark:border-zinc-700 bg-blue-50 dark:bg-zinc-900 hover:bg-blue-100 dark:hover:bg-zinc-800 text-blue-700 dark:text-zinc-100"
-                : "border-border dark:border-gray-600 bg-background dark:bg-gray-700 hover:bg-accent dark:hover:bg-gray-600 text-foreground dark:text-gray-200"
-            }`}
-          >
-            {showDoneNotes ? (
-              <EyeOff className="w-4 h-4" />
-            ) : (
-              <Eye className="w-4 h-4" />
-            )}
-            <span>
-              {showDoneNotes ? "Hide Completed Notes" : "Show Completed Notes"}
-            </span>
-          </button>
         </div>
       </div>
       {/* Board Area */}
@@ -2072,7 +1699,6 @@ export default function BoardPage({
           dateRange.startDate ||
           dateRange.endDate ||
           selectedAuthor ||
-          sortBy !== "created-desc" ||
           showDoneNotes) && (
           <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/50 border-b border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
             <div className="flex flex-wrap items-center gap-2">
@@ -2113,13 +1739,6 @@ export default function BoardPage({
                     : "..."}
                 </span>
               )}
-              {sortBy !== "created-desc" && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
-                  Sort:{" "}
-                  {SORT_OPTIONS.find((option) => option.value === sortBy)
-                    ?.label || "Custom"}
-                </span>
-              )}
               {showDoneNotes && (
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
                   Completed notes shown
@@ -2130,13 +1749,11 @@ export default function BoardPage({
                   setSearchTerm("");
                   setDateRange({ startDate: null, endDate: null });
                   setSelectedAuthor(null);
-                  setSortBy("created-desc");
                   setShowDoneNotes(false);
                   updateURL(
                     "",
                     { startDate: null, endDate: null },
                     null,
-                    "created-desc",
                     false
                   );
                 }}
@@ -2578,13 +2195,11 @@ export default function BoardPage({
                   setSearchTerm("");
                   setDateRange({ startDate: null, endDate: null });
                   setSelectedAuthor(null);
-                  setSortBy("created-desc");
                   setShowDoneNotes(false);
                   updateURL(
                     "",
                     { startDate: null, endDate: null },
                     null,
-                    "created-desc",
                     false
                   );
                 }}
