@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Trash2,
@@ -54,9 +54,6 @@ export default function Dashboard() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchUserAndBoards();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -89,7 +86,7 @@ export default function Dashboard() {
     };
   }, [showUserDropdown, showAddBoard]);
 
-  const fetchUserAndBoards = async () => {
+  const fetchUserAndBoards = useCallback(async () => {
     try {
       const userResponse = await fetch("/api/user");
       if (userResponse.status === 401) {
@@ -121,7 +118,11 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    fetchUserAndBoards();
+  }, [fetchUserAndBoards]);
 
   const handleAddBoard = async (e: React.FormEvent) => {
     e.preventDefault();

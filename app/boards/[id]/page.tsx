@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -456,8 +456,7 @@ export default function BoardPage({
     if (boardId) {
       fetchBoardData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardId]);
+  }, [boardId, fetchBoardData]);
 
   const isEditingRef = useRef(false);           // always up‑to‑date in the interval
 
@@ -483,7 +482,7 @@ export default function BoardPage({
       cancelled = true;
       clearInterval(id);
     };
-  }, [boardId]);   // restart when the user switches boards
+  }, [boardId, fetchBoardData]);   // restart when the user switches boards
 
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
@@ -702,7 +701,7 @@ export default function BoardPage({
     user
   );
 
-  const fetchBoardData = async () => {
+  const fetchBoardData = useCallback(async () => {
     try {
       // Get user info first to check authentication
       const userResponse = await fetch("/api/user");
@@ -769,7 +768,7 @@ export default function BoardPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [boardId, router]);
 
   const handleAddNote = async (targetBoardId?: string) => {
     // For all notes view, ensure a board is selected
