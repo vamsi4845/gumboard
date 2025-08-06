@@ -1382,12 +1382,7 @@ export default function BoardPage({
       if (!currentNote) return;
 
       const allItems = [...currentNote.checklistItems!]
-        .sort((a, b) => {
-          if (a.checked !== b.checked) {
-            return a.checked ? 1 : -1; // unchecked first
-          }
-          return a.order - b.order;
-        });
+        .sort((a, b) => a.order - b.order);
 
       const oldIndex = allItems.findIndex(item => item.id === String(active.id));
       const newIndex = allItems.findIndex(item => item.id === String(over.id));
@@ -2163,23 +2158,13 @@ export default function BoardPage({
                         >
                           <SortableContext
                             items={[...note.checklistItems]
-                              .sort((a, b) => {
-                                if (a.checked !== b.checked) {
-                                  return a.checked ? 1 : -1; // unchecked first
-                                }
-                                return a.order - b.order;
-                              })
+                              .sort((a, b) => a.order - b.order)
                               .map(item => item.id)}
                             strategy={verticalListSortingStrategy}
                           >
                             <div className="space-y-1">
                               {[...note.checklistItems]
-                                .sort((a, b) => {
-                                  if (a.checked !== b.checked) {
-                                    return a.checked ? 1 : -1; // unchecked first
-                                  }
-                                  return a.order - b.order;
-                                })
+                                .sort((a, b) => a.order - b.order)
                                 .map((item) => (
                                   <SortableItem
                                     key={item.id}
