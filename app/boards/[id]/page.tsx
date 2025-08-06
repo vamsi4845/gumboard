@@ -793,12 +793,7 @@ export default function BoardPage({
           body: JSON.stringify({
             content: "",
             isChecklist: true,
-            checklistItems: [{
-              id: `item-${Date.now()}`,
-              content: "",
-              checked: false,
-              order: 0,
-            }],
+            checklistItems: [],
             ...(isAllNotesView && { boardId: targetBoardId }),
           }),
         }
