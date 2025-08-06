@@ -1970,7 +1970,41 @@ export default function BoardPage({
                               e.key === "Backspace" &&
                               editingChecklistItemContent.trim() === ""
                             ) {
-                              handleDeleteChecklistItem(note.id, item.id);
+                              e.preventDefault();
+                              
+                              const currentNote = notes.find((n) => n.id === note.id);
+                              if (currentNote?.checklistItems) {
+                                const currentItem = currentNote.checklistItems.find(
+                                  (i) => i.id === item.id
+                                );
+                                if (currentItem) {
+                                  const sortedItems = [...currentNote.checklistItems]
+                                    .sort((a, b) => a.order - b.order);
+                                  const currentIndex = sortedItems.findIndex(
+                                    (i) => i.id === item.id
+                                  );
+                                  
+                                  if (currentIndex > 0) {
+                                    const previousItem = sortedItems[currentIndex - 1];
+                                    
+                                    handleDeleteChecklistItem(note.id, item.id);
+                                    
+                                    setTimeout(() => {
+                                      setEditingChecklistItem({
+                                        noteId: note.id,
+                                        itemId: previousItem.id,
+                                      });
+                                      setEditingChecklistItemContent(previousItem.content);
+                                    }, 0);
+                                  } else {
+                                    handleDeleteChecklistItem(note.id, item.id);
+                                  }
+                                } else {
+                                  handleDeleteChecklistItem(note.id, item.id);
+                                }
+                              } else {
+                                handleDeleteChecklistItem(note.id, item.id);
+                              }
                             }
                           }}
                           autoFocus
