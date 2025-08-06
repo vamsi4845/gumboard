@@ -254,6 +254,40 @@ test.describe('Note Management with Newlines', () => {
   test('should save notes with debounce during typing', async ({ page }) => {
     let updateRequests = 0;
     
+    await page.route('**/api/boards/test-board/notes', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            notes: [],
+          }),
+        });
+      } else if (route.request().method() === 'POST') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            note: {
+              id: 'new-note-id',
+              content: '',
+              color: '#fef3c7',
+              done: false,
+              isChecklist: false,
+              checklistItems: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              user: {
+                id: 'test-user',
+                name: 'Test User',
+                email: 'test@example.com',
+              },
+            },
+          }),
+        });
+      }
+    });
+    
     await page.route('**/api/boards/test-board/notes/new-note-id', async (route) => {
       if (route.request().method() === 'PUT') {
         updateRequests++;
