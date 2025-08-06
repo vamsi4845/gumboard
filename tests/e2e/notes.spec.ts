@@ -250,4 +250,100 @@ test.describe('Note Management with Newlines', () => {
     await expect(page.locator('text=No notes yet')).toBeVisible();
     await expect(page.locator('button:has-text("Add Your First Note")')).toBeVisible();
   });
+
+  test('should save notes with debounce during typing', async ({ page }) => {
+    let updateRequests = 0;
+    
+    await page.route('**/api/boards/test-board/notes/new-note-id', async (route) => {
+      if (route.request().method() === 'PUT') {
+        updateRequests++;
+        const postData = await route.request().postDataJSON();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            note: {
+              id: 'new-note-id',
+              content: postData.content || '',
+              color: '#fef3c7',
+              done: false,
+              isChecklist: false,
+              checklistItems: [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              user: {
+                id: 'test-user',
+                name: 'Test User',
+                email: 'test@example.com',
+              },
+            },
+          }),
+        });
+      }
+    });
+
+    await page.goto('/boards/test-board');
+    
+    await page.click('button:has-text("Add Your First Note")');
+    await page.waitForTimeout(500);
+    
+    const noteCard = page.locator('[data-testid="note-card"]').first();
+    await noteCard.click();
+    
+    const textarea = page.locator('textarea');
+    await expect(textarea).toBeVisible();
+    
+    await textarea.fill('Test content for debounced save');
+    
+    await page.waitForTimeout(700);
+    
+    expect(updateRequests).toBeGreaterThan(0);
+  });
+
+  test('should save checklist items with debounce during typing', async ({ page }) => {
+    let updateRequests = 0;
+    
+    await page.route('**/api/boards/test-board/notes/new-note-id', async (route) => {
+      if (route.request().method() === 'PUT') {
+        updateRequests++;
+        const postData = await route.request().postDataJSON();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            note: {
+              id: 'new-note-id',
+              content: '',
+              color: '#fef3c7',
+              done: false,
+              isChecklist: true,
+              checklistItems: postData.checklistItems || [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              user: {
+                id: 'test-user',
+                name: 'Test User',
+                email: 'test@example.com',
+              },
+            },
+          }),
+        });
+      }
+    });
+
+    await page.goto('/boards/test-board');
+    
+    await page.click('button:has-text("Add Your First Note")');
+    await page.waitForTimeout(500);
+    
+    const input = page.locator('input.bg-transparent').first();
+    await expect(input).toBeVisible();
+    await input.click();
+    
+    await input.fill('Test checklist item with debounced save');
+    
+    await page.waitForTimeout(700);
+    
+    expect(updateRequests).toBeGreaterThan(0);
+  });
 });

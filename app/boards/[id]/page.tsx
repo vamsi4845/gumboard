@@ -19,6 +19,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
+import { useDebounce } from "@/lib/hooks";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -807,6 +808,10 @@ export default function BoardPage({
     }
   };
 
+  const debouncedUpdateNote = useDebounce((noteId: string, content: string) => {
+    handleUpdateNote(noteId, content);
+  }, 500);
+
   const handleUpdateNote = async (noteId: string, content: string) => {
     try {
       // Find the note to get its board ID for all notes view
@@ -1117,6 +1122,10 @@ export default function BoardPage({
       console.error("Error deleting checklist item:", error);
     }
   };
+
+  const debouncedEditChecklistItem = useDebounce((noteId: string, itemId: string, content: string) => {
+    handleEditChecklistItem(noteId, itemId, content);
+  }, 500);
 
   const handleEditChecklistItem = async (
     noteId: string,
@@ -1832,6 +1841,7 @@ export default function BoardPage({
                     onChange={(e) => {
                       const newValue = e.target.value;
                       setEditContent(newValue);
+                      debouncedUpdateNote(note.id, newValue);
                     }}
                     className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 text-gray-800 dark:text-gray-200"
                     placeholder="Enter note content..."
@@ -1901,9 +1911,10 @@ export default function BoardPage({
                         <input
                           type="text"
                           value={editingChecklistItemContent}
-                          onChange={(e) =>
-                            setEditingChecklistItemContent(e.target.value)
-                          }
+                          onChange={(e) => {
+                            setEditingChecklistItemContent(e.target.value);
+                            debouncedEditChecklistItem(note.id, item.id, e.target.value);
+                          }}
                           className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
                           onBlur={() =>
                             handleEditChecklistItem(
