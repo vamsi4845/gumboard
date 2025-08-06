@@ -1303,6 +1303,9 @@ export default function BoardPage({
       }
     } catch (error) {
       console.error("Error splitting checklist item:", error);
+    }
+  };
+
   const handleReorderChecklistItems = async (
     noteId: string,
     newItems: ChecklistItem[]
@@ -1339,10 +1342,6 @@ export default function BoardPage({
       }
     } catch (error) {
       console.error("Error reordering checklist items:", error);
-    }
-  };
-
-
     }
   };
 
