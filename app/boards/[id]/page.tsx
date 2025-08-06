@@ -807,10 +807,18 @@ export default function BoardPage({
     }
   };
 
-  const handleUpdateNote = async (noteId: string, content: string) => {
+
+  const handleUpdateNoteOptimistic = async (noteId: string, content: string) => {
+    const currentNote = notes.find((n) => n.id === noteId);
+    if (!currentNote) return;
+
+    const originalNote = { ...currentNote };
+    
+    setNotes(notes.map((n) => (n.id === noteId ? { ...n, content } : n)));
+    setEditingNote(null);
+    setEditContent("");
+    
     try {
-      // Find the note to get its board ID for all notes view
-      const currentNote = notes.find((n) => n.id === noteId);
       const targetBoardId =
         boardId === "all-notes" && currentNote?.board?.id
           ? currentNote.board.id
@@ -827,25 +835,23 @@ export default function BoardPage({
         }
       );
 
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-        setEditingNote(null);
-        setEditContent("");
-      } else {
+      if (!response.ok) {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
         const errorData = await response.json();
         setErrorDialog({
           open: true,
           title: "Failed to update note",
-          description: errorData.error || "Failed to update note",
+          description: errorData.error || "Failed to update note. Changes reverted.",
         });
       }
-    } catch (error) {
-      console.error("Error updating note:", error);
+    } catch {
+      setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+      
       setErrorDialog({
         open: true,
         title: "Failed to update note",
-        description: "Failed to update note",
+        description: "Network error. Changes reverted.",
       });
     }
   };
@@ -976,6 +982,8 @@ export default function BoardPage({
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote) return;
 
+      const originalNote = { ...currentNote };
+
       const targetBoardId =
         boardId === "all-notes" && currentNote.board?.id
           ? currentNote.board.id
@@ -990,27 +998,48 @@ export default function BoardPage({
 
       const updatedItems = [...(currentNote.checklistItems || []), newItem];
 
-      // Check if all items are checked to mark note as done
       const allItemsChecked = updatedItems.every((item) => item.checked);
 
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-            done: allItemsChecked,
-          }),
-        }
-      );
+      setNotes(notes.map((n) => (n.id === noteId ? { 
+        ...n, 
+        checklistItems: updatedItems,
+        done: allItemsChecked 
+      } : n)));
+      setNewChecklistItemContent("");
 
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-        setNewChecklistItemContent("");
+      try {
+        const response = await fetch(
+          `/api/boards/${targetBoardId}/notes/${noteId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              checklistItems: updatedItems,
+              done: allItemsChecked,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+          
+          const errorData = await response.json();
+          setErrorDialog({
+            open: true,
+            title: "Failed to add checklist item",
+            description: errorData.error || "Failed to add item. Changes reverted.",
+          });
+        }
+      } catch {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
+        setErrorDialog({
+          open: true,
+          title: "Failed to add checklist item",
+          description: "Network error. Changes reverted.",
+        });
       }
     } catch (error) {
       console.error("Error adding checklist item:", error);
@@ -1021,6 +1050,8 @@ export default function BoardPage({
     try {
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote || !currentNote.checklistItems) return;
+
+      const originalNote = { ...currentNote };
 
       const targetBoardId =
         boardId === "all-notes" && currentNote.board?.id
@@ -1034,22 +1065,36 @@ export default function BoardPage({
       // Add item to animating set for visual feedback
       setAnimatingItems((prev) => new Set([...prev, itemId]));
 
-      // Small delay to show animation before reordering
+      // Sort items: unchecked first, then checked
+      const sortedItems = [
+        ...updatedItems
+          .filter((item) => !item.checked)
+          .sort((a, b) => a.order - b.order),
+        ...updatedItems
+          .filter((item) => item.checked)
+          .sort((a, b) => a.order - b.order),
+      ];
+
+      // Check if all items are checked to mark note as done
+      const allItemsChecked = sortedItems.every((item) => item.checked);
+
+      setNotes(notes.map((n) => (n.id === noteId ? { 
+        ...n, 
+        checklistItems: sortedItems,
+        done: allItemsChecked 
+      } : n)));
+
+      // Remove from animating set after a short delay for visual feedback
       setTimeout(() => {
-        // Sort items: unchecked first, then checked
-        const sortedItems = [
-          ...updatedItems
-            .filter((item) => !item.checked)
-            .sort((a, b) => a.order - b.order),
-          ...updatedItems
-            .filter((item) => item.checked)
-            .sort((a, b) => a.order - b.order),
-        ];
+        setAnimatingItems((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(itemId);
+          return newSet;
+        });
+      }, 200);
 
-        // Check if all items are checked to mark note as done
-        const allItemsChecked = sortedItems.every((item) => item.checked);
-
-        fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+      try {
+        const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -1058,18 +1103,27 @@ export default function BoardPage({
             checklistItems: sortedItems,
             done: allItemsChecked,
           }),
-        })
-          .then((response) => response.json())
-          .then(({ note }) => {
-            setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-            // Remove from animating set after update
-            setAnimatingItems((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(itemId);
-              return newSet;
-            });
+        });
+
+        if (!response.ok) {
+          setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+          
+          const errorData = await response.json();
+          setErrorDialog({
+            open: true,
+            title: "Failed to update checklist",
+            description: errorData.error || "Failed to update checklist. Changes reverted.",
           });
-      }, 200);
+        }
+      } catch {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
+        setErrorDialog({
+          open: true,
+          title: "Failed to update checklist",
+          description: "Network error. Changes reverted.",
+        });
+      }
     } catch (error) {
       console.error("Error toggling checklist item:", error);
     }
@@ -1079,6 +1133,8 @@ export default function BoardPage({
     try {
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote || !currentNote.checklistItems) return;
+
+      const originalNote = { ...currentNote };
 
       const targetBoardId =
         boardId === "all-notes" && currentNote.board?.id
@@ -1095,48 +1151,76 @@ export default function BoardPage({
           ? updatedItems.every((item) => item.checked)
           : false;
 
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-            done: allItemsChecked,
-          }),
-        }
-      );
+      setNotes(notes.map((n) => (n.id === noteId ? { 
+        ...n, 
+        checklistItems: updatedItems,
+        done: allItemsChecked 
+      } : n)));
 
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
+      try {
+        const response = await fetch(
+          `/api/boards/${targetBoardId}/notes/${noteId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              checklistItems: updatedItems,
+              done: allItemsChecked,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+          
+          const errorData = await response.json();
+          setErrorDialog({
+            open: true,
+            title: "Failed to delete checklist item",
+            description: errorData.error || "Failed to delete item. Changes reverted.",
+          });
+        }
+      } catch {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
+        setErrorDialog({
+          open: true,
+          title: "Failed to delete checklist item",
+          description: "Network error. Changes reverted.",
+        });
       }
     } catch (error) {
       console.error("Error deleting checklist item:", error);
     }
   };
 
-  const handleEditChecklistItem = async (
+
+  const handleEditChecklistItemOptimistic = async (
     noteId: string,
     itemId: string,
     content: string
   ) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote || !currentNote.checklistItems) return;
+    const currentNote = notes.find((n) => n.id === noteId);
+    if (!currentNote || !currentNote.checklistItems) return;
 
+    const originalNote = { ...currentNote };
+    
+    const updatedItems = currentNote.checklistItems.map((item) =>
+      item.id === itemId ? { ...item, content } : item
+    );
+    
+    setNotes(notes.map((n) => (n.id === noteId ? { ...n, checklistItems: updatedItems } : n)));
+    setEditingChecklistItem(null);
+    setEditingChecklistItemContent("");
+
+    try {
       const targetBoardId =
         boardId === "all-notes" && currentNote.board?.id
           ? currentNote.board.id
           : boardId;
 
-      const updatedItems = currentNote.checklistItems.map((item) =>
-        item.id === itemId ? { ...item, content } : item
-      );
-
-      // Check if all items are checked to mark note as done
       const allItemsChecked = updatedItems.every((item) => item.checked);
 
       const response = await fetch(
@@ -1153,14 +1237,24 @@ export default function BoardPage({
         }
       );
 
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-        setEditingChecklistItem(null);
-        setEditingChecklistItemContent("");
+      if (!response.ok) {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
+        const errorData = await response.json();
+        setErrorDialog({
+          open: true,
+          title: "Failed to update checklist item",
+          description: errorData.error || "Failed to update item. Changes reverted.",
+        });
       }
-    } catch (error) {
-      console.error("Error editing checklist item:", error);
+    } catch {
+      setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+      
+      setErrorDialog({
+        open: true,
+        title: "Failed to update checklist item", 
+        description: "Network error. Changes reverted.",
+      });
     }
   };
 
@@ -1169,23 +1263,22 @@ export default function BoardPage({
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote || !currentNote.checklistItems) return;
 
+      const originalNote = { ...currentNote };
+
       const targetBoardId =
         boardId === "all-notes" && currentNote.board?.id
           ? currentNote.board.id
           : boardId;
 
-      // Check if all items are checked
       const allChecked = currentNote.checklistItems.every(
         (item) => item.checked
       );
 
-      // Toggle all items to opposite state
       const updatedItems = currentNote.checklistItems.map((item) => ({
         ...item,
         checked: !allChecked,
       }));
 
-      // Sort items: unchecked first, then checked
       const sortedItems = [
         ...updatedItems
           .filter((item) => !item.checked)
@@ -1195,27 +1288,47 @@ export default function BoardPage({
           .sort((a, b) => a.order - b.order),
       ];
 
-      // The note should be marked as done if all items are checked
-      const noteIsDone = !allChecked; // If all were checked before, we're unchecking them (note becomes undone)
-      // If not all were checked before, we're checking them all (note becomes done)
+      const noteIsDone = !allChecked;
 
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: sortedItems,
-            done: noteIsDone,
-          }),
+      setNotes(notes.map((n) => (n.id === noteId ? { 
+        ...n, 
+        checklistItems: sortedItems,
+        done: noteIsDone 
+      } : n)));
+
+      try {
+        const response = await fetch(
+          `/api/boards/${targetBoardId}/notes/${noteId}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              checklistItems: sortedItems,
+              done: noteIsDone,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+          
+          const errorData = await response.json();
+          setErrorDialog({
+            open: true,
+            title: "Failed to toggle checklist items",
+            description: errorData.error || "Failed to toggle items. Changes reverted.",
+          });
         }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
+      } catch {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
+        setErrorDialog({
+          open: true,
+          title: "Failed to toggle checklist items",
+          description: "Network error. Changes reverted.",
+        });
       }
     } catch (error) {
       console.error("Error toggling all checklist items:", error);
@@ -1232,6 +1345,8 @@ export default function BoardPage({
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote || !currentNote.checklistItems) return;
 
+      const originalNote = { ...currentNote };
+
       const targetBoardId =
         boardId === "all-notes" && currentNote.board?.id
           ? currentNote.board.id
@@ -1240,18 +1355,15 @@ export default function BoardPage({
       const firstHalf = content.substring(0, cursorPosition).trim();
       const secondHalf = content.substring(cursorPosition).trim();
 
-      // Update current item with first half
       const updatedItems = currentNote.checklistItems.map((item) =>
         item.id === itemId ? { ...item, content: firstHalf } : item
       );
 
-      // Find the current item's order to insert new item after it
       const currentItem = currentNote.checklistItems.find(
         (item) => item.id === itemId
       );
       const currentOrder = currentItem?.order || 0;
 
-      // Create new item with second half
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content: secondHalf,
@@ -1263,23 +1375,40 @@ export default function BoardPage({
         (a, b) => a.order - b.order
       );
 
-      // Update the note with both changes
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            checklistItems: allItems,
-          }),
-        }
-      );
+      setNotes(notes.map((n) => (n.id === noteId ? { ...n, checklistItems: allItems } : n)));
+      setEditingChecklistItem({ noteId, itemId: newItem.id });
+      setEditingChecklistItemContent(secondHalf);
 
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-        setEditingChecklistItem({ noteId, itemId: newItem.id });
-        setEditingChecklistItemContent(secondHalf);
+      try {
+        const response = await fetch(
+          `/api/boards/${targetBoardId}/notes/${noteId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              checklistItems: allItems,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+          
+          const errorData = await response.json();
+          setErrorDialog({
+            open: true,
+            title: "Failed to split checklist item",
+            description: errorData.error || "Failed to split item. Changes reverted.",
+          });
+        }
+      } catch {
+        setNotes(notes.map((n) => (n.id === noteId ? originalNote : n)));
+        
+        setErrorDialog({
+          open: true,
+          title: "Failed to split checklist item",
+          description: "Network error. Changes reverted.",
+        });
       }
     } catch (error) {
       console.error("Error splitting checklist item:", error);
@@ -1835,10 +1964,10 @@ export default function BoardPage({
                     }}
                     className="w-full h-full p-2 bg-transparent border-none resize-none focus:outline-none text-base leading-7 text-gray-800 dark:text-gray-200"
                     placeholder="Enter note content..."
-                    onBlur={() => handleUpdateNote(note.id, editContent)}
+                    onBlur={() => handleUpdateNoteOptimistic(note.id, editContent)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && e.ctrlKey) {
-                        handleUpdateNote(note.id, editContent);
+                        handleUpdateNoteOptimistic(note.id, editContent);
                       }
                       if (e.key === "Escape") {
                         setEditingNote(null);
@@ -1906,7 +2035,7 @@ export default function BoardPage({
                           }
                           className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
                           onBlur={() =>
-                            handleEditChecklistItem(
+                            handleEditChecklistItemOptimistic(
                               note.id,
                               item.id,
                               editingChecklistItemContent
