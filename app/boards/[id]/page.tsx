@@ -32,6 +32,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
   arrayMove,
+  sortableKeyboardCoordinates,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FullPageLoader } from "@/components/ui/loader";
@@ -1329,7 +1330,9 @@ export default function BoardPage({
         tolerance: 5,
       },
     }),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
 
   const handleReorderChecklistItems = async (
@@ -1371,23 +1374,26 @@ export default function BoardPage({
     }
   };
 
-  const handleDragEnd = (event: DragEndEvent, noteId: string, isChecked: boolean) => {
+  const handleDragEnd = (event: DragEndEvent, noteId: string) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote) return;
 
-      const items = currentNote.checklistItems!.filter(item => item.checked === isChecked).sort((a, b) => a.order - b.order);
-      const oldIndex = items.findIndex(item => item.id === String(active.id));
-      const newIndex = items.findIndex(item => item.id === String(over.id));
+      const allItems = [...currentNote.checklistItems!]
+        .sort((a, b) => {
+          if (a.checked !== b.checked) {
+            return a.checked ? 1 : -1; // unchecked first
+          }
+          return a.order - b.order;
+        });
 
-      const reorderedItems = arrayMove(items, oldIndex, newIndex);
-      
-      const otherItems = currentNote.checklistItems!.filter(item => item.checked !== isChecked).sort((a, b) => a.order - b.order);
-      const allItems = isChecked ? [...otherItems, ...reorderedItems] : [...reorderedItems, ...otherItems];
-      
-      handleReorderChecklistItems(noteId, allItems);
+      const oldIndex = allItems.findIndex(item => item.id === String(active.id));
+      const newIndex = allItems.findIndex(item => item.id === String(over.id));
+
+      const reorderedItems = arrayMove(allItems, oldIndex, newIndex);
+      handleReorderChecklistItems(noteId, reorderedItems);
     }
   };
 
@@ -2148,71 +2154,50 @@ export default function BoardPage({
                   {/* Checklist Items */}
                   {note.checklistItems && note.checklistItems.length > 0 && (
                     <>
-                      {/* Unchecked items - reorderable */}
-                      {note.checklistItems.filter(item => !item.checked).length > 0 && (
+                      {/* Unified sortable list for all checklist items */}
+                      {note.checklistItems.length > 0 && (
                         <DndContext
                           sensors={sensors}
                           collisionDetection={closestCenter}
-                          onDragEnd={(event) => handleDragEnd(event, note.id, false)}
+                          onDragEnd={(event) => handleDragEnd(event, note.id)}
                         >
                           <SortableContext
-                            items={note.checklistItems.filter(item => !item.checked).sort((a, b) => a.order - b.order).map(item => item.id)}
+                            items={[...note.checklistItems]
+                              .sort((a, b) => {
+                                if (a.checked !== b.checked) {
+                                  return a.checked ? 1 : -1; // unchecked first
+                                }
+                                return a.order - b.order;
+                              })
+                              .map(item => item.id)}
                             strategy={verticalListSortingStrategy}
                           >
                             <div className="space-y-1">
-                              {note.checklistItems.filter(item => !item.checked).sort((a, b) => a.order - b.order).map((item) => (
-                                <SortableItem
-                                  key={item.id}
-                                  id={item.id}
-                                  item={item}
-                                  note={note}
-                                  user={user}
-                                  editingChecklistItem={editingChecklistItem}
-                                  editingChecklistItemContent={editingChecklistItemContent}
-                                  setEditingChecklistItem={setEditingChecklistItem}
-                                  setEditingChecklistItemContent={setEditingChecklistItemContent}
-                                  handleToggleChecklistItem={handleToggleChecklistItem}
-                                  handleEditChecklistItem={handleEditChecklistItem}
-                                  handleSplitChecklistItem={handleSplitChecklistItem}
-                                  handleDeleteChecklistItem={handleDeleteChecklistItem}
-                                  animatingItems={animatingItems}
-                                />
-                              ))}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
-                      )}
-
-                      {/* Checked items - reorderable */}
-                      {note.checklistItems.filter(item => item.checked).length > 0 && (
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={(event) => handleDragEnd(event, note.id, true)}
-                        >
-                          <SortableContext
-                            items={note.checklistItems.filter(item => item.checked).sort((a, b) => a.order - b.order).map(item => item.id)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            <div className="space-y-1">
-                              {note.checklistItems.filter(item => item.checked).sort((a, b) => a.order - b.order).map((item) => (
-                                <SortableItem
-                                  key={item.id}
-                                  id={item.id}
-                                  item={item}
-                                  note={note}
-                                  user={user}
-                                  editingChecklistItem={editingChecklistItem}
-                                  editingChecklistItemContent={editingChecklistItemContent}
-                                  setEditingChecklistItem={setEditingChecklistItem}
-                                  setEditingChecklistItemContent={setEditingChecklistItemContent}
-                                  handleToggleChecklistItem={handleToggleChecklistItem}
-                                  handleEditChecklistItem={handleEditChecklistItem}
-                                  handleSplitChecklistItem={handleSplitChecklistItem}
-                                  handleDeleteChecklistItem={handleDeleteChecklistItem}
-                                  animatingItems={animatingItems}
-                                />
-                              ))}
+                              {[...note.checklistItems]
+                                .sort((a, b) => {
+                                  if (a.checked !== b.checked) {
+                                    return a.checked ? 1 : -1; // unchecked first
+                                  }
+                                  return a.order - b.order;
+                                })
+                                .map((item) => (
+                                  <SortableItem
+                                    key={item.id}
+                                    id={item.id}
+                                    item={item}
+                                    note={note}
+                                    user={user}
+                                    editingChecklistItem={editingChecklistItem}
+                                    editingChecklistItemContent={editingChecklistItemContent}
+                                    setEditingChecklistItem={setEditingChecklistItem}
+                                    setEditingChecklistItemContent={setEditingChecklistItemContent}
+                                    handleToggleChecklistItem={handleToggleChecklistItem}
+                                    handleEditChecklistItem={handleEditChecklistItem}
+                                    handleSplitChecklistItem={handleSplitChecklistItem}
+                                    handleDeleteChecklistItem={handleDeleteChecklistItem}
+                                    animatingItems={animatingItems}
+                                  />
+                                ))}
                             </div>
                           </SortableContext>
                         </DndContext>
