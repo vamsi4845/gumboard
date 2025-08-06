@@ -184,11 +184,19 @@ export default function OrganizationSettingsPage() {
         setOriginalSlackWebhookUrl(slackWebhookUrl);
       } else {
         const errorData = await response.json();
-        alert(errorData.error || "Failed to update organization");
+        setErrorDialog({
+          open: true,
+          title: "Failed to update organization",
+          description: errorData.error || "Failed to update organization",
+        });
       }
     } catch (error) {
       console.error("Error updating organization:", error);
-      alert("Failed to update organization");
+      setErrorDialog({
+        open: true,
+        title: "Failed to update organization",
+        description: "Failed to update organization",
+      });
     } finally {
       setSaving(false);
     }

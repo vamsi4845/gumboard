@@ -793,7 +793,11 @@ export default function BoardPage({
   const handleAddNote = async (targetBoardId?: string) => {
     // For all notes view, ensure a board is selected
     if (boardId === "all-notes" && !targetBoardId) {
-      alert("Please select a board to add the note to");
+      setErrorDialog({
+        open: true,
+        title: "Board selection required",
+        description: "Please select a board to add the note to",
+      });
       return;
     }
 
@@ -979,11 +983,19 @@ export default function BoardPage({
         router.push(`/boards/${board.id}`);
       } else {
         const errorData = await response.json();
-        alert(errorData.error || "Failed to create board");
+        setErrorDialog({
+          open: true,
+          title: "Failed to create board",
+          description: errorData.error || "Failed to create board",
+        });
       }
     } catch (error) {
       console.error("Error creating board:", error);
-      alert("Failed to create board");
+      setErrorDialog({
+        open: true,
+        title: "Failed to create board",
+        description: "Failed to create board",
+      });
     }
   };
 
