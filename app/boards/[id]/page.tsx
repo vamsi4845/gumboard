@@ -1373,7 +1373,7 @@ export default function BoardPage({
   const handleDragEnd = (event: { active: { id: string }; over: { id: string } | null }, noteId: string, isChecked: boolean) => {
     const { active, over } = event;
 
-    if (active.id !== over?.id) {
+    if (over && active.id !== over.id) {
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote) return;
 
