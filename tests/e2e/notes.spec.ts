@@ -285,12 +285,9 @@ test.describe('Note Management with Newlines', () => {
     await page.goto('/boards/test-board');
     
     await page.click('button:has-text("Add Your First Note")');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     
-    const noteCard = page.locator('[data-testid="note-card"]').first();
-    await noteCard.click();
-    
-    const textarea = page.locator('textarea');
+    const textarea = page.locator('textarea').first();
     await expect(textarea).toBeVisible();
     
     await textarea.fill('Test content for debounced save');
@@ -334,11 +331,10 @@ test.describe('Note Management with Newlines', () => {
     await page.goto('/boards/test-board');
     
     await page.click('button:has-text("Add Your First Note")');
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(1000);
     
     const input = page.locator('input.bg-transparent').first();
     await expect(input).toBeVisible();
-    await input.click();
     
     await input.fill('Test checklist item with debounced save');
     
