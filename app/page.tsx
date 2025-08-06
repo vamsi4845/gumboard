@@ -23,8 +23,8 @@ export default async function HomePage() {
       <main className="flex-1">
         <section className="w-full py-12 md:py-15">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-24">
-              <div className="flex flex-col justify-center space-y-6">
+            <div className="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-16 xl:gap-24">
+              <div className="flex flex-col justify-center space-y-6 lg:mt-14">
                 <div className="flex items-center gap-3">
                   <StickyNote className="h-9 w-9 text-blue-600 dark:text-blue-400" />
                   <span className="text-4xl font-bold">Gumboard</span>
