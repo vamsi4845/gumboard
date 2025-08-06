@@ -25,6 +25,7 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -1370,7 +1371,7 @@ export default function BoardPage({
     }
   };
 
-  const handleDragEnd = (event: { active: { id: string }; over: { id: string } | null }, noteId: string, isChecked: boolean) => {
+  const handleDragEnd = (event: DragEndEvent, noteId: string, isChecked: boolean) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -1378,8 +1379,8 @@ export default function BoardPage({
       if (!currentNote) return;
 
       const items = currentNote.checklistItems!.filter(item => item.checked === isChecked).sort((a, b) => a.order - b.order);
-      const oldIndex = items.findIndex(item => item.id === active.id);
-      const newIndex = items.findIndex(item => item.id === over.id);
+      const oldIndex = items.findIndex(item => item.id === String(active.id));
+      const newIndex = items.findIndex(item => item.id === String(over.id));
 
       const reorderedItems = arrayMove(items, oldIndex, newIndex);
       
