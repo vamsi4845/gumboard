@@ -2113,7 +2113,7 @@ export default function BoardPage({
                       <Checkbox
                         checked={false}
                         disabled
-                        className="border-slate-500 bg-white/50 dark:bg-zinc-800 dark:border-zinc-600 mr-3 ml-2"
+                        className="border-slate-500 bg-white/50 dark:bg-zinc-800 dark:border-zinc-600"
                       />
                       <Input
                         type="text"
