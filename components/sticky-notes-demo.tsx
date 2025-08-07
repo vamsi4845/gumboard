@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { StickyNoteCard, type Note } from "@/components/sticky-note-card"
+import { StickyNoteCard } from "@/components/sticky-note-card"
 import type { DemoNote } from "@/lib/types"
 import { Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"

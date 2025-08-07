@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ChecklistItem } from "@/components/checklist-item";
 import { cn } from "@/lib/utils";
 import { Trash2, Plus } from "lucide-react";
-import type { Note as NoteType, ChecklistItem as ChecklistItemType, User } from "@/lib/types";
+import type { Note as NoteType, User } from "@/lib/types";
 
 interface NoteProps {
   note: NoteType;
