@@ -10,22 +10,11 @@ import { cn } from "@/lib/utils";
 import { Plus, Trash2 } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { DemoTask, DemoNote } from "@/lib/types";
 
-export type Task = {
-  id: number;
-  text: string;
-  completed: boolean;
-};
-
-export type Note = {
-  id: number;
-  author: {
-    name: string;
-    initial: string;
-  };
-  color: string;
-  tasks: Task[];
-};
+// Re-export for backward compatibility
+export type Task = DemoTask;
+export type Note = DemoNote;
 
 type StickyNoteCardProps = {
   note: Note;

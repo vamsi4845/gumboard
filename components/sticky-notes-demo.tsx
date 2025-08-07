@@ -4,10 +4,11 @@ import * as React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { StickyNoteCard, type Note } from "@/components/sticky-note-card"
+import type { DemoNote } from "@/lib/types"
 import { Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
-const initialNotes: Note[] = [
+const initialNotes: DemoNote[] = [
   {
     id: 1,
     author: { name: "Sahil", initial: "S" },
@@ -271,9 +272,9 @@ const itemVariants = {
 }
 
 export function StickyNotesDemo() {
-  const [notes, setNotes] = useState<Note[]>(initialNotes)
+  const [notes, setNotes] = useState<DemoNote[]>(initialNotes)
 
-  const handleUpdateNote = (updatedNote: Note) => {
+  const handleUpdateNote = (updatedNote: DemoNote) => {
     setNotes(notes.map((note) => (note.id === updatedNote.id ? updatedNote : note)))
   }
 
@@ -284,7 +285,7 @@ export function StickyNotesDemo() {
   const handleAddNote = () => {
     const randomColor = noteColors[Math.floor(Math.random() * noteColors.length)]
     const randomAuthor = authors[Math.floor(Math.random() * authors.length)]
-    const newNote: Note = {
+    const newNote: DemoNote = {
       id: Date.now(),
       author: randomAuthor,
       color: randomColor,
