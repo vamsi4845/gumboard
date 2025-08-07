@@ -14,7 +14,6 @@ import {
   Settings,
   LogOut,
   Search,
-  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -131,7 +130,7 @@ export default function BoardPage({
   const searchParams = useSearchParams();
   
   
-  const { isPolling, lastSync } = useBoardNotesPolling({
+  const { lastSync } = useBoardNotesPolling({
     boardId,
     enabled: !loading && !!boardId,
     pollingInterval: 4000, 
@@ -1631,23 +1630,6 @@ export default function BoardPage({
                 }}
                 className="min-w-fit"
               />
-            </div>
-            
-            {}
-            <div className="flex items-center space-x-2 px-2">
-              <div className="flex items-center space-x-1">
-                <RefreshCw 
-                  className={cn(
-                    "w-4 h-4 text-muted-foreground dark:text-zinc-400",
-                    isPolling && "animate-spin text-blue-500 dark:text-blue-400"
-                  )} 
-                />
-                {lastSync && (
-                  <span className="text-xs text-muted-foreground dark:text-zinc-400 hidden lg:inline">
-                    Live
-                  </span>
-                )}
-              </div>
             </div>
           </div>
 

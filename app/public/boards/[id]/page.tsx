@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Search, RefreshCw } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { useBoardNotesPolling } from "@/lib/hooks/useBoardNotesPolling";
-import { cn } from "@/lib/utils";
 
 interface ChecklistItem {
   id: string;
@@ -62,7 +61,7 @@ export default function PublicBoardPage({
   const router = useRouter();
   
   
-  const { isPolling, lastSync } = useBoardNotesPolling({
+  const { lastSync } = useBoardNotesPolling({
     boardId,
     enabled: !loading && !!boardId,
     pollingInterval: 5000, 
@@ -518,21 +517,6 @@ export default function PublicBoardPage({
               />
             </div>
             
-            <div className="flex items-center space-x-2 px-2">
-              <div className="flex items-center space-x-1">
-                <RefreshCw 
-                  className={cn(
-                    "w-4 h-4 text-muted-foreground dark:text-zinc-400",
-                    isPolling && "animate-spin text-blue-500 dark:text-blue-400"
-                  )} 
-                />
-                {lastSync && (
-                  <span className="text-xs text-muted-foreground dark:text-zinc-400 hidden lg:inline">
-                    Live
-                  </span>
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="flex items-center space-x-2 px-3">

@@ -21,7 +21,6 @@ import {
   Grid3x3,
   Copy,
   Edit3,
-  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FullPageLoader } from "@/components/ui/loader";
@@ -36,7 +35,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useBoardsListPolling } from "@/lib/hooks/useBoardsListPolling";
-import { cn } from "@/lib/utils";
 
 interface Board {
   id: string;
@@ -83,7 +81,7 @@ export default function Dashboard() {
   const [copiedBoardId, setCopiedBoardId] = useState<string | null>(null);
   const router = useRouter();
   
-  const { isPolling, lastSync } = useBoardsListPolling({
+  const { lastSync } = useBoardsListPolling({
     enabled: !loading,
     pollingInterval: 5000,
     onUpdate: useCallback((data: { boards: Board[] }) => {
@@ -326,19 +324,6 @@ export default function Dashboard() {
               <h1 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 Gumboard
               </h1>
-            </div>
-            <div className="flex items-center space-x-1">
-              <RefreshCw 
-                className={cn(
-                  "w-4 h-4 text-muted-foreground dark:text-zinc-400",
-                  isPolling && "animate-spin text-blue-500 dark:text-blue-400"
-                )} 
-              />
-              {lastSync && (
-                <span className="text-xs text-muted-foreground dark:text-zinc-400 hidden lg:inline">
-                  Live
-                </span>
-              )}
             </div>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
