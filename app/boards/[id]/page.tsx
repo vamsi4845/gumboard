@@ -14,7 +14,6 @@ import {
   Settings,
   LogOut,
   Search,
-  User,
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
@@ -32,7 +31,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useRealTimeBoard } from "@/lib/hooks/useRealTimeBoard";
+import { useBoardNotesPolling } from "@/lib/hooks/useBoardNotesPolling";
 
 interface ChecklistItem {
   id: string;
@@ -79,7 +78,7 @@ interface User {
 export default function BoardPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -93,7 +92,7 @@ export default function BoardPage({
   const [showAddBoard, setShowAddBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardDescription, setNewBoardDescription] = useState("");
-  const [boardId, setBoardId] = useState<string | null>(null);
+  const boardId = params.id;
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
@@ -132,7 +131,7 @@ export default function BoardPage({
   const searchParams = useSearchParams();
   
   
-  const { isPolling, lastSync } = useRealTimeBoard({
+  const { isPolling, lastSync } = useBoardNotesPolling({
     boardId,
     enabled: !loading && !!boardId,
     pollingInterval: 4000, 
@@ -142,9 +141,6 @@ export default function BoardPage({
         const editingNoteId = editingNote;
         const addingItemNoteId = addingChecklistItem;
         const editingItemNote = editingChecklistItem?.noteId;
-        
-        
-        const newNotesMap = new Map(data.notes.map(note => [note.id, note]));
         
         
         return data.notes.map(newNote => {

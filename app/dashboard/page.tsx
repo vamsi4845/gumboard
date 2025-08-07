@@ -35,7 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useRealTimeBoards } from "@/lib/hooks/useRealTimeBoards";
+import { useBoardsListPolling } from "@/lib/hooks/useBoardsListPolling";
 import { cn } from "@/lib/utils";
 
 interface Board {
@@ -83,7 +83,7 @@ export default function Dashboard() {
   const [copiedBoardId, setCopiedBoardId] = useState<string | null>(null);
   const router = useRouter();
   
-  const { isPolling, lastSync } = useRealTimeBoards({
+  const { isPolling, lastSync } = useBoardsListPolling({
     enabled: !loading,
     pollingInterval: 5000,
     onUpdate: useCallback((data: { boards: Board[] }) => {

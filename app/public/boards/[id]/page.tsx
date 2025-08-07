@@ -7,7 +7,7 @@ import { Search, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
-import { useRealTimeBoard } from "@/lib/hooks/useRealTimeBoard";
+import { useBoardNotesPolling } from "@/lib/hooks/useBoardNotesPolling";
 import { cn } from "@/lib/utils";
 
 interface ChecklistItem {
@@ -62,7 +62,7 @@ export default function PublicBoardPage({
   const router = useRouter();
   
   
-  const { isPolling, lastSync } = useRealTimeBoard({
+  const { isPolling, lastSync } = useBoardNotesPolling({
     boardId,
     enabled: !loading && !!boardId,
     pollingInterval: 5000, 
