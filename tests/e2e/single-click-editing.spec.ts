@@ -144,7 +144,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await expect(page.locator('text=Test checklist item')).toBeVisible();
     
-    const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
+    const checklistItemElement = page.locator('span.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
     await expect(checklistItemElement).toBeVisible();
     
     await expect(page.locator('text=Test checklist item')).toBeVisible();
@@ -228,7 +228,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await expect(page.locator('text=Test checklist item')).toBeVisible();
     
-    const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
+    const checklistItemElement = page.locator('span.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
     await expect(checklistItemElement).toBeVisible();
     
     await expect(page.locator('text=Test checklist item')).toBeVisible();
@@ -295,7 +295,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await expect(page.locator('text=Test checklist item')).toBeVisible();
     
-    const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
+    const checklistItemElement = page.locator('span.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Test checklist item' });
     await expect(checklistItemElement).toBeVisible();
     
     await expect(page.locator('text=Test checklist item')).toBeVisible();
@@ -379,7 +379,7 @@ test.describe('Single-Click Note Editing', () => {
     
     await expect(page.locator('text=Original item content')).toBeVisible();
     
-    const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Original item content' });
+    const checklistItemElement = page.locator('span.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Original item content' });
     await expect(checklistItemElement).toBeVisible();
     
     await expect(page.locator('text=Original item content')).toBeVisible();

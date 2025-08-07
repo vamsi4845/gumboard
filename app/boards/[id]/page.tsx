@@ -2027,7 +2027,7 @@ export default function BoardPage({
                           onChange={(e) =>
                             setEditingChecklistItemContent(e.target.value)
                           }
-                          className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
+                          className="bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200"
                           onBlur={() =>
                             handleEditChecklistItem(
                               note.id,
@@ -2103,7 +2103,7 @@ export default function BoardPage({
                         />
                       ) : (
                         <span
-                          className={`flex-1 text-sm leading-6 cursor-pointer ${
+                          className={`text-sm leading-6 cursor-pointer ${
                             item.checked
                               ? "text-gray-500 dark:text-gray-400 line-through opacity-70"
                               : "text-gray-800 dark:text-gray-200"
@@ -2151,7 +2151,7 @@ export default function BoardPage({
                         onChange={(e) =>
                           setNewChecklistItemContent(e.target.value)
                         }
-                        className="flex-1 bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
+                        className="bg-transparent border-none outline-none text-sm leading-6 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
                         placeholder="Add new item..."
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
