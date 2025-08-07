@@ -254,6 +254,9 @@ test.describe('Note Management with Newlines', () => {
   test('should save notes with debounce during typing', async ({ page }) => {
     let updateRequests = 0;
     
+    await page.unroute('**/api/boards/test-board/notes');
+    await page.unroute('**/api/boards/test-board/notes/new-note-id');
+    
     await page.route('**/api/boards/test-board/notes', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
@@ -333,6 +336,8 @@ test.describe('Note Management with Newlines', () => {
 
   test('should save checklist items with debounce during typing', async ({ page }) => {
     let updateRequests = 0;
+    
+    await page.unroute('**/api/boards/test-board/notes/new-note-id');
     
     await page.route('**/api/boards/test-board/notes/new-note-id', async (route) => {
       if (route.request().method() === 'PUT') {
