@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { NOTE_COLORS } from "@/lib/constants"
-import crypto from "crypto"
+import { handleEtagResponse } from "@/lib/etag"
 
 // Get all notes from all boards in the organization
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -51,23 +51,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const etag = crypto
-      .createHash('md5')
-      .update(JSON.stringify(notes))
-      .digest('hex')
-    
-    const clientEtag = request.headers.get('if-none-match')
-    if (clientEtag === etag) {
-      return new Response(null, { 
-        status: 304,
-        headers: { 'ETag': etag }
-      })
-    }
-
-    return NextResponse.json(
-      { notes },
-      { headers: { 'ETag': etag } }
-    )
+    return handleEtagResponse(request, { notes })
   } catch (error) {
     console.error("Error fetching global notes:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

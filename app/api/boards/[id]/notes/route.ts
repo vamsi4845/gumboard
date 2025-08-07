@@ -3,7 +3,7 @@ import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { sendSlackMessage, formatNoteForSlack, hasValidContent, shouldSendNotification } from "@/lib/slack"
 import { NOTE_COLORS } from "@/lib/constants"
-import crypto from "crypto"
+import { handleEtagResponse } from "@/lib/etag"
 
 // Get all notes for a board
 export async function GET(
@@ -39,23 +39,7 @@ export async function GET(
     }
 
     if (board.isPublic) {
-      const etag = crypto
-        .createHash('md5')
-        .update(JSON.stringify(board.notes))
-        .digest('hex')
-      
-      const clientEtag = request.headers.get('if-none-match')
-      if (clientEtag === etag) {
-        return new Response(null, { 
-          status: 304,
-          headers: { 'ETag': etag }
-        })
-      }
-
-      return NextResponse.json(
-        { notes: board.notes },
-        { headers: { 'ETag': etag } }
-      )
+      return handleEtagResponse(request, { notes: board.notes })
     }
 
     if (!session?.user?.id) {
@@ -75,23 +59,7 @@ export async function GET(
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    const etag = crypto
-      .createHash('md5')
-      .update(JSON.stringify(board.notes))
-      .digest('hex')
-    
-    const clientEtag = request.headers.get('if-none-match')
-    if (clientEtag === etag) {
-      return new Response(null, { 
-        status: 304,
-        headers: { 'ETag': etag }
-      })
-    }
-
-    return NextResponse.json(
-      { notes: board.notes },
-      { headers: { 'ETag': etag } }
-    )
+    return handleEtagResponse(request, { notes: board.notes })
   } catch (error) {
     console.error("Error fetching notes:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
