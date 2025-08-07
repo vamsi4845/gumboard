@@ -77,7 +77,7 @@ interface User {
 export default function BoardPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -91,7 +91,7 @@ export default function BoardPage({
   const [showAddBoard, setShowAddBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardDescription, setNewBoardDescription] = useState("");
-  const boardId = params.id;
+  const [boardId, setBoardId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
@@ -151,13 +151,7 @@ export default function BoardPage({
           }
           
           
-          if ((newNote.id === addingItemNoteId || newNote.id === editingItemNote) && prevNote) {
-            
-            return {
-              ...newNote,
-              checklistItems: prevNote.checklistItems, 
-            };
-          }
+          
           
           return newNote;
         });

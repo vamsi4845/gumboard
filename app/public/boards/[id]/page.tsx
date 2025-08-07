@@ -40,12 +40,12 @@ interface Board {
 export default function PublicBoardPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  const boardId = params.id;
+  const [boardId, setBoardId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
@@ -370,6 +370,14 @@ export default function PublicBoardPage({
     });
   };
 
+
+  useEffect(() => {
+    const initializeParams = async () => {
+      const resolvedParams = await params;
+      setBoardId(resolvedParams.id);
+    };
+    initializeParams();
+  }, [params]);
 
   useEffect(() => {
     if (boardId) {
