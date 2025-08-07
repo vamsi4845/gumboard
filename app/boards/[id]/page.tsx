@@ -15,6 +15,7 @@ import {
   LogOut,
   Search,
   User,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -31,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { useRealTimeBoard } from "@/lib/hooks/useRealTimeBoard";
 
 interface ChecklistItem {
   id: string;
@@ -128,8 +130,47 @@ export default function BoardPage({
   const boardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  
+  const { isPolling, lastSync } = useRealTimeBoard({
+    boardId,
+    enabled: !loading && !!boardId,
+    pollingInterval: 4000, 
+    onUpdate: useCallback((data: { notes: Note[] }) => {
+      
+      setNotes((prevNotes) => {
+        const editingNoteId = editingNote;
+        const addingItemNoteId = addingChecklistItem;
+        const editingItemNote = editingChecklistItem?.noteId;
+        
+        
+        const newNotesMap = new Map(data.notes.map(note => [note.id, note]));
+        
+        
+        return data.notes.map(newNote => {
+          const prevNote = prevNotes.find(n => n.id === newNote.id);
+          
+          
+          if (newNote.id === editingNoteId && prevNote) {
+            return prevNote; 
+          }
+          
+          
+          if ((newNote.id === addingItemNoteId || newNote.id === editingItemNote) && prevNote) {
+            
+            return {
+              ...newNote,
+              checklistItems: prevNote.checklistItems, 
+            };
+          }
+          
+          return newNote;
+        });
+      });
+    }, [editingNote, addingChecklistItem, editingChecklistItem]),
+  });
 
-  // Update URL with current filter state
+  
   const updateURL = (
     newSearchTerm?: string,
     newDateRange?: { startDate: Date | null; endDate: Date | null },
@@ -169,7 +210,7 @@ export default function BoardPage({
     }
 
     if (!currentShowDone) {
-      // Only add if not default (true)
+      
       params.set("showDone", "false");
     }
 
@@ -178,7 +219,7 @@ export default function BoardPage({
     router.replace(newURL, { scroll: false });
   };
 
-  // Initialize filters from URL parameters
+  
   const initializeFiltersFromURL = () => {
     const urlSearchTerm = searchParams.get("search") || "";
     const urlStartDate = searchParams.get("startDate");
@@ -188,7 +229,7 @@ export default function BoardPage({
 
     setSearchTerm(urlSearchTerm);
 
-    // Parse dates safely
+    
     let startDate: Date | null = null;
     let endDate: Date | null = null;
 
@@ -208,11 +249,11 @@ export default function BoardPage({
 
     setDateRange({ startDate, endDate });
     setSelectedAuthor(urlAuthor);
-    // Default to true if not specified, otherwise parse the boolean
+    
     setShowDoneNotes(urlShowDone === null ? true : urlShowDone === "true");
   };
 
-  // Enhanced responsive grid configuration
+  
   const getResponsiveConfig = () => {
     if (typeof window === "undefined")
       return {
@@ -224,7 +265,7 @@ export default function BoardPage({
 
     const width = window.innerWidth;
 
-    // Ultra-wide screens (1920px+)
+    
     if (width >= 1920) {
       return {
         noteWidth: 340,
@@ -233,7 +274,7 @@ export default function BoardPage({
         notePadding: 18,
       };
     }
-    // Large desktop (1200px-1919px)
+    
     else if (width >= 1200) {
       return {
         noteWidth: 320,
@@ -242,7 +283,7 @@ export default function BoardPage({
         notePadding: 16,
       };
     }
-    // Medium desktop/laptop (768px-1199px)
+    
     else if (width >= 768) {
       return {
         noteWidth: 300,
@@ -251,7 +292,7 @@ export default function BoardPage({
         notePadding: 16,
       };
     }
-    // Small tablet (600px-767px)
+    
     else if (width >= 600) {
       return {
         noteWidth: 280,
@@ -260,7 +301,7 @@ export default function BoardPage({
         notePadding: 14,
       };
     }
-    // Mobile (less than 600px)
+    
     else {
       return {
         noteWidth: 260,
@@ -271,7 +312,7 @@ export default function BoardPage({
     }
   };
 
-  // Helper function to calculate note height based on content
+  
   const calculateNoteHeight = (
     note: Note,
     noteWidth?: number,
@@ -281,16 +322,16 @@ export default function BoardPage({
     const actualNotePadding = notePadding || config.notePadding;
     const actualNoteWidth = noteWidth || config.noteWidth;
 
-    const headerHeight = 76; // User info header + margins (more accurate)
-    const paddingHeight = actualNotePadding * 2; // Top and bottom padding
-    const minContentHeight = 84; // Minimum content area (3 lines)
+    const headerHeight = 76; 
+    const paddingHeight = actualNotePadding * 2; 
+    const minContentHeight = 84; 
 
     if (note.checklistItems) {
-      // For checklist items, calculate height based on number of items
-      const itemHeight = 32; // Each checklist item is about 32px tall (text + padding)
-      const itemSpacing = 8; // Space between items
+      
+      const itemHeight = 32; 
+      const itemSpacing = 8; 
       const checklistItemsCount = note.checklistItems.length;
-      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // Add height for input field
+      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; 
 
       const checklistHeight =
         checklistItemsCount * itemHeight +
@@ -298,32 +339,32 @@ export default function BoardPage({
         addingItemHeight;
       const totalChecklistHeight = Math.max(minContentHeight, checklistHeight);
 
-      return headerHeight + paddingHeight + totalChecklistHeight + 40; // Extra space for + button
+      return headerHeight + paddingHeight + totalChecklistHeight + 40; 
     } else {
-      // Original logic for regular notes
+      
       const lines = note.content.split("\n");
 
-      // Estimate character width and calculate text wrapping
-      const avgCharWidth = 9; // Average character width in pixels
-      const contentWidth = actualNoteWidth - actualNotePadding * 2 - 16; // Note width minus padding and margins
+      
+      const avgCharWidth = 9; 
+      const contentWidth = actualNoteWidth - actualNotePadding * 2 - 16; 
       const charsPerLine = Math.floor(contentWidth / avgCharWidth);
 
-      // Calculate total lines including wrapped text
+      
       let totalLines = 0;
       lines.forEach((line) => {
         if (line.length === 0) {
-          totalLines += 1; // Empty line
+          totalLines += 1; 
         } else {
           const wrappedLines = Math.ceil(line.length / charsPerLine);
           totalLines += Math.max(1, wrappedLines);
         }
       });
 
-      // Ensure minimum content
+      
       totalLines = Math.max(3, totalLines);
 
-      // Calculate based on actual text content with wrapping
-      const lineHeight = 28; // Line height for readability (leading-7)
+      
+      const lineHeight = 28; 
       const contentHeight = totalLines * lineHeight;
 
       return (
@@ -332,7 +373,7 @@ export default function BoardPage({
     }
   };
 
-  // Helper function to calculate bin-packed layout for desktop
+  
   const calculateGridLayout = () => {
     if (typeof window === "undefined") return [];
 
@@ -344,13 +385,13 @@ export default function BoardPage({
     );
     const actualColumnsCount = Math.max(1, columnsCount);
 
-    // Calculate the actual available width and adjust note width to fill better
+    
     const availableWidthForNotes =
       containerWidth - (actualColumnsCount - 1) * config.gridGap;
     const calculatedNoteWidth = Math.floor(
       availableWidthForNotes / actualColumnsCount
     );
-    // Ensure notes don't get too narrow or too wide based on screen size
+    
     const minWidth = config.noteWidth - 40;
     const maxWidth = config.noteWidth + 80;
     const adjustedNoteWidth = Math.max(
@@ -358,10 +399,10 @@ export default function BoardPage({
       Math.min(maxWidth, calculatedNoteWidth)
     );
 
-    // Use full width with minimal left offset
+    
     const offsetX = config.containerPadding;
 
-    // Bin-packing algorithm: track the bottom Y position of each column
+    
     const columnBottoms: number[] = new Array(actualColumnsCount).fill(
       config.containerPadding
     );
@@ -373,7 +414,7 @@ export default function BoardPage({
         config.notePadding
       );
 
-      // Find the column with the lowest bottom position
+      
       let bestColumn = 0;
       let minBottom = columnBottoms[0];
 
@@ -384,11 +425,11 @@ export default function BoardPage({
         }
       }
 
-      // Place the note in the best column
+      
       const x = offsetX + bestColumn * (adjustedNoteWidth + config.gridGap);
       const y = columnBottoms[bestColumn];
 
-      // Update the column bottom position
+      
       columnBottoms[bestColumn] = y + noteHeight + config.gridGap;
 
       return {
@@ -401,24 +442,24 @@ export default function BoardPage({
     });
   };
 
-  // Helper function to calculate mobile layout (optimized single/double column)
+  
   const calculateMobileLayout = () => {
     if (typeof window === "undefined") return [];
 
     const config = getResponsiveConfig();
     const containerWidth = window.innerWidth - config.containerPadding * 2;
-    const minNoteWidth = config.noteWidth - 20; // Slightly smaller minimum for mobile
+    const minNoteWidth = config.noteWidth - 20; 
     const columnsCount = Math.floor(
       (containerWidth + config.gridGap) / (minNoteWidth + config.gridGap)
     );
     const actualColumnsCount = Math.max(1, columnsCount);
 
-    // Calculate note width for mobile
+    
     const availableWidthForNotes =
       containerWidth - (actualColumnsCount - 1) * config.gridGap;
     const noteWidth = Math.floor(availableWidthForNotes / actualColumnsCount);
 
-    // Bin-packing for mobile with fewer columns
+    
     const columnBottoms: number[] = new Array(actualColumnsCount).fill(
       config.containerPadding
     );
@@ -430,7 +471,7 @@ export default function BoardPage({
         config.notePadding
       );
 
-      // Find the column with the lowest bottom position
+      
       let bestColumn = 0;
       let minBottom = columnBottoms[0];
 
@@ -441,12 +482,12 @@ export default function BoardPage({
         }
       }
 
-      // Place the note in the best column
+      
       const x =
         config.containerPadding + bestColumn * (noteWidth + config.gridGap);
       const y = columnBottoms[bestColumn];
 
-      // Update the column bottom position
+      
       columnBottoms[bestColumn] = y + noteHeight + config.gridGap;
 
       return {
@@ -467,20 +508,20 @@ export default function BoardPage({
     initializeParams();
   }, [params]);
 
-  // Initialize filters from URL on mount
+  
   useEffect(() => {
     initializeFiltersFromURL();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, []);
 
   useEffect(() => {
     if (boardId) {
       fetchBoardData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [boardId]);
 
-  // Close dropdowns when clicking outside and handle escape key
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (showBoardDropdown || showUserDropdown || showAddBoard) {
@@ -542,28 +583,28 @@ export default function BoardPage({
 
   useEffect(() => {
     if (!editingChecklistItem) {
-      // Clear all pending timeouts when exiting edit mode
+      
       editDebounceMap.current.forEach((timeout) => clearTimeout(timeout));
       editDebounceMap.current.clear();
     }
   }, [editingChecklistItem]);
 
-  // Enhanced responsive handling with debounced resize and better breakpoints
+  
   useEffect(() => {
     let resizeTimeout: NodeJS.Timeout;
 
     const checkResponsive = () => {
       if (typeof window !== "undefined") {
         const width = window.innerWidth;
-        setIsMobile(width < 768); // Tablet breakpoint
+        setIsMobile(width < 768); 
 
-        // Force re-render of notes layout after screen size change
-        // This ensures notes are properly repositioned
+        
+        
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-          // Trigger a state update to force re-calculation of note positions
+          
           setNotes((prevNotes) => [...prevNotes]);
-        }, 50); // Debounce resize events - reduced for real-time feel
+        }, 50); 
       }
     };
 
@@ -575,7 +616,7 @@ export default function BoardPage({
     };
   }, []);
 
-  // Get unique authors from notes
+  
   const getUniqueAuthors = (notes: Note[]) => {
     const authorsMap = new Map<
       string,
@@ -597,7 +638,7 @@ export default function BoardPage({
     );
   };
 
-  // Filter notes based on search term, date range, author, and done status
+  
   const filterAndSortNotes = (
     notes: Note[],
     searchTerm: string,
@@ -608,12 +649,12 @@ export default function BoardPage({
   ): Note[] => {
     let filteredNotes = notes;
 
-    // Filter by done status
+    
     if (!showDone) {
       filteredNotes = filteredNotes.filter((note) => !note.done);
     }
 
-    // Filter by search term
+    
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filteredNotes = filteredNotes.filter((note) => {
@@ -623,12 +664,12 @@ export default function BoardPage({
       });
     }
 
-    // Filter by author
+    
     if (authorId) {
       filteredNotes = filteredNotes.filter((note) => note.user.id === authorId);
     }
 
-    // Filter by date range
+    
     if (dateRange.startDate || dateRange.endDate) {
       filteredNotes = filteredNotes.filter((note) => {
         const noteDate = new Date(note.createdAt);
@@ -659,37 +700,37 @@ export default function BoardPage({
       });
     }
 
-    // Sort notes with user priority (current user's notes first) and then by creation date (newest first)
+    
     filteredNotes.sort((a, b) => {
-      // First priority: logged-in user's notes come first
+      
       if (currentUser) {
         const aIsCurrentUser = a.user.id === currentUser.id;
         const bIsCurrentUser = b.user.id === currentUser.id;
 
         if (aIsCurrentUser && !bIsCurrentUser) {
-          return -1; // a (current user's note) comes first
+          return -1; 
         }
         if (!aIsCurrentUser && bIsCurrentUser) {
-          return 1; // b (current user's note) comes first
+          return 1; 
         }
       }
 
-      // Second priority: done status (undone notes first) if showing done notes
+      
       if (showDone && a.done !== b.done) {
-        return a.done ? 1 : -1; // Undone notes (false) come first
+        return a.done ? 1 : -1; 
       }
 
-      // Third priority: newest first
+      
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     return filteredNotes;
   };
 
-  // Get unique authors for dropdown
+  
   const uniqueAuthors = getUniqueAuthors(notes);
 
-  // Get filtered and sorted notes for display
+  
   const filteredNotes = filterAndSortNotes(
     notes,
     searchTerm,
@@ -701,7 +742,7 @@ export default function BoardPage({
 
   const fetchBoardData = async () => {
     try {
-      // Get user info first to check authentication
+      
       const userResponse = await fetch("/api/user");
       if (userResponse.status === 401) {
         router.push("/auth/signin");
@@ -713,7 +754,7 @@ export default function BoardPage({
         setUser(userData);
       }
 
-      // Fetch all boards for the dropdown
+      
       const allBoardsResponse = await fetch("/api/boards");
       if (allBoardsResponse.ok) {
         const { boards } = await allBoardsResponse.json();
@@ -721,21 +762,21 @@ export default function BoardPage({
       }
 
       if (boardId === "all-notes") {
-        // For all notes view, create a virtual board object and fetch all notes
+        
         setBoard({
           id: "all-notes",
           name: "All notes",
           description: "Notes from all boards",
         });
 
-        // Fetch notes from all boards
+        
         const notesResponse = await fetch(`/api/boards/all-notes/notes`);
         if (notesResponse.ok) {
           const { notes } = await notesResponse.json();
           setNotes(notes);
         }
       } else {
-        // Fetch current board info
+        
         const boardResponse = await fetch(`/api/boards/${boardId}`);
         if (boardResponse.status === 401) {
           router.push("/auth/signin");
@@ -747,7 +788,7 @@ export default function BoardPage({
           setBoardSettings({ sendSlackUpdates: (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true });
         }
 
-        // Fetch notes for specific board
+        
         const notesResponse = await fetch(`/api/boards/${boardId}/notes`);
         if (notesResponse.ok) {
           const { notes } = await notesResponse.json();
@@ -770,7 +811,7 @@ export default function BoardPage({
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
-    // For all notes view, ensure a board is selected
+    
     if (boardId === "all-notes" && !targetBoardId) {
       setErrorDialog({
         open: true,
@@ -813,7 +854,7 @@ export default function BoardPage({
 
   const handleUpdateNote = async (noteId: string, content: string) => {
     try {
-      // Find the note to get its board ID for all notes view
+      
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote) return;
       const targetBoardId =
@@ -821,10 +862,10 @@ export default function BoardPage({
           ? currentNote.board.id
           : boardId;
 
-      // Store original content for potential rollback
+      
       const originalContent = currentNote.content;
 
-      // OPTIMISTIC UPDATE: Update UI immediately
+      
       const optimisticNote = {
         ...currentNote,
         content: content,
@@ -834,7 +875,7 @@ export default function BoardPage({
       setEditingNote(null);
       setEditContent("");
 
-      // Send to server in background
+      
       const response = await fetch(
         `/api/boards/${targetBoardId}/notes/${noteId}`,
         {
@@ -847,16 +888,16 @@ export default function BoardPage({
       );
 
       if (response.ok) {
-        // Server succeeded, confirm with actual server response
+        
         const { note } = await response.json();
         setNotes(notes.map((n) => (n.id === noteId ? note : n)));
       } else {
-        // Server failed, revert to original content
+        
         console.error("Server error, reverting optimistic update");
         const revertedNote = { ...currentNote, content: originalContent };
         setNotes(notes.map((n) => (n.id === noteId ? revertedNote : n)));
         
-        // Re-enable editing with original content
+        
         setEditingNote(noteId);
         setEditContent(originalContent);
 
@@ -870,13 +911,13 @@ export default function BoardPage({
     } catch (error) {
       console.error("Error updating note:", error);
       
-      // Revert optimistic update on network error
+      
       const currentNote = notes.find((n) => n.id === noteId);
       if (currentNote) {
-        // We need to restore the original content, but we've lost it
-        // In a more robust implementation, we'd store it in state
+        
+        
         setEditingNote(noteId);
-        setEditContent(currentNote.content); // Use current content as fallback
+        setEditContent(currentNote.content); 
       }
       
       setErrorDialog({
@@ -896,7 +937,7 @@ export default function BoardPage({
 
   const confirmDeleteNote = async () => {
     try {
-      // Find the note to get its board ID for all notes view
+      
       const currentNote = notes.find((n) => n.id === deleteNoteDialog.noteId);
       const targetBoardId =
         boardId === "all-notes" && currentNote?.board?.id
@@ -1017,10 +1058,10 @@ export default function BoardPage({
 
       const updatedItems = [...(currentNote.checklistItems || []), newItem];
 
-      // Check if all items are checked to mark note as done
+      
       const allItemsChecked = updatedItems.every((item) => item.checked);
 
-      // OPTIMISTIC UPDATE
+      
       const optimisticNote = {
         ...currentNote,
         checklistItems: updatedItems,
@@ -1062,11 +1103,11 @@ export default function BoardPage({
     } catch (error) {
       console.error("Error adding checklist item:", error);
       
-      // Revert optimistic update on network error
+      
       const currentNote = notes.find((n) => n.id === noteId);
       if (currentNote) {
         setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-        // Re-enable adding state for retry
+        
         setAddingChecklistItem(noteId);
         setNewChecklistItemContent(newChecklistItemContent);
       }
@@ -1089,7 +1130,7 @@ export default function BoardPage({
           ? currentNote.board.id
           : boardId;
 
-      // OPTIMISTIC UPDATE
+      
       const updatedItems = currentNote.checklistItems.map((item) =>
         item.id === itemId ? { ...item, checked: !item.checked } : item
       );
@@ -1105,7 +1146,7 @@ export default function BoardPage({
 
       const allItemsChecked = sortedItems.every((item) => item.checked);
 
-      // OPTIMISTIC UPDATE
+      
       const optimisticNote = {
         ...currentNote,
         checklistItems: sortedItems,
@@ -1124,7 +1165,7 @@ export default function BoardPage({
         });
       }, 200);
 
-      // Send to server in background
+      
       fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: {
@@ -1175,7 +1216,7 @@ export default function BoardPage({
           ? currentNote.board.id
           : boardId;
 
-      // Store the item being deleted for potential rollback
+      
       const deletedItem = currentNote.checklistItems.find((item) => item.id === itemId);
       if (!deletedItem) return;
 
@@ -1183,13 +1224,13 @@ export default function BoardPage({
         (item) => item.id !== itemId
       );
 
-      // Check if all remaining items are checked to mark note as done
+      
       const allItemsChecked =
         updatedItems.length > 0
           ? updatedItems.every((item) => item.checked)
           : false;
 
-      // OPTIMISTIC UPDATE: Update UI immediately
+      
       const optimisticNote = {
         ...currentNote,
         checklistItems: updatedItems,
@@ -1198,7 +1239,7 @@ export default function BoardPage({
 
       setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
 
-      // Send to server in background
+      
       const response = await fetch(
         `/api/boards/${targetBoardId}/notes/${noteId}`,
         {
@@ -1229,7 +1270,7 @@ export default function BoardPage({
     } catch (error) {
       console.error("Error deleting checklist item:", error);
       
-      // Revert optimistic update on network error
+      
       const currentNote = notes.find((n) => n.id === noteId);
       if (currentNote) {
         setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
@@ -1261,7 +1302,7 @@ export default function BoardPage({
         item.id === itemId ? { ...item, content } : item
       );
 
-      // Check if all items are checked to mark note as done
+      
       const allItemsChecked = updatedItems.every((item) => item.checked);
 
       const response = await fetch(
@@ -1322,18 +1363,18 @@ export default function BoardPage({
           ? currentNote.board.id
           : boardId;
 
-      // Check if all items are checked
+      
       const allChecked = currentNote.checklistItems.every(
         (item) => item.checked
       );
 
-      // Toggle all items to opposite state
+      
       const updatedItems = currentNote.checklistItems.map((item) => ({
         ...item,
         checked: !allChecked,
       }));
 
-      // Sort items: unchecked first, then checked
+      
       const sortedItems = [
         ...updatedItems
           .filter((item) => !item.checked)
@@ -1343,9 +1384,9 @@ export default function BoardPage({
           .sort((a, b) => a.order - b.order),
       ];
 
-      // The note should be marked as done if all items are checked
-      const noteIsDone = !allChecked; // If all were checked before, we're unchecking them (note becomes undone)
-      // If not all were checked before, we're checking them all (note becomes done)
+      
+      const noteIsDone = !allChecked; 
+      
 
       const response = await fetch(
         `/api/boards/${targetBoardId}/notes/${noteId}`,
@@ -1388,18 +1429,18 @@ export default function BoardPage({
       const firstHalf = content.substring(0, cursorPosition).trim();
       const secondHalf = content.substring(cursorPosition).trim();
 
-      // Update current item with first half
+      
       const updatedItems = currentNote.checklistItems.map((item) =>
         item.id === itemId ? { ...item, content: firstHalf } : item
       );
 
-      // Find the current item's order to insert new item after it
+      
       const currentItem = currentNote.checklistItems.find(
         (item) => item.id === itemId
       );
       const currentOrder = currentItem?.order || 0;
 
-      // Create new item with second half
+      
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content: secondHalf,
@@ -1411,7 +1452,7 @@ export default function BoardPage({
         (a, b) => a.order - b.order
       );
 
-      // Update the note with both changes
+      
       const response = await fetch(
         `/api/boards/${targetBoardId}/notes/${noteId}`,
         {
@@ -1450,19 +1491,19 @@ export default function BoardPage({
     ? calculateMobileLayout()
     : calculateGridLayout();
 
-  // Calculate the total height needed for the board area
+  
   const calculateBoardHeight = () => {
     if (layoutNotes.length === 0) {
-      return "calc(100vh - 64px)"; // Default minimum height when no notes
+      return "calc(100vh - 64px)"; 
     }
 
-    // Find the bottommost note position
+    
     const maxBottom = Math.max(
       ...layoutNotes.map((note) => note.y + note.height)
     );
     const minHeight =
-      typeof window !== "undefined" && window.innerWidth < 768 ? 500 : 600; // Different min heights for mobile/desktop
-    const calculatedHeight = Math.max(minHeight, maxBottom + 100); // Add 100px padding at bottom
+      typeof window !== "undefined" && window.innerWidth < 768 ? 500 : 600; 
+    const calculatedHeight = Math.max(minHeight, maxBottom + 100); 
 
     return `${calculatedHeight}px`;
   };
@@ -1472,7 +1513,7 @@ export default function BoardPage({
       <div className="bg-card dark:bg-zinc-900 border-b border-border dark:border-zinc-800 shadow-sm">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
-            {/* Company Name */}
+            {}
             <Link
               href="/dashboard"
               className="flex-shrink-0 pl-4 sm:pl-2 lg:pl-4"
@@ -1482,7 +1523,7 @@ export default function BoardPage({
               </h1>
             </Link>
 
-            {/* Board Selector Dropdown */}
+            {}
             <div className="relative board-dropdown block">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
@@ -1503,7 +1544,7 @@ export default function BoardPage({
               {showBoardDropdown && (
                 <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
-                    {/* All Notes Option */}
+                    {}
                     <Link
                       href="/boards/all-notes"
                       className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
@@ -1571,7 +1612,7 @@ export default function BoardPage({
               )}
             </div>
 
-            {/* Filter Popover */}
+            {}
             <div className="block">
               <FilterPopover
                 startDate={dateRange.startDate}
@@ -1595,11 +1636,28 @@ export default function BoardPage({
                 className="min-w-fit"
               />
             </div>
+            
+            {}
+            <div className="flex items-center space-x-2 px-2">
+              <div className="flex items-center space-x-1">
+                <RefreshCw 
+                  className={cn(
+                    "w-4 h-4 text-muted-foreground dark:text-zinc-400",
+                    isPolling && "animate-spin text-blue-500 dark:text-blue-400"
+                  )} 
+                />
+                {lastSync && (
+                  <span className="text-xs text-muted-foreground dark:text-zinc-400 hidden lg:inline">
+                    Live
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Right side - Search, Add Note and User dropdown */}
+          {}
           <div className="flex items-center space-x-2 px-3 ">
-            {/* Search Box */}
+            {}
             <div className="relative block">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-muted-foreground dark:text-zinc-400" />
@@ -1640,7 +1698,7 @@ export default function BoardPage({
               <Pencil className="w-4 h-4" />
             </Button>
 
-            {/* User Dropdown */}
+            {}
             <div className="relative user-dropdown">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -1692,16 +1750,16 @@ export default function BoardPage({
         </div>
       </div>
 
-      {/* Board Area */}
+      {}
       <div
         ref={boardRef}
         className="relative w-full bg-gray-50 dark:bg-zinc-950"
         style={{
           height: calculateBoardHeight(),
-          minHeight: "calc(100vh - 64px)", // Account for header height
+          minHeight: "calc(100vh - 64px)", 
         }}
       >
-        {/* Search Results Info */}
+        {}
         {(searchTerm ||
           dateRange.startDate ||
           dateRange.endDate ||
@@ -1772,7 +1830,7 @@ export default function BoardPage({
           </div>
         )}
 
-        {/* Notes */}
+        {}
         <div className="relative w-full h-full">
           {layoutNotes.map((note) => (
             <div
@@ -1794,7 +1852,7 @@ export default function BoardPage({
                 padding: `${getResponsiveConfig().notePadding}px`,
               }}
             >
-              {/* User Info Header */}
+              {}
               <div className="flex items-start justify-between mb-4 flex-shrink-0">
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-7 w-7 border-2 border-white dark:border-zinc-800">
@@ -1820,7 +1878,7 @@ export default function BoardPage({
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  {/* Show edit/delete buttons for note author or admin */}
+                  {}
                   {(user?.id === note.user.id || user?.isAdmin) && (
                     <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
@@ -1834,7 +1892,7 @@ export default function BoardPage({
                       </Button>
                     </div>
                   )}
-                  {/* Beautiful checkbox for done status - show to author or admin */}
+                  {}
                   {(user?.id === note.user.id || user?.isAdmin) && (
                     <div className="flex items-center">
                       <Checkbox
@@ -1887,7 +1945,7 @@ export default function BoardPage({
               ) : (
                 <div className="flex-1 flex flex-col">
                   <div className="overflow-y-auto space-y-1 flex-1">
-                    {/* Checklist Items */}
+                    {}
                     {note.checklistItems?.map((item) => (
                     <div
                       key={item.id}
@@ -1895,7 +1953,7 @@ export default function BoardPage({
                         animatingItems.has(item.id) ? "animate-pulse" : ""
                       }`}
                     >
-                      {/* Checkbox */}
+                      {}
                       <Checkbox
                         checked={item.checked}
                         onCheckedChange={() =>
@@ -1904,7 +1962,7 @@ export default function BoardPage({
                         className="border-slate-500 bg-white/50 dark:bg-zinc-800 dark:border-zinc-600"
                       />
 
-                      {/* Content */}
+                      {}
                       {editingChecklistItem?.noteId === note.id &&
                         editingChecklistItem?.itemId === item.id ? (
                           <Input
@@ -1930,7 +1988,7 @@ export default function BoardPage({
                                 clearTimeout(existingTimeout);
                                 editDebounceMap.current.delete(key);
                               }
-                              // Save immediately
+                              
                               handleEditChecklistItem(
                                 note.id,
                                 item.id,
@@ -2032,7 +2090,7 @@ export default function BoardPage({
                           </span>
                         )}
 
-                      {/* Delete button */}
+                      {}
                       {(user?.id === note.user.id || user?.isAdmin) && (
                         <Button
                           variant="ghost"
@@ -2048,7 +2106,7 @@ export default function BoardPage({
                     </div>
                     ))}
 
-                  {/* Add new item input */}
+                  {}
                   {addingChecklistItem === note.id && (
                     <div className="flex items-center group/item rounded gap-3 transition-all duration-200">
                       <Checkbox
@@ -2091,7 +2149,7 @@ export default function BoardPage({
                   )}
                   </div>
 
-                  {/* Add task button - everpresent for checklist notes and authorized users */}
+                  {}
                   {(user?.id === note.user.id || user?.isAdmin) && (
                       <Button
                         variant="ghost"
@@ -2112,7 +2170,7 @@ export default function BoardPage({
           ))}
         </div>
 
-        {/* Empty State */}
+        {}
         {filteredNotes.length === 0 &&
           notes.length > 0 &&
           (searchTerm ||

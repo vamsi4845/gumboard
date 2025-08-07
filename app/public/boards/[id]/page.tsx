@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
+import { useRealTimeBoard } from "@/lib/hooks/useRealTimeBoard";
+import { cn } from "@/lib/utils";
 
 interface ChecklistItem {
   id: string;
@@ -39,12 +41,12 @@ interface Board {
 export default function PublicBoardPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
-  const [boardId, setBoardId] = useState<string | null>(null);
+  const boardId = params.id;
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
@@ -58,6 +60,16 @@ export default function PublicBoardPage({
   const [showDoneNotes, setShowDoneNotes] = useState(true);
   const boardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  
+  
+  const { isPolling, lastSync } = useRealTimeBoard({
+    boardId,
+    enabled: !loading && !!boardId,
+    pollingInterval: 5000, 
+    onUpdate: useCallback((data: { notes: Note[] }) => {
+      setNotes(data.notes);
+    }, []),
+  });
 
   const getResponsiveConfig = () => {
     if (typeof window === "undefined")
@@ -359,13 +371,6 @@ export default function PublicBoardPage({
     });
   };
 
-  useEffect(() => {
-    const initializeParams = async () => {
-      const resolvedParams = await params;
-      setBoardId(resolvedParams.id);
-    };
-    initializeParams();
-  }, [params]);
 
   useEffect(() => {
     if (boardId) {
@@ -511,6 +516,22 @@ export default function PublicBoardPage({
                 }}
                 className="min-w-fit"
               />
+            </div>
+            
+            <div className="flex items-center space-x-2 px-2">
+              <div className="flex items-center space-x-1">
+                <RefreshCw 
+                  className={cn(
+                    "w-4 h-4 text-muted-foreground dark:text-zinc-400",
+                    isPolling && "animate-spin text-blue-500 dark:text-blue-400"
+                  )} 
+                />
+                {lastSync && (
+                  <span className="text-xs text-muted-foreground dark:text-zinc-400 hidden lg:inline">
+                    Live
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

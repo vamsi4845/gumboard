@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Trash2,
@@ -21,6 +21,7 @@ import {
   Grid3x3,
   Copy,
   Edit3,
+  RefreshCw,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FullPageLoader } from "@/components/ui/loader";
@@ -34,6 +35,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useRealTimeBoards } from "@/lib/hooks/useRealTimeBoards";
+import { cn } from "@/lib/utils";
 
 interface Board {
   id: string;
@@ -79,6 +82,14 @@ export default function Dashboard() {
   }>({ open: false, title: "", description: "" });
   const [copiedBoardId, setCopiedBoardId] = useState<string | null>(null);
   const router = useRouter();
+  
+  const { isPolling, lastSync } = useRealTimeBoards({
+    enabled: !loading,
+    pollingInterval: 5000,
+    onUpdate: useCallback((data: { boards: Board[] }) => {
+      setBoards(data.boards);
+    }, []),
+  });
 
   useEffect(() => {
     fetchUserAndBoards();
@@ -310,11 +321,24 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background dark:bg-zinc-950">
       <nav className="bg-card dark:bg-zinc-900 border-b border-border dark:border-zinc-800 shadow-sm">
         <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
               <h1 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                 Gumboard
               </h1>
+            </div>
+            <div className="flex items-center space-x-1">
+              <RefreshCw 
+                className={cn(
+                  "w-4 h-4 text-muted-foreground dark:text-zinc-400",
+                  isPolling && "animate-spin text-blue-500 dark:text-blue-400"
+                )} 
+              />
+              {lastSync && (
+                <span className="text-xs text-muted-foreground dark:text-zinc-400 hidden lg:inline">
+                  Live
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2 sm:space-x-4">
