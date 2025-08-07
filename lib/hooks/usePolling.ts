@@ -17,6 +17,24 @@ export function usePolling({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isTabActiveRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const lastDataRef = useRef<string | null>(null);
+  const dynamicIntervalRef = useRef(interval);
+  const lastActivityRef = useRef(Date.now());
+  const etagRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const updateActivity = () => {
+      lastActivityRef.current = Date.now();
+      dynamicIntervalRef.current = interval;
+    };
+    
+    const events = ['mousedown', 'keydown', 'touchstart'];
+    events.forEach(e => document.addEventListener(e, updateActivity));
+    
+    return () => {
+      events.forEach(e => document.removeEventListener(e, updateActivity));
+    };
+  }, [interval]);
 
   const fetchData = useCallback(async () => {
     if (!enabled || !isTabActiveRef.current) return;
@@ -28,25 +46,54 @@ export function usePolling({
     abortControllerRef.current = new AbortController();
 
     try {
+      const headers: HeadersInit = {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+      };
+      
+      if (etagRef.current) {
+        headers['If-None-Match'] = etagRef.current;
+      }
+
       const response = await fetch(url, {
         signal: abortControllerRef.current.signal,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-        },
+        headers,
       });
 
+      if (response.status === 304) {
+        const timeSinceActivity = Date.now() - lastActivityRef.current;
+        if (timeSinceActivity > 30000) {
+          dynamicIntervalRef.current = Math.min(interval * 2, 10000);
+        }
+        return;
+      }
+
       if (response.ok) {
+        const newEtag = response.headers.get('ETag');
+        if (newEtag) {
+          etagRef.current = newEtag;
+        }
+
         const data = await response.json();
-        setLastSync(new Date());
-        onUpdate?.(data);
+        const dataStr = JSON.stringify(data);
+        
+        if (dataStr !== lastDataRef.current) {
+          lastDataRef.current = dataStr;
+          setLastSync(new Date());
+          onUpdate?.(data);
+        }
+        
+        const timeSinceActivity = Date.now() - lastActivityRef.current;
+        if (timeSinceActivity > 30000) {
+          dynamicIntervalRef.current = Math.min(interval * 2, 10000);
+        }
       }
     } catch (error: any) {
       if (error.name !== 'AbortError') {
         console.error('Polling error:', error);
       }
     }
-  }, [url, enabled, onUpdate]);
+  }, [url, enabled, onUpdate, interval]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -65,13 +112,28 @@ export function usePolling({
   useEffect(() => {
     if (!enabled) return;
 
-    fetchData();
-
-    intervalRef.current = setInterval(() => {
-      if (isTabActiveRef.current) {
-        fetchData();
+    const startPolling = () => {
+      fetchData();
+      
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
-    }, interval);
+      
+      intervalRef.current = setInterval(() => {
+        if (isTabActiveRef.current) {
+          fetchData();
+          
+          if (dynamicIntervalRef.current !== interval) {
+            clearInterval(intervalRef.current!);
+            intervalRef.current = setInterval(() => {
+              if (isTabActiveRef.current) fetchData();
+            }, dynamicIntervalRef.current);
+          }
+        }
+      }, dynamicIntervalRef.current);
+    };
+
+    startPolling();
 
     return () => {
       if (intervalRef.current) {
