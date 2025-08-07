@@ -58,3 +58,26 @@ export interface DemoNote {
   color: string;
   tasks: DemoTask[];
 }
+
+// App-specific extension types
+export type DashboardBoard = Board & {
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  isPublic: boolean;
+  _count: { notes: number };
+};
+
+export type UserWithOrganization = User & {
+  organization: {
+    id: string;
+    name: string;
+    slackWebhookUrl?: string | null;
+    members: {
+      id: string;
+      name: string | null;
+      email: string;
+      isAdmin: boolean;
+    }[];
+  } | null;
+};

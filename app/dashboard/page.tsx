@@ -34,32 +34,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface Board {
-  id: string;
-  name: string;
-  description: string | null;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  isPublic: boolean;
-  _count: {
-    notes: number;
-  };
-}
-
-interface User {
-  id: string;
-  name: string | null;
-  email: string;
-  isAdmin: boolean;
-  organization: {
-    name: string;
-  } | null;
-}
+import type { DashboardBoard, User, Board } from "@/lib/types";
+// keep Board for editingBoard state
 
 export default function Dashboard() {
-  const [boards, setBoards] = useState<Board[]>([]);
+  const [boards, setBoards] = useState<DashboardBoard[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAddBoard, setShowAddBoard] = useState(false);
