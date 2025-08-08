@@ -2,6 +2,7 @@
 
 Keep on top of your team's to-dos.
 
+Note: This temporary line exists only to verify the PR workflow and will be removed.
 ## Getting Started
 
 ### Prerequisites
