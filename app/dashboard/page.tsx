@@ -35,7 +35,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { DashboardBoard, User, Board } from "@/lib/types";
-// keep Board for editingBoard state
 
 export default function Dashboard() {
   const [boards, setBoards] = useState<DashboardBoard[]>([]);
