@@ -12,7 +12,12 @@ import { db } from "@/lib/db";
 import { Resend } from "resend";
 import OrganizationSetupForm from "./form";
 
-const resend = new Resend(process.env.AUTH_RESEND_KEY);
+function getResendClient() {
+  if (!process.env.AUTH_RESEND_KEY) {
+    throw new Error('AUTH_RESEND_KEY environment variable is not configured')
+  }
+  return new Resend(process.env.AUTH_RESEND_KEY)
+}
 
 async function createOrganization(orgName: string, teamEmails: string[]) {
   "use server";
@@ -51,7 +56,7 @@ async function createOrganization(orgName: string, teamEmails: string[]) {
           },
         });
 
-        await resend.emails.send({
+        await getResendClient().emails.send({
           from: process.env.EMAIL_FROM!,
           to: email,
           subject: `${session.user.name} invited you to join ${orgName}`,

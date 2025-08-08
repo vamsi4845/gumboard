@@ -3,8 +3,12 @@ import { db } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 
-
-const resend = new Resend(process.env.AUTH_RESEND_KEY)
+function getResendClient() {
+  if (!process.env.AUTH_RESEND_KEY) {
+    throw new Error('AUTH_RESEND_KEY environment variable is not configured')
+  }
+  return new Resend(process.env.AUTH_RESEND_KEY)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Send invite email
     try {
+      const resend = getResendClient()
       await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: cleanEmail,
@@ -118,4 +123,4 @@ export async function POST(request: NextRequest) {
     console.error("Error creating invite:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}  
