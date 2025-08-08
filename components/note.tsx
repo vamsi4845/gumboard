@@ -48,7 +48,12 @@ export function Note({
   const [editContent, setEditContent] = useState(note.content);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingItemContent, setEditingItemContent] = useState("");
-  const [addingItem, setAddingItem] = useState(false);
+  const [addingItem, setAddingItem] = useState(
+    !readonly && 
+    currentUser && 
+    (currentUser.id === note.user.id || currentUser.isAdmin) && 
+    (!note.checklistItems || note.checklistItems.length === 0)
+  );
   const [newItemContent, setNewItemContent] = useState("");
 
   const canEdit = !readonly && (currentUser?.id === note.user.id || currentUser?.isAdmin);
@@ -240,7 +245,7 @@ export function Note({
                   value={newItemContent}
                   onChange={(e) => setNewItemContent(e.target.value)}
                   className="h-auto flex-1 border-none bg-transparent p-0 text-sm text-zinc-900 dark:text-zinc-100 focus-visible:ring-0 focus-visible:ring-offset-0"
-                  placeholder="New item..."
+                  placeholder="Add new item..."
                   onBlur={handleAddItem}
                   onKeyDown={handleKeyDownNewItem}
                   autoFocus
@@ -260,7 +265,7 @@ export function Note({
           </div>
 
           {/* Add Item Button */}
-          {canEdit && !addingItem && (
+          {canEdit && (
             <Button
               variant="ghost"
               size="sm"
@@ -268,7 +273,7 @@ export function Note({
               className="mt-2 justify-start text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add item
+              Add task
             </Button>
           )}
         </div>
