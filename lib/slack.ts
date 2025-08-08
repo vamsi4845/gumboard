@@ -39,7 +39,6 @@ export async function sendSlackApiMessage(token: string, message: SlackApiMessag
 
 export async function updateSlackApiMessage(token: string, channel: string, timestamp: string, message: Partial<SlackApiMessage>): Promise<boolean> {
   try {
-    console.log('Updating Slack message:', { channel, timestamp, text: message.text?.substring(0, 50) + '...' });
     
     const response = await fetch('https://slack.com/api/chat.update', {
       method: 'POST',
@@ -56,8 +55,6 @@ export async function updateSlackApiMessage(token: string, channel: string, time
 
     const data: SlackApiResponse = await response.json()
     
-    console.log('Slack update response:', { ok: data.ok, error: data.error });
-    
     if (!data.ok) {
       console.error('Slack API update error:', data.error)
       return false
@@ -72,25 +69,21 @@ export async function updateSlackApiMessage(token: string, channel: string, time
 
 export function hasValidContent(content: string | null | undefined): boolean {
   if (!content) {
-    console.log(`[Slack] hasValidContent check: "${content}" -> false (null/undefined)`)
     return false
   }
   
   const trimmed = content.trim()
   
   if (trimmed.length === 0) {
-    console.log(`[Slack] hasValidContent check: "${content}" -> false (empty after trim)`)
     return false
   }
   
   const hasSubstantiveContent = /[a-zA-Z0-9\u00C0-\u017F\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/.test(trimmed)
   
   if (!hasSubstantiveContent) {
-    console.log(`[Slack] hasValidContent check: "${content}" -> false (no substantive content)`)
     return false
   }
   
-  console.log(`[Slack] hasValidContent check: "${content}" -> true`)
   return true
 }
 
@@ -103,12 +96,10 @@ export function clearNotificationDebounce() {
 
 export function shouldSendNotification(userId: string, boardId: string, boardName: string, sendSlackUpdates: boolean = true): boolean {
   if (boardName.startsWith("Test")) {
-    console.log(`[Slack] Skipping notification for test board: ${boardName}`)
     return false
   }
   
   if (!sendSlackUpdates) {
-    console.log(`[Slack] Skipping notification for board with disabled Slack updates: ${boardName}`)
     return false
   }
   
@@ -117,12 +108,10 @@ export function shouldSendNotification(userId: string, boardId: string, boardNam
   const lastNotification = notificationDebounce.get(key)
   
   if (lastNotification && now - lastNotification < DEBOUNCE_DURATION) {
-    console.log(`[Slack] Debounced notification for ${key} (${now - lastNotification}ms ago)`)
     return false
   }
   
   notificationDebounce.set(key, now)
-  console.log(`[Slack] Allowing notification for ${key}`)
   return true
 }
 
@@ -132,7 +121,7 @@ export function formatNoteForSlack(note: { content: string }, boardName: string,
 
 export function formatTodoForSlack(todoContent: string, boardName: string, userName: string, action: 'added' | 'completed' | 'reopened'): string {
   if (action === 'completed') {
-    return `:white_check_mark: ~~${todoContent}~~ by ${userName} in ${boardName}`
+    return `:white_check_mark: ${todoContent} by ${userName} in ${boardName}`
   } else if (action === 'reopened') {
     return `:heavy_plus_sign: ${todoContent} by ${userName} in ${boardName}`
   }
@@ -165,12 +154,6 @@ export async function notifySlackForNoteChanges(params: {
   const out: {noteMessageId?: string | null; itemMessageIds?: Record<string, string>} = {};
   
   if (!slackApiToken || !slackChannelId || !sendSlackUpdates) return out;
-
-  console.log('Slack notification params:', {
-    slackApiToken: slackApiToken ? 'present' : 'missing',
-    slackChannelId: slackChannelId ? 'present' : 'missing',
-    existingMessageIdsCount: Object.keys(existingMessageIds || {}).length
-  });
 
   // Handle note updates
   const had = hasValidContent(prevContent);
@@ -218,12 +201,9 @@ export async function notifySlackForNoteChanges(params: {
     
     // Try to update existing message if we have the ID
     if (existingMessageId) {
-      console.log(`Attempting to update existing message ${existingMessageId} for item ${u.id}`);
       const updated = await updateSlackApiMessage(slackApiToken, slackChannelId, existingMessageId, {
         text: formatTodoForSlack(u.content, boardName, userName, action)
       });
-      
-      console.log(`Message update result for ${u.id}:`, updated);
       
       if (updated) {
         // Keep the same message ID since we updated it

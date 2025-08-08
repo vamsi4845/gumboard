@@ -79,7 +79,6 @@ export default function BoardPage({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Helper to generate new item IDs
   const generateItemId = () => {
     try {
       return crypto.randomUUID();
@@ -826,7 +825,6 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             content: "",
-            checklistItems: [],
             ...(isAllNotesView && { boardId: targetBoardId }),
           }),
         }
