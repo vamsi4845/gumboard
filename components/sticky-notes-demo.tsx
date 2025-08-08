@@ -453,7 +453,6 @@ export function StickyNotesDemo() {
                   onToggleChecklistItem={handleToggleChecklistItem}
                   onEditChecklistItem={handleEditChecklistItem}
                   onDeleteChecklistItem={handleDeleteChecklistItem}
-                  onToggleAllChecklistItems={handleToggleAllChecklistItems}
                   className={`${note.color} bg-white dark:bg-zinc-900 p-4`}
                 />
               </motion.div>

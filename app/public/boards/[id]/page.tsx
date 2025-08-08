@@ -155,14 +155,9 @@ export default function PublicBoardPage({
     notes: Note[],
     searchTerm: string,
     dateRange: { startDate: Date | null; endDate: Date | null },
-    authorId: string | null,
-    showDone: boolean
+    authorId: string | null
   ): Note[] => {
     let filteredNotes = notes;
-
-    if (!showDone) {
-      filteredNotes = filteredNotes.filter((note) => !note.done);
-    }
 
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
@@ -481,10 +476,6 @@ export default function PublicBoardPage({
                 authors={uniqueAuthors}
                 onAuthorChange={(authorId) => {
                   setSelectedAuthor(authorId);
-                }}
-                showCompleted={showDoneNotes}
-                onShowCompletedChange={(show) => {
-                  setShowDoneNotes(show);
                 }}
                 className="min-w-fit"
               />

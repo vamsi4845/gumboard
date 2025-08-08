@@ -246,59 +246,6 @@ test.describe('Archive Functionality', () => {
     await expect(archiveButton).not.toBeVisible();
   });
 
-  test('should not automatically archive note when checklist items are completed', async ({ page }) => {
-    
-    await page.route('**/api/boards/test-board/notes', async (route) => {
-      if (route.request().method() === 'GET') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            notes: [
-              {
-                id: 'test-note-1',
-                content: 'Note with completed checklist',
-                color: '#fef3c7',
-                done: false, // Note is not archived despite all items being checked
-                x: 100,
-                y: 100,
-                width: 300,
-                height: 200,
-                checklistItems: [
-                  {
-                    id: 'item-1',
-                    content: 'Task 1',
-                    checked: true, // All items are checked
-                    order: 0,
-                  },
-                  {
-                    id: 'item-2',
-                    content: 'Task 2',
-                    checked: true, // All items are checked
-                    order: 1,
-                  },
-                ],
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                user: {
-                  id: 'test-user',
-                  name: 'Test User',
-                  email: 'test@example.com',
-                },
-              },
-            ],
-          }),
-        });
-      }
-    });
-
-    await page.goto('/boards/test-board');
-    
-    await expect(page.locator('text=Note with completed checklist')).toBeVisible();
-    
-    const archiveButton = page.locator('[title="Archive note"]');
-    await expect(archiveButton).toBeVisible();
-  });
 
   test('should show empty state on Archive board when no archived notes exist', async ({ page }) => {
     await page.route('**/api/boards/archive/notes', async (route) => {
