@@ -101,6 +101,19 @@ export async function PUT(
     }
 
     const updatedNote = await db.$transaction(async (tx) => {
+      const currentNote = await tx.note.findUnique({
+        where: { id: noteId },
+        include: { checklistItems: { orderBy: { order: 'asc' } } }
+      });
+      
+      if (!currentNote) {
+        throw new Error('Note not found during transaction');
+      }
+      
+      if (currentNote.deletedAt) {
+        throw new Error('Note has been deleted');
+      }
+      
       if (sanitizedChecklistItems !== undefined) {
         const existing = await tx.checklistItem.findMany({ 
           where: { noteId }, 
@@ -161,6 +174,7 @@ export async function PUT(
           ...(content !== undefined && { content }),
           ...(color !== undefined && { color }),
           ...(done !== undefined && { done }),
+          updatedAt: new Date(),
         },
         include: {
           user: {

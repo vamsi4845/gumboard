@@ -1060,7 +1060,8 @@ export default function BoardPage({
           .sort((a, b) => a.order - b.order),
       ];
 
-      const allItemsChecked = sortedItems.every((item) => item.checked);
+      // handle edge case where there are no items
+      const allItemsChecked = updatedItems.length > 0 && updatedItems.every((item) => item.checked);
 
       // OPTIMISTIC UPDATE
       const optimisticNote = {
@@ -1071,6 +1072,21 @@ export default function BoardPage({
 
       setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
 
+      const sanitizedItems = sanitizeChecklistItems(sortedItems);
+      
+      // Additional validation
+      if (!Array.isArray(sanitizedItems) || sanitizedItems.some(item => 
+        !item.id || typeof item.content !== 'string' || typeof item.checked !== 'boolean' || typeof item.order !== 'number'
+      )) {
+        console.error('Invalid checklist items data:', sanitizedItems);
+        setErrorDialog({
+          open: true,
+          title: "Data Error",
+          description: "Invalid checklist data. Please refresh the page and try again.",
+        });
+        return;
+      }
+
       // Send to server in background
       fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
@@ -1078,28 +1094,31 @@ export default function BoardPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          checklistItems: sanitizeChecklistItems(sortedItems),
+          checklistItems: sanitizedItems,
           done: allItemsChecked,
         }),
       })
         .then(async (response) => {
           if (!response.ok) {
-            console.error("Server error, reverting optimistic update");
-            setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            console.error("Server error, reverting optimistic update. Status:", response.status, "Error:", errorData);
+            
+            // Use a fresh copy of notes to avoid stale state
+            setNotes(prev => prev.map((n) => (n.id === noteId ? currentNote : n)));
             
             setErrorDialog({
               open: true,
               title: "Update Failed",
-              description: "Failed to update checklist item. Please try again.",
+              description: `Failed to update checklist item. ${errorData.error || 'Please try again.'}`,
             });
           } else {
             const { note } = await response.json();
-            setNotes(notes.map((n) => (n.id === noteId ? note : n)));
+            setNotes(prev => prev.map((n) => (n.id === noteId ? note : n)));
           }
         })
         .catch((error) => {
           console.error("Error toggling checklist item:", error);
-          setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
+          setNotes(prev => prev.map((n) => (n.id === noteId ? currentNote : n)));
           
           setErrorDialog({
             open: true,
@@ -1162,24 +1181,25 @@ export default function BoardPage({
 
       if (response.ok) {
         const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
+        setNotes(prev => prev.map((n) => (n.id === noteId ? note : n)));
       } else {
-        console.error("Server error, reverting optimistic update");
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error("Server error, reverting optimistic update. Status:", response.status, "Error:", errorData);
+        setNotes(prev => prev.map((n) => (n.id === noteId ? currentNote : n)));
 
         setErrorDialog({
           open: true,
           title: "Failed to Delete Item",
-          description: "Failed to delete checklist item. Please try again.",
+          description: `Failed to delete checklist item. ${errorData.error || 'Please try again.'}`,
         });
       }
     } catch (error) {
       console.error("Error deleting checklist item:", error);
       
       // Revert optimistic update on network error
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (currentNote) {
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
+      const noteToRevert = notes.find((n) => n.id === noteId);
+      if (noteToRevert) {
+        setNotes(prev => prev.map((n) => (n.id === noteId ? noteToRevert : n)));
       }
       
       setErrorDialog({
