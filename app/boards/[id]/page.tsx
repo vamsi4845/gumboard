@@ -79,10 +79,6 @@ export default function BoardPage({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Client-side sanitization for checklist items
-  const sanitizeChecklistItems = (items: ChecklistItem[]) =>
-    items.map(i => ({ id: i.id, content: i.content, checked: i.checked, order: i.order }));
-
   // Helper to generate new item IDs
   const generateItemId = () => {
     try {
@@ -775,7 +771,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: sanitizeChecklistItems(updatedItems),
+            checklistItems: updatedItems,
           }),
         }
       );
@@ -1090,13 +1086,11 @@ export default function BoardPage({
 
       setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
 
-      const sanitizedItems = sanitizeChecklistItems(sortedItems);
-      
       // Additional validation
-      if (!Array.isArray(sanitizedItems) || sanitizedItems.some(item => 
+      if (!Array.isArray(sortedItems) || sortedItems.some(item => 
         !item.id || typeof item.content !== 'string' || typeof item.checked !== 'boolean' || typeof item.order !== 'number'
       )) {
-        console.error('Invalid checklist items data:', sanitizedItems);
+        console.error('Invalid checklist items data:', sortedItems);
         setErrorDialog({
           open: true,
           title: "Data Error",
@@ -1112,7 +1106,7 @@ export default function BoardPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          checklistItems: sanitizedItems,
+          checklistItems: sortedItems,
         }),
       })
         .then(async (response) => {
@@ -1183,7 +1177,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: sanitizeChecklistItems(updatedItems),
+            checklistItems: updatedItems,
           }),
         }
       );
@@ -1246,7 +1240,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: sanitizeChecklistItems(updatedItems),
+            checklistItems: updatedItems,
           }),
         }
       );
@@ -1310,7 +1304,7 @@ export default function BoardPage({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            checklistItems: sanitizeChecklistItems(allItems),
+            checklistItems: allItems,
           }),
         }
       );
