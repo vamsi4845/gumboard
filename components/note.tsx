@@ -6,15 +6,58 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ChecklistItem } from "@/components/checklist-item";
+import { ChecklistItem as ChecklistItemComponent } from "@/components/checklist-item";
 import { cn } from "@/lib/utils";
 import { Trash2, Plus } from "lucide-react";
-import type { Note as NoteType, User } from "@/lib/types";
+// Core domain types
+export interface ChecklistItem {
+  id: string;
+  content: string;
+  checked: boolean;
+  order: number;
+}
+
+export interface User {
+  id: string;
+  name: string | null;
+  email: string;
+  isAdmin?: boolean;
+}
+
+export interface Board {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+export interface Note {
+  id: string;
+  content: string;
+  color: string;
+  done: boolean;
+  createdAt: string;
+  updatedAt: string;
+  checklistItems?: ChecklistItem[];
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+  };
+  board?: {
+    id: string;
+    name: string;
+  };
+  // Optional positioning properties for board layout
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
 
 interface NoteProps {
-  note: NoteType;
+  note: Note;
   currentUser?: User;
-  onUpdate?: (note: NoteType) => void;
+  onUpdate?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
   onAddChecklistItem?: (noteId: string, content: string) => void;
   onToggleChecklistItem?: (noteId: string, itemId: string) => void;
@@ -219,7 +262,7 @@ export function Note({
           <div className="overflow-y-auto space-y-1 flex-1">
             {/* Checklist Items */}
             {note.checklistItems?.map((item) => (
-              <ChecklistItem
+                                      <ChecklistItemComponent
                 key={item.id}
                 item={item}
                 onToggle={(itemId) => onToggleChecklistItem?.(note.id, itemId)}
