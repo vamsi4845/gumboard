@@ -387,6 +387,15 @@ export function StickyNotesDemo() {
 
 
   const handleAddNote = () => {
+    const existingEmptyNote = notes.find(note => 
+      note.checklistItems && 
+      note.checklistItems.some(item => item.content.trim() === "")
+    );
+    
+    if (existingEmptyNote) {
+      return;
+    }
+
     const randomColor = noteColors[Math.floor(Math.random() * noteColors.length)]
     const randomAuthor = authors[Math.floor(Math.random() * authors.length)]
     const newNote: Note = {
@@ -402,7 +411,7 @@ export function StickyNotesDemo() {
         email: `${randomAuthor.name.toLowerCase().replace(/\s+/g, '')}@example.com`,
       },
       checklistItems: [
-        { id: `${Date.now() + 1}`, content: "New to-do", checked: false, order: 0 },
+        { id: `${Date.now() + 1}`, content: "", checked: false, order: 0 },
       ],
     }
     setNotes([newNote, ...notes])
@@ -413,7 +422,7 @@ export function StickyNotesDemo() {
       <div className="mb-4 flex items-center justify-end">
         <Button size="sm" onClick={handleAddNote}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Note
+          Add new task
         </Button>
       </div>
       <div>

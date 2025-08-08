@@ -792,6 +792,17 @@ export default function BoardPage({
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
+    const existingEmptyNote = notes.find(note => 
+      note.checklistItems && 
+      note.checklistItems.some(item => item.content.trim() === "") &&
+      !note.done
+    );
+    
+    if (existingEmptyNote) {
+      setAddingChecklistItem(existingEmptyNote.id);
+      return;
+    }
+
     // For all notes view, ensure a board is selected
     if (boardId === "all-notes" && !targetBoardId) {
       setErrorDialog({
@@ -816,7 +827,9 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             content: "",
-            checklistItems: [],
+            checklistItems: [
+              { content: "", checked: false, order: 0 }
+            ],
             ...(isAllNotesView && { boardId: targetBoardId }),
           }),
         }
@@ -1488,7 +1501,8 @@ export default function BoardPage({
               }}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer font-medium"
             >
-              <Pencil className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add new task</span>
             </Button>
 
             {/* User Dropdown */}
