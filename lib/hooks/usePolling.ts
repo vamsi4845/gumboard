@@ -1,31 +1,41 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-interface UsePollingOptions {
+// Polling configuration constants
+const ACTIVITY_THRESHOLD = 30000; // 30 seconds
+const MAX_BACKOFF_INTERVAL = 10000; // 10 seconds
+const BACKOFF_MULTIPLIER = 2;
+
+interface UsePollingOptions<T = unknown> {
   url: string;
   enabled?: boolean;
   interval?: number;
-  onUpdate?: (data: unknown) => void;
+  onUpdate?: (data: T) => void;
 }
 
-export function usePolling({
+// Utility function to calculate adaptive polling interval
+const getAdaptiveInterval = (timeSinceActivity: number, baseInterval: number): number => {
+  return timeSinceActivity > ACTIVITY_THRESHOLD 
+    ? Math.min(baseInterval * BACKOFF_MULTIPLIER, MAX_BACKOFF_INTERVAL)
+    : baseInterval;
+};
+
+export function usePolling<T = unknown>({
   url,
   enabled = true,
   interval = 5000,
   onUpdate,
-}: UsePollingOptions) {
+}: UsePollingOptions<T>) {
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTabActiveRef = useRef(true);
   const abortControllerRef = useRef<AbortController | null>(null);
   const lastDataRef = useRef<string | null>(null);
-  const dynamicIntervalRef = useRef(interval);
   const lastActivityRef = useRef(Date.now());
   const etagRef = useRef<string | null>(null);
 
   useEffect(() => {
     const updateActivity = () => {
       lastActivityRef.current = Date.now();
-      dynamicIntervalRef.current = interval;
     };
     
     const events = ['mousedown', 'keydown', 'touchstart'];
@@ -34,7 +44,7 @@ export function usePolling({
     return () => {
       events.forEach(e => document.removeEventListener(e, updateActivity));
     };
-  }, [interval]);
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!enabled || !isTabActiveRef.current) return;
@@ -61,10 +71,6 @@ export function usePolling({
       });
 
       if (response.status === 304) {
-        const timeSinceActivity = Date.now() - lastActivityRef.current;
-        if (timeSinceActivity > 30000) {
-          dynamicIntervalRef.current = Math.min(interval * 2, 10000);
-        }
         return;
       }
 
@@ -82,18 +88,13 @@ export function usePolling({
           setLastSync(new Date());
           onUpdate?.(data);
         }
-        
-        const timeSinceActivity = Date.now() - lastActivityRef.current;
-        if (timeSinceActivity > 30000) {
-          dynamicIntervalRef.current = Math.min(interval * 2, 10000);
-        }
       }
     } catch (error) {
       if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Polling error:', error);
       }
     }
-  }, [url, enabled, onUpdate, interval]);
+  }, [url, enabled, onUpdate]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -112,34 +113,28 @@ export function usePolling({
   useEffect(() => {
     if (!enabled) return;
 
-    let currentInterval = interval;
-    
-    const poll = () => {
-      if (isTabActiveRef.current) {
-        fetchData();
-      }
-      
-      const timeSinceActivity = Date.now() - lastActivityRef.current;
-      const nextInterval = timeSinceActivity > 30000 
-        ? Math.min(interval * 2, 10000)
-        : interval;
-      
-      if (nextInterval !== currentInterval) {
-        currentInterval = nextInterval;
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = setInterval(poll, currentInterval);
+    const scheduleNext = (delay: number) => {
+      timeoutRef.current = setTimeout(() => {
+        if (isTabActiveRef.current) {
+          fetchData();
         }
-      }
+        
+        const timeSinceActivity = Date.now() - lastActivityRef.current;
+        const nextInterval = getAdaptiveInterval(timeSinceActivity, interval);
+        scheduleNext(nextInterval);
+      }, delay);
     };
     
+    // Initial fetch and schedule
     fetchData();
-    intervalRef.current = setInterval(poll, currentInterval);
+    const timeSinceActivity = Date.now() - lastActivityRef.current;
+    const initialInterval = getAdaptiveInterval(timeSinceActivity, interval);
+    scheduleNext(initialInterval);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
