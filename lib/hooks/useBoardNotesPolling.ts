@@ -4,7 +4,7 @@ interface UseBoardNotesPollingOptions {
   boardId: string | null;
   enabled?: boolean;
   pollingInterval?: number;
-  onUpdate?: (data: any) => void;
+  onUpdate?: (data: { notes: unknown[] }) => void;
 }
 
 export function useBoardNotesPolling({

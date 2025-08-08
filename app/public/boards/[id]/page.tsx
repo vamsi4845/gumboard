@@ -61,7 +61,7 @@ export default function PublicBoardPage({
   const router = useRouter();
   
   
-  const { lastSync } = useBoardNotesPolling({
+  useBoardNotesPolling({
     boardId,
     enabled: !loading && !!boardId,
     pollingInterval: 5000, 

@@ -130,7 +130,7 @@ export default function BoardPage({
   const searchParams = useSearchParams();
   
   
-  const { lastSync } = useBoardNotesPolling({
+  useBoardNotesPolling({
     boardId,
     enabled: !loading && !!boardId,
     pollingInterval: 4000, 
@@ -138,25 +138,18 @@ export default function BoardPage({
       
       setNotes((prevNotes) => {
         const editingNoteId = editingNote;
-        const addingItemNoteId = addingChecklistItem;
-        const editingItemNote = editingChecklistItem?.noteId;
-        
         
         return data.notes.map(newNote => {
           const prevNote = prevNotes.find(n => n.id === newNote.id);
-          
           
           if (newNote.id === editingNoteId && prevNote) {
             return prevNote; 
           }
           
-          
-          
-          
           return newNote;
         });
       });
-    }, [editingNote, addingChecklistItem, editingChecklistItem]),
+    }, [editingNote]),
   });
 
   

@@ -4,7 +4,7 @@ interface UsePollingOptions {
   url: string;
   enabled?: boolean;
   interval?: number;
-  onUpdate?: (data: any) => void;
+  onUpdate?: (data: unknown) => void;
 }
 
 export function usePolling({
@@ -88,8 +88,8 @@ export function usePolling({
           dynamicIntervalRef.current = Math.min(interval * 2, 10000);
         }
       }
-    } catch (error: any) {
-      if (error.name !== 'AbortError') {
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Polling error:', error);
       }
     }
@@ -112,28 +112,29 @@ export function usePolling({
   useEffect(() => {
     if (!enabled) return;
 
-    const startPolling = () => {
-      fetchData();
-      
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    let currentInterval = interval;
+    
+    const poll = () => {
+      if (isTabActiveRef.current) {
+        fetchData();
       }
       
-      intervalRef.current = setInterval(() => {
-        if (isTabActiveRef.current) {
-          fetchData();
-          
-          if (dynamicIntervalRef.current !== interval) {
-            clearInterval(intervalRef.current!);
-            intervalRef.current = setInterval(() => {
-              if (isTabActiveRef.current) fetchData();
-            }, dynamicIntervalRef.current);
-          }
+      const timeSinceActivity = Date.now() - lastActivityRef.current;
+      const nextInterval = timeSinceActivity > 30000 
+        ? Math.min(interval * 2, 10000)
+        : interval;
+      
+      if (nextInterval !== currentInterval) {
+        currentInterval = nextInterval;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = setInterval(poll, currentInterval);
         }
-      }, dynamicIntervalRef.current);
+      }
     };
-
-    startPolling();
+    
+    fetchData();
+    intervalRef.current = setInterval(poll, currentInterval);
 
     return () => {
       if (intervalRef.current) {

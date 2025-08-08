@@ -3,7 +3,7 @@ import { usePolling } from './usePolling';
 interface UseBoardsListPollingOptions {
   enabled?: boolean;
   pollingInterval?: number;
-  onUpdate?: (data: any) => void;
+  onUpdate?: (data: { boards: unknown[] }) => void;
 }
 
 export function useBoardsListPolling({

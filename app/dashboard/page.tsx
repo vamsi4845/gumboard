@@ -81,7 +81,7 @@ export default function Dashboard() {
   const [copiedBoardId, setCopiedBoardId] = useState<string | null>(null);
   const router = useRouter();
   
-  const { lastSync } = useBoardsListPolling({
+  useBoardsListPolling({
     enabled: !loading,
     pollingInterval: 5000,
     onUpdate: useCallback((data: { boards: Board[] }) => {
