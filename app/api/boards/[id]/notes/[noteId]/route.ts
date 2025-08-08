@@ -25,7 +25,9 @@ export async function PUT(
           select: {
             id: true,
             name: true,
-            slackWebhookUrl: true
+            slackWebhookUrl: true,
+            slackApiToken: true,
+            slackChannelId: true
           }
         }
       }
@@ -196,9 +198,18 @@ export async function PUT(
     });
 
     // Send Slack notifications after transaction commits
-    if (user.organization?.slackWebhookUrl) {
+    if (user.organization?.slackWebhookUrl || (user.organization?.slackApiToken && user.organization?.slackChannelId)) {
+      const existingMessageIds: Record<string, string> = {};
+      for (const item of note.checklistItems) {
+        if (item.slackMessageId) {
+          existingMessageIds[item.id] = item.slackMessageId;
+        }
+      }
+
       const slackResult = await notifySlackForNoteChanges({
-        webhookUrl: user.organization.slackWebhookUrl,
+        webhookUrl: user.organization.slackWebhookUrl || undefined,
+        slackApiToken: user.organization.slackApiToken || undefined,
+        slackChannelId: user.organization.slackChannelId || undefined,
         boardName: updatedNote.board.name,
         boardId,
         sendSlackUpdates: updatedNote.board.sendSlackUpdates,
@@ -207,7 +218,8 @@ export async function PUT(
         prevContent: note.content,
         nextContent: content ?? note.content,
         noteSlackMessageId: note.slackMessageId,
-        itemChanges: checklistChanges
+        itemChanges: checklistChanges,
+        existingMessageIds
       });
 
       // Persist message IDs outside transaction
