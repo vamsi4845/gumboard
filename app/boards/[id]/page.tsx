@@ -1221,6 +1221,53 @@ export default function BoardPage({
     }
   }, [notes, boardId]);
 
+  const handleReorderChecklistItems = useCallback(async (
+    noteId: string,
+    newItems: ChecklistItem[]
+  ) => {
+    const currentNote = notes.find((n) => n.id === noteId);
+    if (!currentNote) return;
+
+    const allItemsChecked = newItems.every((item) => item.checked);
+
+    // Optimistically update UI immediately
+    setNotes(notes.map((n) =>
+      n.id === noteId ? { ...n, checklistItems: newItems, done: allItemsChecked } : n
+    ));
+
+    try {
+      const targetBoardId =
+        boardId === "all-notes" && currentNote.board?.id
+          ? currentNote.board.id
+          : boardId;
+
+      const response = await fetch(
+        `/api/boards/${targetBoardId}/notes/${noteId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            checklistItems: newItems,
+            done: allItemsChecked,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to reorder checklist items");
+      }
+
+      const { note } = await response.json();
+      // Confirm update from server, sync state
+      setNotes(notes.map((n) => (n.id === noteId ? note : n)));
+    } catch (error) {
+      console.error("Error reordering checklist items:", error);
+      setNotes(notes);
+    }
+  }, [notes, boardId]);
+
   // Removed external debounce; Note component handles UX concerns
 
   const handleToggleAllChecklistItems = async (noteId: string) => {
@@ -1677,6 +1724,7 @@ export default function BoardPage({
               onDeleteChecklistItem={handleDeleteChecklistItem}
               onSplitChecklistItem={handleSplitChecklistItem}
               onToggleAllChecklistItems={handleToggleAllChecklistItems}
+              onReorderChecklistItems={handleReorderChecklistItems}
               showBoardName={boardId === "all-notes"}
               className="note-background"
               style={{

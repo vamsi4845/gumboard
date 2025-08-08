@@ -167,8 +167,6 @@ export function Note({
   };
 
   const handleReorderChecklistItems= (noteId: string, newItems: ChecklistItem[]) => {
-    if (!note.checklistItems) return;
-
     // Disallow unchecked items to be after checked items
     const firstCheckedIndex = newItems.findIndex((element) => element.checked);
     const lastUncheckedIndex = newItems.map(element => element.checked).lastIndexOf(false);
@@ -278,7 +276,6 @@ export function Note({
             <DraggableContainer className="space-y-1">
               {note.checklistItems?.map((item) => (
                 <DraggableItem
-                    className="contents"
                     key={item.id} 
                     id={item.id}
                   >

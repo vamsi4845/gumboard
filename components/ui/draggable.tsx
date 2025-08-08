@@ -138,7 +138,7 @@ export function DraggableItem({
   })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
   }
 
@@ -181,98 +181,3 @@ export function DraggableTrigger({ children, style, ...props }: DraggableTrigger
     </div>
   )
 }
-
-
-// ============================================================================
-// USAGE EXAMPLES
-// ============================================================================
-
-/*
-// BASIC USAGE
-function MyComponent() {
-  const [items, setItems] = useState([
-    { id: "1", name: "Item 1" },
-    { id: "2", name: "Item 2" },
-    { id: "3", name: "Item 3" },
-  ])
-
-  return (
-    <DraggableRoot items={items} onItemsChange={setItems}>
-      <DraggableContainer>
-        {items.map((item) => (
-          <DraggableItem key={item.id} id={item.id}>
-            <div className="p-4 border rounded">
-              {item.name}
-            </div>
-          </DraggableItem>
-        ))}
-      </DraggableContainer>
-    </DraggableRoot>
-  )
-}
-
-// WITH CUSTOM HANDLE - Default wrapper
-function MyComponentWithHandle() {
-  const [items, setItems] = useState([...])
-
-  return (
-    <DraggableRoot items={items} onItemsChange={setItems}>
-      <DraggableContainer>
-        {items.map((item) => (
-          <DraggableItem key={item.id} id={item.id}>
-            <div className="p-4 border rounded flex items-center gap-2">
-              <DraggableTrigger className="cursor-grab hover:bg-gray-100 p-1 rounded">
-                <GripIcon />
-              </DraggableTrigger>
-              <span>{item.name}</span>
-            </div>
-          </DraggableItem>
-        ))}
-      </DraggableContainer>
-    </DraggableRoot>
-  )
-}
-
-// WITH CUSTOM HANDLE - display: contents (no wrapper)
-function MyComponentWithHandle() {
-  const [items, setItems] = useState([...])
-
-  return (
-    <DraggableRoot items={items} onItemsChange={setItems}>
-      <DraggableContainer>
-        {items.map((item) => (
-          <DraggableItem key={item.id} id={item.id}>
-            <div className="p-4 border rounded flex items-center gap-2">
-              <DraggableTrigger>
-                <button className="p-2 hover:bg-gray-100 rounded cursor-grab">
-                  <GripIcon />
-                </button>
-              </DraggableTrigger>
-              <span>{item.name}</span>
-            </div>
-          </DraggableItem>
-        ))}
-      </DraggableContainer>
-    </DraggableRoot>
-  )
-}
-
-// CUSTOM LAYOUT
-function CustomLayoutExample() {
-  return (
-    <DraggableRoot items={items} onItemsChange={setItems}>
-      <DraggableContainer className="flex flex-col space-y-2">
-        {items.map((item) => (
-          <DraggableItem 
-            key={item.id} 
-            id={item.id}
-            className="hover:bg-gray-50 transition-colors"
-          >
-            <MyCustomCard item={item} />
-          </DraggableItem>
-        ))}
-      </DraggableContainer>
-    </DraggableRoot>
-  )
-}
-*/

@@ -320,8 +320,14 @@ test.describe('Note Management with Newlines', () => {
     await page.mouse.move(itemB1Box.x + itemB1Box.width/2, itemB1Box.y + 5);
     await page.mouse.up();
 
-    await expect(page.getByText('Item A1Item A2Item A3Item A4')).toBeVisible();
-    await expect(page.getByText('Item B1Item B2Item B3Item B4')).toBeVisible();
+    await expect(page.getByTestId('item-1a')).toHaveAttribute('data-testorder', '0');
+    await expect(page.getByTestId('item-1b')).toHaveAttribute('data-testorder', '1');
+    await expect(page.getByTestId('item-1c')).toHaveAttribute('data-testorder', '2');
+    await expect(page.getByTestId('item-1d')).toHaveAttribute('data-testorder', '3');
+    await expect(page.getByTestId('item-2a')).toHaveAttribute('data-testorder', '0');
+    await expect(page.getByTestId('item-2b')).toHaveAttribute('data-testorder', '1');
+    await expect(page.getByTestId('item-2c')).toHaveAttribute('data-testorder', '2');
+    await expect(page.getByTestId('item-2d')).toHaveAttribute('data-testorder', '3');
 
     expect(didCallUpdateApi).toBeFalsy();
   });
@@ -395,7 +401,10 @@ test.describe('Note Management with Newlines', () => {
     await page.mouse.move(itemA3Box.x + itemA3Box.width/2, itemA3Box.y + 5);
     await page.mouse.up();
 
-    await expect(page.getByText('Item A1Item A2Item A3Item A4')).toBeVisible();
+    await expect(page.getByTestId('item-1a')).toHaveAttribute('data-testorder', '0');
+    await expect(page.getByTestId('item-1b')).toHaveAttribute('data-testorder', '1');
+    await expect(page.getByTestId('item-1c')).toHaveAttribute('data-testorder', '2');
+    await expect(page.getByTestId('item-1d')).toHaveAttribute('data-testorder', '3');
 
     expect(didCallUpdateApi).toBeFalsy();
   });
@@ -496,7 +505,10 @@ test.describe('Note Management with Newlines', () => {
 
     await page.waitForTimeout(200);
 
-    await expect(page.getByText('Item A3Item A1Item A2Item A4')).toBeVisible();
+    await expect(page.getByTestId('item-1c')).toHaveAttribute('data-testorder', '0');
+    await expect(page.getByTestId('item-1a')).toHaveAttribute('data-testorder', '1');
+    await expect(page.getByTestId('item-1b')).toHaveAttribute('data-testorder', '2');
+    await expect(page.getByTestId('item-1d')).toHaveAttribute('data-testorder', '3');
   });
 
   test('should re-order checked items within checked group area', async ({ page }) => {
@@ -586,7 +598,11 @@ test.describe('Note Management with Newlines', () => {
 
     await page.waitForTimeout(200);
 
-    await expect(page.getByText('Item A1Item A2Item A5Item A3Item A4')).toBeVisible();
+    await expect(page.getByTestId('item-1a')).toHaveAttribute('data-testorder', '0');
+    await expect(page.getByTestId('item-1b')).toHaveAttribute('data-testorder', '1');
+    await expect(page.getByTestId('item-1e')).toHaveAttribute('data-testorder', '2');
+    await expect(page.getByTestId('item-1c')).toHaveAttribute('data-testorder', '3');
+    await expect(page.getByTestId('item-1d')).toHaveAttribute('data-testorder', '4');
   });
 
   test('should re-order unchecked items within unchecked group area', async ({ page }) => {
@@ -676,6 +692,10 @@ test.describe('Note Management with Newlines', () => {
 
     await page.waitForTimeout(200);
 
-    await expect(page.getByText('Item A2Item A1Item A3Item A4Item A5')).toBeVisible();
+    await expect(page.getByTestId('item-1b')).toHaveAttribute('data-testorder', '0');
+    await expect(page.getByTestId('item-1a')).toHaveAttribute('data-testorder', '1');
+    await expect(page.getByTestId('item-1c')).toHaveAttribute('data-testorder', '2');
+    await expect(page.getByTestId('item-1d')).toHaveAttribute('data-testorder', '3');
+    await expect(page.getByTestId('item-1e')).toHaveAttribute('data-testorder', '4');
   });
 });
