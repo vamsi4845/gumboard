@@ -792,17 +792,6 @@ export default function BoardPage({
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
-    const existingEmptyNote = notes.find(note => 
-      note.checklistItems && 
-      note.checklistItems.some(item => item.content.trim() === "") &&
-      !note.done
-    );
-    
-    if (existingEmptyNote) {
-      setAddingChecklistItem(existingEmptyNote.id);
-      return;
-    }
-
     // For all notes view, ensure a board is selected
     if (boardId === "all-notes" && !targetBoardId) {
       setErrorDialog({
@@ -827,9 +816,7 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             content: "",
-            checklistItems: [
-              { content: "", checked: false, order: 0 }
-            ],
+            checklistItems: [],
             ...(isAllNotesView && { boardId: targetBoardId }),
           }),
         }

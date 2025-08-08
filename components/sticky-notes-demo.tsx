@@ -387,15 +387,6 @@ export function StickyNotesDemo() {
 
 
   const handleAddNote = () => {
-    const existingEmptyNote = notes.find(note => 
-      note.checklistItems && 
-      note.checklistItems.some(item => item.content.trim() === "")
-    );
-    
-    if (existingEmptyNote) {
-      return;
-    }
-
     const randomColor = noteColors[Math.floor(Math.random() * noteColors.length)]
     const randomAuthor = authors[Math.floor(Math.random() * authors.length)]
     const newNote: Note = {
