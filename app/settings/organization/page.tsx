@@ -29,7 +29,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { UserWithOrganization } from "@/lib/types";
+import type { User } from "@/components/note";
+
+// Settings-specific extended types
+export type UserWithOrganization = User & {
+  organization: {
+    id: string;
+    name: string;
+    slackWebhookUrl?: string | null;
+    members: {
+      id: string;
+      name: string | null;
+      email: string;
+      isAdmin: boolean;
+    }[];
+  } | null;
+};
 
 interface OrganizationInvite {
   id: string;

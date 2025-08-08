@@ -3,12 +3,12 @@
 import * as React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Note } from "@/components/note"
-import type { Note as NoteType, ChecklistItem } from "@/lib/types"
+import { Note as NoteComponent } from "@/components/note"
+import type { Note, ChecklistItem } from "@/components/note"
 import { Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
-const initialNotes: NoteType[] = [
+const initialNotes: Note[] = [
   {
     id: "1",
     content: "",
@@ -304,9 +304,9 @@ const itemVariants = {
 }
 
 export function StickyNotesDemo() {
-  const [notes, setNotes] = useState<NoteType[]>(initialNotes)
+  const [notes, setNotes] = useState<Note[]>(initialNotes)
 
-  const handleUpdateNote = (updatedNote: NoteType) => {
+  const handleUpdateNote = (updatedNote: Note) => {
     setNotes(notes.map((note) => (note.id === updatedNote.id ? updatedNote : note)))
   }
 
@@ -406,7 +406,7 @@ export function StickyNotesDemo() {
   const handleAddNote = () => {
     const randomColor = noteColors[Math.floor(Math.random() * noteColors.length)]
     const randomAuthor = authors[Math.floor(Math.random() * authors.length)]
-    const newNote: NoteType = {
+    const newNote: Note = {
       id: `${Date.now()}`,
       content: "",
       color: randomColor,
@@ -443,7 +443,7 @@ export function StickyNotesDemo() {
           <AnimatePresence>
             {notes.map((note) => (
               <motion.div key={note.id} className="mb-4 break-inside-avoid" variants={itemVariants} exit="exit" layout>
-                <Note
+                <NoteComponent
                   note={note}
                   currentUser={{ id: "demo-user", name: "Demo User", email: "demo@example.com" }}
                   onUpdate={handleUpdateNote}

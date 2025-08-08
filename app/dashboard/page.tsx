@@ -34,7 +34,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { DashboardBoard, User, Board } from "@/lib/types";
+import type { User, Board } from "@/components/note";
+
+// Dashboard-specific extended types
+export type DashboardBoard = Board & {
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  isPublic: boolean;
+  _count: { notes: number };
+};
 
 export default function Dashboard() {
   const [boards, setBoards] = useState<DashboardBoard[]>([]);
