@@ -213,12 +213,12 @@ export function Note({
               </Button>
             </div>
           )}
-          {canEdit && (
+          {canEdit && onArchive && (
             <div className="flex items-center">
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onArchive?.(note.id);
+                  onArchive(note.id);
                 }}
                 className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
                 variant="ghost"
