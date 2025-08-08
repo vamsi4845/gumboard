@@ -80,6 +80,19 @@ export default function BoardPage({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Client-side sanitization for checklist items
+  const sanitizeChecklistItems = (items: ChecklistItem[]) =>
+    items.map(i => ({ id: i.id, content: i.content, checked: i.checked, order: i.order }));
+
+  // Helper to generate new item IDs
+  const generateItemId = () => {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      return `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+  };
+
   // Update URL with current filter state
   const updateURL = (
     newSearchTerm?: string,
@@ -745,7 +758,7 @@ export default function BoardPage({
           : boardId;
 
       const newItem: ChecklistItem = {
-        id: `item-${Date.now()}`,
+        id: generateItemId(),
         content: content.trim(),
         checked: false,
         order: (currentNote.checklistItems || []).length,
@@ -771,7 +784,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: updatedItems,
+            checklistItems: sanitizeChecklistItems(updatedItems),
             done: allItemsChecked,
           }),
         }
@@ -1065,7 +1078,7 @@ export default function BoardPage({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          checklistItems: sortedItems,
+          checklistItems: sanitizeChecklistItems(sortedItems),
           done: allItemsChecked,
         }),
       })
@@ -1141,7 +1154,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: updatedItems,
+            checklistItems: sanitizeChecklistItems(updatedItems),
             done: allItemsChecked,
           }),
         }
@@ -1206,7 +1219,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: updatedItems,
+            checklistItems: sanitizeChecklistItems(updatedItems),
             done: allItemsChecked,
           }),
         }
@@ -1266,7 +1279,7 @@ export default function BoardPage({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            checklistItems: sortedItems,
+            checklistItems: sanitizeChecklistItems(sortedItems),
             done: noteIsDone,
           }),
         }
@@ -1312,7 +1325,7 @@ export default function BoardPage({
 
       // Create new item with second half
       const newItem = {
-        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: generateItemId(),
         content: secondHalf,
         checked: false,
         order: currentOrder + 0.5,
@@ -1329,7 +1342,7 @@ export default function BoardPage({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            checklistItems: allItems,
+            checklistItems: sanitizeChecklistItems(allItems),
           }),
         }
       );
