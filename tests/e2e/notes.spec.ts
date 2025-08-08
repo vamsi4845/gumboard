@@ -301,28 +301,101 @@ test.describe('Note Management with Newlines', () => {
     await page.goto('/boards/test-board');
 
     // Locate checklist items
-    const itemB1 = page.locator('text=Item B1');
     const itemA1 = page.locator('text=Item A1');
+    const itemB1 = page.locator('text=Item B1');
     await expect(itemA1).toBeVisible();
 
     // Get bounding boxes for precise positioning
     const itemB1Box = await itemB1.boundingBox();
-
     if(!itemB1Box) {
-      throw Error('Will neverHappen');
+      throw Error('will never throw');
     }
 
     await itemA1.hover();
     await page.mouse.down();
+    // repeat to trigger dragover event reliably https://playwright.dev/docs/input#dragging-manually
     await itemB1.hover();
-    await itemB1.hover(); // repeat to trigger dragover event reliably
-    await page.mouse.move(itemB1Box.x + itemB1Box.width/2, itemB1Box.y + 5); // Top of Item B1
+    await itemB1.hover();
+     // Slightly outside the box for dndkit to trigger drop
+    await page.mouse.move(itemB1Box.x + itemB1Box.width/2, itemB1Box.y + 5);
     await page.mouse.up();
-
-
 
     await expect(page.getByText('Item A1Item A2Item A3Item A4')).toBeVisible();
     await expect(page.getByText('Item B1Item B2Item B3Item B4')).toBeVisible();
+
+    expect(didCallUpdateApi).toBeFalsy();
+  });
+
+  test('should display empty state when no notes exist', async ({ page }) => {
+    await page.goto('/boards/test-board');
+    
+    await expect(page.locator('text=No notes yet')).toBeVisible();
+    await expect(page.locator('button:has-text("Add Your First Note")')).toBeVisible();
+  });
+
+  test('should not update state when an unchecked checklist item is dropped after checked', async ({ page }) => {
+    let didCallUpdateApi = false;
+
+    await page.route('**/api/boards/test-board/notes', async (route) => {
+      const request = route.request();
+      if (request.method() === 'GET') {
+        const notes = [
+          {
+            id: 'note-1',
+            content: 'Test Note with Checklist',
+            color: '#fef3c7',
+            done: false,
+            checklistItems: [
+              { id: 'item-1a', content: 'Item A1', checked: false, order: 0 },
+              { id: 'item-1b', content: 'Item A2', checked: false, order: 1 },
+              { id: 'item-1c', content: 'Item A3', checked: true, order: 2 },
+              { id: 'item-1d', content: 'Item A4', checked: true, order: 3 },
+            ],
+            boardId: 'test-board',
+            user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
+            board: { id: 'test-board', name: 'Test Board' }
+          }
+        ];
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ notes }),
+        });
+      }
+    });
+
+    await page.route('**/api/boards/test-board/notes/note-1', async (route) => {
+      const request = route.request(); 
+      if (request.method() === 'PUT') {
+        didCallUpdateApi = true;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true }),
+        });
+      }
+    });
+
+    await page.goto('/boards/test-board');
+
+    const itemA1 = page.locator('text=Item A1');
+    const itemA3 = page.locator('text=Item A3');
+    await expect(itemA1).toBeVisible();
+
+    const itemA3Box = await itemA3.boundingBox();
+    if(!itemA3Box) {
+      throw Error('will never throw');
+    }
+
+    await itemA1.hover();
+    await page.mouse.down();
+    await itemA3.hover();
+    await itemA3.hover();
+    await page.mouse.move(itemA3Box.x + itemA3Box.width/2, itemA3Box.y + 5);
+    await page.mouse.up();
+
+    await expect(page.getByText('Item A1Item A2Item A3Item A4')).toBeVisible();
 
     expect(didCallUpdateApi).toBeFalsy();
   });
@@ -344,12 +417,7 @@ test.describe('Note Management with Newlines', () => {
               { id: 'item-1c', content: 'Item A3', checked: false, order: 2 },
               { id: 'item-1d', content: 'Item A4', checked: false, order: 3 },
             ],
-            slackMessageId: null,
             boardId: 'test-board',
-            createdBy: 'test-user',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            deletedAt: null,
             user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
             board: { id: 'test-board', name: 'Test Board' }
           }
@@ -410,32 +478,205 @@ test.describe('Note Management with Newlines', () => {
 
     await page.goto('/boards/test-board');
     
-    const itemA3 = page.locator('text=Item A3');
     const itemA1 = page.locator('text=Item A1');
+    const itemA3 = page.locator('text=Item A3');
     await expect(itemA1).toBeVisible();
-    // Get bounding boxes for precise positioning
-    const itemA1Box = await itemA1.boundingBox();
 
+    const itemA1Box = await itemA1.boundingBox();
     if(!itemA1Box) {
-      throw Error('Will neverHappen');
+      throw Error('will never throw');
     }
 
     await itemA3.hover();
     await page.mouse.down();
     await itemA1.hover();
-    await itemA1.hover(); // repeat to trigger dragover event reliably
-    await page.mouse.move(itemA1Box.x + itemA1Box.width/2, itemA1Box.y + 5); // Top of Item A1
+    await itemA1.hover();
+    await page.mouse.move(itemA1Box.x + itemA1Box.width/2, itemA1Box.y + 5);
     await page.mouse.up();
+
     await page.waitForTimeout(200);
 
     await expect(page.getByText('Item A3Item A1Item A2Item A4')).toBeVisible();
   });
 
-  test('should display empty state when no notes exist', async ({ page }) => {
+  test('should re-order checked items within checked group area', async ({ page }) => {
+    await page.route('**/api/boards/test-board/notes', async (route) => {
+      const request = route.request();
+
+      if (request.method() === 'GET') {
+        const notes = [
+          {
+            id: 'note-1',
+            content: 'Test Note with Checklist',
+            color: '#fef3c7',
+            done: false,
+            checklistItems: [
+              { id: 'item-1a', content: 'Item A1', checked: false, order: 0 },
+              { id: 'item-1b', content: 'Item A2', checked: false, order: 1 },
+              { id: 'item-1c', content: 'Item A3', checked: true, order: 2 },
+              { id: 'item-1d', content: 'Item A4', checked: true, order: 3 },
+              { id: 'item-1e', content: 'Item A5', checked: true, order: 4 },
+            ],
+            boardId: 'test-board',
+            user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
+            board: { id: 'test-board', name: 'Test Board' }
+          }
+        ];
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ notes }),
+        });
+      }
+    });
+
+    await page.route('**/api/boards/test-board/notes/note-1', async (route) => {
+      const request = route.request();
+      if (request.method() === 'PUT') {
+          const body = await request.postDataJSON();
+          const processedChecklistItems = body.checklistItems?.map((item, index) => ({
+            ...item,
+            order: index
+          })) || [];
+        const updatedNote = {
+          id: 'note-1',
+          content: 'Test Note with Checklist',
+          color: '#fef3c7',
+          done: body.done,
+          checklistItems: processedChecklistItems,
+          boardId: 'test-board',
+          user: {
+            id: 'test-user',
+            name: 'Test User',
+            email: 'test@example.com'
+          },
+          board: {
+            id: 'test-board',
+            name: 'Test Board',
+            sendSlackUpdates: false
+          }
+        };
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ note: updatedNote }),
+        });
+      }
+    });
+
     await page.goto('/boards/test-board');
     
-    await expect(page.locator('text=No notes yet')).toBeVisible();
-    await expect(page.locator('button:has-text("Add Your First Note")')).toBeVisible();
+    const itemA3 = page.locator('text=Item A3');
+    const itemA5 = page.locator('text=Item A5');
+    await expect(itemA3).toBeVisible();
+
+    const itemA3Box = await itemA3.boundingBox();
+    if(!itemA3Box) {
+      throw Error('will never throw');
+    }
+
+    await itemA5.hover();
+    await page.mouse.down();
+    await itemA3.hover();
+    await itemA3.hover();
+    await page.mouse.move(itemA3Box.x + itemA3Box.width/2, itemA3Box.y + 5);
+    await page.mouse.up();
+
+    await page.waitForTimeout(200);
+
+    await expect(page.getByText('Item A1Item A2Item A5Item A3Item A4')).toBeVisible();
+  });
+
+  test('should re-order unhecked items within unchecked group area', async ({ page }) => {
+    await page.route('**/api/boards/test-board/notes', async (route) => {
+      const request = route.request();
+      if (request.method() === 'GET') {
+        const notes = [
+          {
+            id: 'note-1',
+            content: 'Test Note with Checklist',
+            color: '#fef3c7',
+            done: false,
+            checklistItems: [
+              { id: 'item-1a', content: 'Item A1', checked: false, order: 0 },
+              { id: 'item-1b', content: 'Item A2', checked: false, order: 1 },
+              { id: 'item-1c', content: 'Item A3', checked: false, order: 2 },
+              { id: 'item-1d', content: 'Item A4', checked: true, order: 3 },
+              { id: 'item-1e', content: 'Item A5', checked: true, order: 4 },
+            ],
+            boardId: 'test-board',
+            user: { id: 'test-user', name: 'Test User', email: 'test@example.com' },
+            board: { id: 'test-board', name: 'Test Board' }
+          }
+        ];
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ notes }),
+        });
+      }
+    });
+
+    await page.route('**/api/boards/test-board/notes/note-1', async (route) => {
+      const request = route.request();
+      if (request.method() === 'PUT') {
+          const body = await request.postDataJSON();  
+          const processedChecklistItems = body.checklistItems?.map((item, index) => ({
+            ...item,
+            order: index
+          })) || [];
+        const updatedNote = {
+          id: 'note-1',
+          content: 'Test Note with Checklist',
+          color: '#fef3c7',
+          done: body.done,
+          checklistItems: processedChecklistItems,
+          boardId: 'test-board',
+          createdBy: 'test-user',
+          user: {
+            id: 'test-user',
+            name: 'Test User',
+            email: 'test@example.com'
+          },
+          board: {
+            id: 'test-board',
+            name: 'Test Board',
+            sendSlackUpdates: false
+          }
+        };
+
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ note: updatedNote }),
+        });
+      }
+    });
+
+    await page.goto('/boards/test-board');
+    
+    const itemA1 = page.locator('text=Item A1');
+    const itemA2 = page.locator('text=Item A2');
+    await expect(itemA2).toBeVisible();
+
+    const itemA1Box = await itemA1.boundingBox();
+    if(!itemA1Box) {
+      throw Error('will never throw');
+    }
+
+    await itemA2.hover();
+    await page.mouse.down();
+    await itemA1.hover();
+    await itemA1.hover();
+    await page.mouse.move(itemA1Box.x + itemA1Box.width/2, itemA1Box.y + 5);
+    await page.mouse.up();
+
+    await page.waitForTimeout(200);
+
+    await expect(page.getByText('Item A2Item A1Item A3Item A4Item A5')).toBeVisible();
   });
 });
 
