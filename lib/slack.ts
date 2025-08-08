@@ -1,9 +1,3 @@
-interface SlackMessage {
-  text: string
-  username?: string
-  icon_emoji?: string
-}
-
 interface SlackApiMessage {
   channel: string
   text: string
@@ -132,60 +126,6 @@ export function shouldSendNotification(userId: string, boardId: string, boardNam
   return true
 }
 
-export async function sendSlackMessage(webhookUrl: string, message: SlackMessage, options?: { token?: string; channel?: string }): Promise<string | null> {
-  // If we have API token and channel, use API (supports editing)
-  if (options?.token && options?.channel) {
-    return await sendSlackApiMessage(options.token, {
-      channel: options.channel,
-      ...message,
-    })
-  }
-
-  // Fallback to webhook (legacy mode)
-  try {
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(message),
-    })
-
-    if (!response.ok) {
-      console.error('Failed to send Slack message:', response.statusText)
-      return null
-    }
-
-    // Webhooks don't return message timestamps, so we generate a fake one for consistency
-    return `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  } catch (error) {
-    console.error('Error sending Slack message:', error)
-    return null
-  }
-}
-
-export async function updateSlackMessage(webhookUrl: string, originalText: string, completed: boolean, boardName: string, userName: string): Promise<void> {
-  try {
-    const updatedText = completed 
-      ? `:white_check_mark: ${originalText} by ${userName} in ${boardName}`
-      : `:heavy_plus_sign: ${originalText} by ${userName} in ${boardName}`
-    
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: updatedText,
-        username: 'Gumboard',
-        icon_emoji: ':clipboard:'
-      }),
-    })
-  } catch (error) {
-    console.error('Error updating Slack message:', error)
-  }
-}
-
 export function formatNoteForSlack(note: { content: string }, boardName: string, userName: string): string {
   return `:heavy_plus_sign: ${note.content} by ${userName} in ${boardName}`
 }
@@ -199,45 +139,9 @@ export function formatTodoForSlack(todoContent: string, boardName: string, userN
   return `:heavy_plus_sign: ${todoContent} by ${userName} in ${boardName}`
 }
 
-export async function sendTodoNotification(webhookUrl: string, todoContent: string, boardName: string, userName: string, action: 'added' | 'completed' | 'reopened', options?: { token?: string; channel?: string }): Promise<string | null> {
-  const message = formatTodoForSlack(todoContent, boardName, userName, action)
-  return await sendSlackMessage(webhookUrl, {
-    text: message,
-    username: 'Gumboard',
-    icon_emoji: ':clipboard:'
-  }, options)
-}
-
-/**
- * Updates an existing Slack message for a checklist item
- */
-export async function updateSlackTodoMessage(
-  webhookUrl: string, 
-  messageId: string, 
-  todoContent: string, 
-  boardName: string, 
-  userName: string, 
-  action: 'completed' | 'reopened',
-  options?: { token?: string; channel?: string }
-): Promise<boolean> {
-  const message = formatTodoForSlack(todoContent, boardName, userName, action)
-  
-  // If we have API credentials and this is a real message ID, update it
-  if (options?.token && options?.channel && !messageId.startsWith('webhook_')) {
-    return await updateSlackApiMessage(options.token, options.channel, messageId, {
-      text: message,
-      username: 'Gumboard',
-      icon_emoji: ':clipboard:'
-    })
-  }
-
-  // For webhook messages or when API is not available, we can't edit - log it
-  console.log('Cannot update webhook message - would send new message:', { messageId, message })
-  return false
-}
-
 export async function notifySlackForNoteChanges(params: {
-  webhookUrl?: string,
+  slackApiToken?: string,
+  slackChannelId?: string,
   boardName: string,
   boardId: string,
   sendSlackUpdates: boolean,
@@ -251,46 +155,39 @@ export async function notifySlackForNoteChanges(params: {
     updated: Array<{id: string, content: string, checked: boolean, order: number, previous: {content: string, checked: boolean, order: number}}>,
     deleted: Array<{id: string, content: string, checked: boolean, order: number}>
   },
-  // New Slack API options for message editing
-  slackApiToken?: string,
-  slackChannelId?: string,
   existingMessageIds?: Record<string, string> // itemId -> messageId mapping
 }): Promise<{noteMessageId?: string | null; itemMessageIds?: Record<string, string>}> {
   const { 
-    webhookUrl, boardName, boardId, sendSlackUpdates, userId, userName, 
-    prevContent, nextContent, noteSlackMessageId, itemChanges,
-    slackApiToken, slackChannelId, existingMessageIds 
+    slackApiToken, slackChannelId, boardName, boardId, sendSlackUpdates, userId, userName, 
+    prevContent, nextContent, noteSlackMessageId, itemChanges, existingMessageIds 
   } = params;
   
   const out: {noteMessageId?: string | null; itemMessageIds?: Record<string, string>} = {};
   
-  if ((!webhookUrl && (!slackApiToken || !slackChannelId)) || !sendSlackUpdates) return out;
-
-  const slackOptions = slackApiToken && slackChannelId ? { token: slackApiToken, channel: slackChannelId } : undefined;
-  const useWebhook = !slackOptions && webhookUrl;
+  if (!slackApiToken || !slackChannelId || !sendSlackUpdates) return out;
 
   console.log('Slack notification params:', {
-    hasSlackOptions: !!slackOptions,
-    useWebhook,
-    hasWebhookUrl: !!webhookUrl,
     slackApiToken: slackApiToken ? 'present' : 'missing',
     slackChannelId: slackChannelId ? 'present' : 'missing',
     existingMessageIdsCount: Object.keys(existingMessageIds || {}).length
   });
 
-  // empty to non-empty note
+  // Handle note updates
   const had = hasValidContent(prevContent);
   const has = hasValidContent(nextContent);
-  if (!noteSlackMessageId && !had && has && shouldSendNotification(userId, boardId, boardName, sendSlackUpdates)) {
-    if (useWebhook) {
-      out.noteMessageId = await sendSlackMessage(webhookUrl!, {
-        text: formatNoteForSlack({ content: nextContent as string }, boardName, userName),
-        username: 'Gumboard', 
-        icon_emoji: ':clipboard:'
+  
+  if (has && shouldSendNotification(userId, boardId, boardName, sendSlackUpdates)) {
+    if (noteSlackMessageId) {
+      const updated = await updateSlackApiMessage(slackApiToken, slackChannelId, noteSlackMessageId, {
+        text: formatNoteForSlack({ content: nextContent as string }, boardName, userName)
       });
-    } else if (slackOptions) {
-      out.noteMessageId = await sendSlackApiMessage(slackOptions.token, {
-        channel: slackOptions.channel,
+      if (updated) {
+        out.noteMessageId = noteSlackMessageId;
+      }
+    } else if (!had) {
+      // Create new note message (empty to non-empty note)
+      out.noteMessageId = await sendSlackApiMessage(slackApiToken, {
+        channel: slackChannelId,
         text: formatNoteForSlack({ content: nextContent as string }, boardName, userName)
       });
     }
@@ -300,20 +197,14 @@ export async function notifySlackForNoteChanges(params: {
   const created = itemChanges?.created ?? [];
   const updated = itemChanges?.updated ?? [];
 
-  // Handle created items - only send notifications for new items
-  for (const item of created) {
-    if (hasValidContent(item.content) && shouldSendNotification(userId, boardId, boardName, sendSlackUpdates)) {
-      let msgId: string | null = null;
-      if (useWebhook) {
-        msgId = await sendTodoNotification(webhookUrl!, item.content, boardName, userName, 'added');
-      } else if (slackOptions) {
-        msgId = await sendSlackApiMessage(slackOptions.token, {
-          channel: slackOptions.channel,
-          text: formatTodoForSlack(item.content, boardName, userName, 'added')
-        });
-      }
-      if (msgId) ids[item.id] = msgId;
-    }
+  // only send notifications for the first item to avoid spam
+  if (created.length > 0 && hasValidContent(created[0].content) && shouldSendNotification(userId, boardId, boardName, sendSlackUpdates)) {
+    const item = created[0];
+    const msgId = await sendSlackApiMessage(slackApiToken, {
+      channel: slackChannelId,
+      text: formatTodoForSlack(item.content, boardName, userName, 'added')
+    });
+    if (msgId) ids[item.id] = msgId;
   }
 
   // Handle updated items - try to update existing messages when possible
@@ -325,14 +216,12 @@ export async function notifySlackForNoteChanges(params: {
     const action = u.checked ? 'completed' : 'reopened';
     const existingMessageId = existingMessageIds?.[u.id];
     
-    // Try to update existing message if we have the ID and API access
-    if (existingMessageId && slackOptions) {
+    // Try to update existing message if we have the ID
+    if (existingMessageId) {
       console.log(`Attempting to update existing message ${existingMessageId} for item ${u.id}`);
-      const updated = await updateSlackApiMessage(
-        slackOptions.token, slackOptions.channel, existingMessageId, {
-          text: formatTodoForSlack(u.content, boardName, userName, action)
-        }
-      );
+      const updated = await updateSlackApiMessage(slackApiToken, slackChannelId, existingMessageId, {
+        text: formatTodoForSlack(u.content, boardName, userName, action)
+      });
       
       console.log(`Message update result for ${u.id}:`, updated);
       
@@ -344,15 +233,10 @@ export async function notifySlackForNoteChanges(params: {
     }
     
     // Fall back to creating a new message
-    let msgId: string | null = null;
-    if (useWebhook) {
-      msgId = await sendTodoNotification(webhookUrl!, u.content, boardName, userName, action);
-    } else if (slackOptions) {
-      msgId = await sendSlackApiMessage(slackOptions.token, {
-        channel: slackOptions.channel,
-        text: formatTodoForSlack(u.content, boardName, userName, action)
-      });
-    }
+    const msgId = await sendSlackApiMessage(slackApiToken, {
+      channel: slackChannelId,
+      text: formatTodoForSlack(u.content, boardName, userName, action)
+    });
     if (msgId) ids[u.id] = msgId;
   }
 

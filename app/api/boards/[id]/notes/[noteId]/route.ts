@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
-import { updateSlackMessage, notifySlackForNoteChanges } from "@/lib/slack"
+import { notifySlackForNoteChanges } from "@/lib/slack"
 
 // Update a note
 export async function PUT(
@@ -25,7 +25,6 @@ export async function PUT(
           select: {
             id: true,
             name: true,
-            slackWebhookUrl: true,
             slackApiToken: true,
             slackChannelId: true
           }
@@ -198,7 +197,7 @@ export async function PUT(
     });
 
     // Send Slack notifications after transaction commits
-    if (user.organization?.slackWebhookUrl || (user.organization?.slackApiToken && user.organization?.slackChannelId)) {
+    if (user.organization?.slackApiToken && user.organization?.slackChannelId) {
       const existingMessageIds: Record<string, string> = {};
       for (const item of note.checklistItems) {
         if (item.slackMessageId) {
@@ -207,9 +206,8 @@ export async function PUT(
       }
 
       const slackResult = await notifySlackForNoteChanges({
-        webhookUrl: user.organization.slackWebhookUrl || undefined,
-        slackApiToken: user.organization.slackApiToken || undefined,
-        slackChannelId: user.organization.slackChannelId || undefined,
+        slackApiToken: user.organization.slackApiToken,
+        slackChannelId: user.organization.slackChannelId,
         boardName: updatedNote.board.name,
         boardId,
         sendSlackUpdates: updatedNote.board.sendSlackUpdates,
@@ -238,13 +236,6 @@ export async function PUT(
         );
         await Promise.all(updates);
       }
-    }
-
-    // Update existing Slack message when done status changes
-    if (done !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
-      const userName = note.user?.name || note.user?.email || 'Unknown User'
-      const boardName = note.board.name
-      await updateSlackMessage(user.organization.slackWebhookUrl, note.content, done, boardName, userName)
     }
 
     return NextResponse.json({ note: updatedNote })

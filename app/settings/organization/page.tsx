@@ -15,7 +15,6 @@ import {
   Copy,
   Calendar,
   Users,
-  ExternalLink,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import {
@@ -36,7 +35,6 @@ export type UserWithOrganization = User & {
   organization: {
     id: string;
     name: string;
-    slackWebhookUrl?: string | null;
     slackApiToken?: string | null;
     slackChannelId?: string | null;
     members: {
@@ -76,8 +74,6 @@ export default function OrganizationSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [originalOrgName, setOriginalOrgName] = useState("");
-  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
-  const [originalSlackWebhookUrl, setOriginalSlackWebhookUrl] = useState("");
   const [slackApiToken, setSlackApiToken] = useState("");
   const [originalSlackApiToken, setOriginalSlackApiToken] = useState("");
   const [slackChannelId, setSlackChannelId] = useState("");
@@ -124,13 +120,10 @@ export default function OrganizationSettingsPage() {
         const userData = await response.json();
         setUser(userData);
         const orgNameValue = userData.organization?.name || "";
-        const slackWebhookValue = userData.organization?.slackWebhookUrl || "";
         const slackApiTokenValue = userData.organization?.slackApiToken || "";
         const slackChannelIdValue = userData.organization?.slackChannelId || "";
         setOrgName(orgNameValue);
         setOriginalOrgName(orgNameValue);
-        setSlackWebhookUrl(slackWebhookValue);
-        setOriginalSlackWebhookUrl(slackWebhookValue);
         setSlackApiToken(slackApiTokenValue);
         setOriginalSlackApiToken(slackApiTokenValue);
         setSlackChannelId(slackChannelIdValue);
@@ -183,7 +176,6 @@ export default function OrganizationSettingsPage() {
         },
         body: JSON.stringify({
           name: orgName,
-          slackWebhookUrl: slackWebhookUrl,
           slackApiToken: slackApiToken,
           slackChannelId: slackChannelId,
         }),
@@ -194,7 +186,6 @@ export default function OrganizationSettingsPage() {
         setUser(updatedUser);
         // Update the original values to reflect the saved state
         setOriginalOrgName(orgName);
-        setOriginalSlackWebhookUrl(slackWebhookUrl);
         setOriginalSlackApiToken(slackApiToken);
         setOriginalSlackChannelId(slackChannelId);
       } else {
@@ -531,42 +522,11 @@ export default function OrganizationSettingsPage() {
           </div>
 
           <div>
-            <Label
-              htmlFor="slackWebhookUrl"
-              className="text-zinc-800 dark:text-zinc-200"
-            >
-              Slack Webhook URL
-            </Label>
-            <Input
-              id="slackWebhookUrl"
-              type="url"
-              value={slackWebhookUrl}
-              onChange={(e) => setSlackWebhookUrl(e.target.value)}
-              placeholder="https://hooks.slack.com/services/..."
-              className="mt-1 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-              disabled={!user?.isAdmin}
-            />
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-              Create a webhook URL in your Slack workspace to receive
-              notifications when notes and todos are created or completed.{" "}
-              <a
-                href="https://api.slack.com/apps"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline"
-              >
-                Create Slack App
-                <ExternalLink className="w-3 h-3 ml-1" />
-              </a>
-            </p>
-          </div>
-
-          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4">
             <h4 className="text-md font-medium text-zinc-900 dark:text-zinc-100 mb-3">
-              Slack API Integration (Recommended)
+              Slack API Integration
             </h4>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-              Use Slack API tokens for better message management, including the ability to edit existing messages instead of creating new ones.
+              Configure Slack API integration for note and todo notifications with message editing capabilities.
             </p>
             
             <div className="space-y-4">
@@ -619,7 +579,7 @@ export default function OrganizationSettingsPage() {
               onClick={handleSaveOrganization}
               disabled={
                 saving ||
-                (slackWebhookUrl === originalSlackWebhookUrl &&
+                (orgName === originalOrgName &&
                  slackApiToken === originalSlackApiToken &&
                  slackChannelId === originalSlackChannelId) ||
                 !user?.isAdmin

@@ -68,7 +68,6 @@ model User {
 model Organization {
   id        String   @id @default(cuid())
   name      String
-  slackWebhookUrl String?
   slackApiToken String?
   slackChannelId String?
   createdAt DateTime @default(now())
