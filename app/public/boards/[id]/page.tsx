@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
-import type { Note, Board } from "@/lib/types";
+import type { Note, Board } from "@/components/note";
 
 export default function PublicBoardPage({
   params,

@@ -18,7 +18,7 @@ import { signOut } from "next-auth/react";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { Note as NoteCard } from "@/components/note";
-import type { Note as SharedNoteType, User as SharedUserType } from "@/lib/types";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,8 +29,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// Use shared types
-import type { ChecklistItem, Note, Board, User } from "@/lib/types";
+// Use shared types from note component
+import type { ChecklistItem, Note, Board, User } from "@/components/note";
 
 export default function BoardPage({
   params,
@@ -1667,8 +1667,8 @@ export default function BoardPage({
           {layoutNotes.map((note) => (
             <NoteCard
               key={note.id}
-              note={note as SharedNoteType}
-              currentUser={user as SharedUserType}
+              note={note as Note}
+              currentUser={user as User}
               onUpdate={handleUpdateNoteFromComponent}
               onDelete={handleDeleteNote}
               onAddChecklistItem={handleAddChecklistItemFromComponent}

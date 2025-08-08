@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { updateSlackMessage, formatNoteForSlack, sendSlackMessage, sendTodoNotification, hasValidContent, shouldSendNotification } from "@/lib/slack"
-import type { ChecklistItem } from "@/lib/types"
+import type { ChecklistItem } from "@/components/note"
 
 // Helper function to detect checklist item changes
 function detectChecklistChanges(oldItems: ChecklistItem[] = [], newItems: ChecklistItem[] = []) {

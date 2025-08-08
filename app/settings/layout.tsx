@@ -6,7 +6,7 @@ import { User as UserIcon, Building2, ArrowLeft, Settings, LogOut, ChevronDown }
 import Link from "next/link"
 import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
-import type { User } from "@/lib/types"
+import type { User } from "@/components/note"
 
 export default function SettingsLayout({
   children,
