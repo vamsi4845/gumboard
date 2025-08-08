@@ -112,8 +112,7 @@ export function ChecklistItemComponent({
             "flex-1 text-sm leading-6 cursor-pointer transition-all duration-200",
             item.checked
               ? "text-slate-500 dark:text-zinc-500 line-through"
-              : "text-gray-800 dark:text-gray-200",
-            !readonly && "hover:text-gray-900 dark:hover:text-gray-100"
+              : "text-gray-800 dark:text-gray-200"
           )}
           onClick={() => {
             if (!readonly) {
