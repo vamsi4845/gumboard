@@ -2,13 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/auth"
 import { db } from "@/lib/db"
 import { updateSlackMessage, formatNoteForSlack, sendSlackMessage, sendTodoNotification, hasValidContent, shouldSendNotification } from "@/lib/slack"
-
-interface ChecklistItem {
-  id: string
-  content: string
-  checked: boolean
-  order: number
-}
+import { type ChecklistItem } from "@/components"
 
 // Helper function to detect checklist item changes
 function detectChecklistChanges(oldItems: ChecklistItem[] = [], newItems: ChecklistItem[] = []) {
@@ -258,4 +252,4 @@ export async function DELETE(
     console.error("Error deleting note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}                                                                                                                                
+}                                                                                                                                                                                                                                                                
