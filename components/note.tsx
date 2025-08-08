@@ -169,7 +169,7 @@ export function Note({
         className
       )}
       style={{
-        backgroundColor: note.color,
+        backgroundColor: typeof window !== "undefined" && document.documentElement.classList.contains('dark') ? "#374151" : note.color,
         ...style,
       }}
     >

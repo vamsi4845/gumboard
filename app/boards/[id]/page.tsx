@@ -1577,12 +1577,7 @@ export default function BoardPage({
                 width: note.width,
                 height: note.height,
                 padding: `${getResponsiveConfig().notePadding}px`,
-                backgroundColor:
-                  typeof window !== "undefined" &&
-                  window.matchMedia &&
-                  window.matchMedia("(prefers-color-scheme: dark)").matches
-                    ? `${note.color}20`
-                    : note.color,
+                backgroundColor: typeof window !== "undefined" && document.documentElement.classList.contains('dark') ? "#374151" : note.color,
               }}
             />
           ))}
