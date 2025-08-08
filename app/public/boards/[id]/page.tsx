@@ -203,9 +203,6 @@ export default function PublicBoardPage({
     }
 
     filteredNotes.sort((a, b) => {
-      if (showDone && a.done !== b.done) {
-        return a.done ? 1 : -1;
-      }
       return (
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
