@@ -519,7 +519,7 @@ export default function Dashboard() {
                               onCheckedChange={(checked) => handleTogglePublic(board.id, checked)}
                               disabled={user?.id !== board.createdBy && !user?.isAdmin}
                             />
-                            <span className="text-xs text-muted-foreground dark:text-zinc-300">
+                            <span className="text-xs text-muted-foreground dark:text-zinc-400">
                               {board.isPublic ? "Public" : "Private"}
                             </span>
                           </div>
