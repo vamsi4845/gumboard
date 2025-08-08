@@ -6,17 +6,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { ChecklistItem as ChecklistItemComponent } from "@/components/checklist-item";
+import { ChecklistItem as ChecklistItemComponent, ChecklistItem } from "@/components/checklist-item";
 import { cn } from "@/lib/utils";
 import { Trash2, Plus } from "lucide-react";
-// Core domain types
-export interface ChecklistItem {
-  id: string;
-  content: string;
-  checked: boolean;
-  order: number;
-}
 
+// Core domain types
 export interface User {
   id: string;
   name: string | null;
@@ -92,9 +86,9 @@ export function Note({
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingItemContent, setEditingItemContent] = useState("");
   const [addingItem, setAddingItem] = useState(
-    !readonly && 
-    currentUser && 
-    (currentUser.id === note.user.id || currentUser.isAdmin) && 
+    !readonly &&
+    currentUser &&
+    (currentUser.id === note.user.id || currentUser.isAdmin) &&
     (!note.checklistItems || note.checklistItems.length === 0)
   );
   const [newItemContent, setNewItemContent] = useState("");
@@ -180,7 +174,6 @@ export function Note({
         ...style,
       }}
     >
-      {/* User Info Header */}
       <div className="flex items-start justify-between mb-4 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Avatar className="h-7 w-7 border-2 border-white dark:border-zinc-800">
@@ -206,7 +199,6 @@ export function Note({
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          {/* Show edit/delete buttons for note author or admin */}
           {canEdit && (
             <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
@@ -222,7 +214,6 @@ export function Note({
               </Button>
             </div>
           )}
-          {/* Beautiful checkbox for done status - show to author or admin */}
           {canEdit && (
             <div className="flex items-center">
               <Checkbox
@@ -236,7 +227,6 @@ export function Note({
         </div>
       </div>
 
-      {/* Note Content */}
       {isEditing ? (
         <div className="flex-1 min-h-0">
           <textarea
@@ -262,7 +252,7 @@ export function Note({
           <div className="overflow-y-auto space-y-1 flex-1">
             {/* Checklist Items */}
             {note.checklistItems?.map((item) => (
-                                      <ChecklistItemComponent
+              <ChecklistItemComponent
                 key={item.id}
                 item={item}
                 onToggle={(itemId) => onToggleChecklistItem?.(note.id, itemId)}

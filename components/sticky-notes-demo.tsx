@@ -4,7 +4,8 @@ import * as React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Note as NoteComponent } from "@/components/note"
-import type { Note, ChecklistItem } from "@/components/note"
+import type { Note } from "@/components/note"
+import type { ChecklistItem } from "@/components/checklist-item"
 import { Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -453,8 +454,7 @@ export function StickyNotesDemo() {
                   onEditChecklistItem={handleEditChecklistItem}
                   onDeleteChecklistItem={handleDeleteChecklistItem}
                   onToggleAllChecklistItems={handleToggleAllChecklistItems}
-                  className={`${note.color} bg-white dark:bg-zinc-900`}
-                  style={{ padding: "16px" }}
+                  className={`${note.color} bg-white dark:bg-zinc-900 p-4`}
                 />
               </motion.div>
             ))}

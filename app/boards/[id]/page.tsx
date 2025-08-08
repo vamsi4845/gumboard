@@ -29,8 +29,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// Use shared types from note component
-import type { ChecklistItem, Note, Board, User } from "@/components/note";
+// Use shared types from components
+import type { Note, Board, User } from "@/components/note";
+import type { ChecklistItem } from "@/components/checklist-item";
 
 export default function BoardPage({
   params,

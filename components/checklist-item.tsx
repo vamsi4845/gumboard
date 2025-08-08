@@ -6,7 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
-import type { ChecklistItem } from "@/components/note";
+
+export interface ChecklistItem {
+  id: string;
+  content: string;
+  checked: boolean;
+  order: number;
+}
 
 interface ChecklistItemProps {
   item: ChecklistItem;
@@ -71,7 +77,6 @@ export function ChecklistItem({
         className
       )}
     >
-      {/* Checkbox */}
       <Checkbox
         checked={item.checked}
         onCheckedChange={() => !readonly && onToggle?.(item.id)}
@@ -79,7 +84,6 @@ export function ChecklistItem({
         disabled={readonly}
       />
 
-      {/* Content */}
       {isEditing && !readonly ? (
         <Input
           type="text"
@@ -108,7 +112,6 @@ export function ChecklistItem({
         </span>
       )}
 
-      {/* Delete Button */}
       {showDeleteButton && !readonly && (
         <Button
           variant="ghost"
