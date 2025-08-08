@@ -219,7 +219,7 @@ export default function BoardPage({
   };
 
   // Helper function to calculate note height based on content
-  const calculateNoteHeight = useCallback((
+  const calculateNoteHeight = (
     note: Note,
     noteWidth?: number,
     notePadding?: number
@@ -277,7 +277,7 @@ export default function BoardPage({
         headerHeight + paddingHeight + Math.max(minContentHeight, contentHeight)
       );
     }
-  }, [addingChecklistItem]);
+  };
 
   useEffect(() => {
     const initializeParams = async () => {
@@ -496,7 +496,7 @@ export default function BoardPage({
   );
 
   // Helper function to calculate bin-packed layout for desktop
-  const calculateGridLayout = useCallback(() => {
+  const calculateGridLayout = () => {
     if (typeof window === "undefined") return [];
 
     const config = getResponsiveConfig();
@@ -562,10 +562,10 @@ export default function BoardPage({
         height: noteHeight,
       };
     });
-  }, [filteredNotes, calculateNoteHeight]);
+  };
 
   // Helper function to calculate mobile layout (optimized single/double column)
-  const calculateMobileLayout = useCallback(() => {
+  const calculateMobileLayout = () => {
     if (typeof window === "undefined") return [];
 
     const config = getResponsiveConfig();
@@ -620,14 +620,11 @@ export default function BoardPage({
         height: noteHeight,
       };
     });
-  }, [filteredNotes, calculateNoteHeight]);
+  };
 
-  const layoutNotes = useMemo(
-    () => (isMobile ? calculateMobileLayout() : calculateGridLayout()),
-    [isMobile, calculateMobileLayout, calculateGridLayout]
-  );
+  const layoutNotes = isMobile ? calculateMobileLayout() : calculateGridLayout();
 
-  const boardHeight = useMemo(() => {
+  const boardHeight = (() => {
     if (layoutNotes.length === 0) {
       return "calc(100vh - 64px)";
     }
@@ -635,7 +632,7 @@ export default function BoardPage({
     const minHeight = typeof window !== "undefined" && window.innerWidth < 768 ? 500 : 600;
     const calculatedHeight = Math.max(minHeight, maxBottom + 100);
     return `${calculatedHeight}px`;
-  }, [layoutNotes]);
+  })();
 
   const fetchBoardData = async () => {
     try {
@@ -1083,19 +1080,6 @@ export default function BoardPage({
       };
 
       setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
-
-      // Additional validation
-      if (!Array.isArray(sortedItems) || sortedItems.some(item => 
-        !item.id || typeof item.content !== 'string' || typeof item.checked !== 'boolean' || typeof item.order !== 'number'
-      )) {
-        console.error('Invalid checklist items data:', sortedItems);
-        setErrorDialog({
-          open: true,
-          title: "Data Error",
-          description: "Invalid checklist data. Please refresh the page and try again.",
-        });
-        return;
-      }
 
       // Send to server in background
       fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
@@ -1593,6 +1577,7 @@ export default function BoardPage({
               onDeleteChecklistItem={handleDeleteChecklistItem}
               onSplitChecklistItem={handleSplitChecklistItem}
               showBoardName={boardId === "all-notes" || boardId === "archive"}
+              showAddingItemInput={addingChecklistItem === note.id}
               className="note-background"
               style={{
                 position: "absolute",

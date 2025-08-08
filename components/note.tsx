@@ -61,6 +61,7 @@ interface NoteProps {
   onSplitChecklistItem?: (noteId: string, itemId: string, content: string, cursorPosition: number) => void;
   readonly?: boolean;
   showBoardName?: boolean;
+  showAddingItemInput?: boolean;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -78,6 +79,7 @@ export function Note({
   onSplitChecklistItem,
   readonly = false,
   showBoardName = false,
+  showAddingItemInput = false,
   className,
   style,
 }: NoteProps) {
@@ -86,10 +88,12 @@ export function Note({
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingItemContent, setEditingItemContent] = useState("");
   const [addingItem, setAddingItem] = useState(
-    !readonly &&
-    currentUser &&
-    (currentUser.id === note.user.id || currentUser.isAdmin) &&
-    (!note.checklistItems || note.checklistItems.length === 0)
+    showAddingItemInput || (
+      !readonly &&
+      currentUser &&
+      (currentUser.id === note.user.id || currentUser.isAdmin) &&
+      (!note.checklistItems || note.checklistItems.length === 0)
+    )
   );
   const [newItemContent, setNewItemContent] = useState("");
 
