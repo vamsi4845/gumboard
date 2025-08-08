@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-// Polling configuration constants
-const ACTIVITY_THRESHOLD = 30000; // 30 seconds
-const MAX_BACKOFF_INTERVAL = 10000; // 10 seconds
+const ACTIVITY_THRESHOLD = 30000;
+const MAX_BACKOFF_INTERVAL = 10000;
 const BACKOFF_MULTIPLIER = 2;
 
 interface UsePollingOptions<T = unknown> {
@@ -12,7 +11,6 @@ interface UsePollingOptions<T = unknown> {
   onUpdate?: (data: T) => void;
 }
 
-// Utility function to calculate adaptive polling interval
 const getAdaptiveInterval = (timeSinceActivity: number, baseInterval: number): number => {
   return timeSinceActivity > ACTIVITY_THRESHOLD 
     ? Math.min(baseInterval * BACKOFF_MULTIPLIER, MAX_BACKOFF_INTERVAL)
@@ -125,7 +123,6 @@ export function usePolling<T = unknown>({
       }, delay);
     };
     
-    // Initial fetch and schedule
     fetchData();
     const timeSinceActivity = Date.now() - lastActivityRef.current;
     const initialInterval = getAdaptiveInterval(timeSinceActivity, interval);
