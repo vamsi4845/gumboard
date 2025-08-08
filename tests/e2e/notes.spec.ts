@@ -244,7 +244,6 @@ test.describe('Note Management with Newlines', () => {
 
     await page.route('**/api/boards/test-board/notes', async (route) => {
       const request = route.request();
-
       if (request.method() === 'GET') {
         const notes = [
           {
@@ -284,18 +283,19 @@ test.describe('Note Management with Newlines', () => {
           contentType: 'application/json',
           body: JSON.stringify({ notes }),
         });
-      } 
-      else if (request.method() === 'PUT') {
-        didCallUpdateApi = true;
-        // You should ideally read and parse the body here if you want to assert it
+      }
+    });
 
-        // Respond with a successful update response to avoid hanging
+    await page.route('**/api/boards/test-board/notes/note-1', async (route) => {
+      const request = route.request(); 
+      if (request.method() === 'PUT') {
+        didCallUpdateApi = true;
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({ success: true }),
         });
-      } 
+      }
     });
 
     await page.goto('/boards/test-board');
@@ -679,4 +679,3 @@ test.describe('Note Management with Newlines', () => {
     await expect(page.getByText('Item A2Item A1Item A3Item A4Item A5')).toBeVisible();
   });
 });
-
