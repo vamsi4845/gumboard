@@ -101,6 +101,7 @@ export function NoteComponent({
 }: NoteProps) {
   return (
     <div
+      data-testid={`note-${note.id}`}
       className={cn(
         "absolute rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border note-background",
         note.done ? "opacity-80" : "",
