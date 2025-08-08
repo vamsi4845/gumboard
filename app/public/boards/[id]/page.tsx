@@ -28,7 +28,6 @@ export default function PublicBoardPage({
     endDate: null,
   });
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
-  const [showDoneNotes, setShowDoneNotes] = useState(true);
   const boardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -406,10 +405,9 @@ export default function PublicBoardPage({
         notes,
         searchTerm,
         dateRange,
-        selectedAuthor,
-        showDoneNotes
+        selectedAuthor
       ),
-    [notes, searchTerm, dateRange, selectedAuthor, showDoneNotes]
+    [notes, searchTerm, dateRange, selectedAuthor]
   );
 
   const layoutNotes = useMemo(
