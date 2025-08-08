@@ -589,7 +589,7 @@ test.describe('Note Management with Newlines', () => {
     await expect(page.getByText('Item A1Item A2Item A5Item A3Item A4')).toBeVisible();
   });
 
-  test('should re-order unhecked items within unchecked group area', async ({ page }) => {
+  test('should re-order unchecked items within unchecked group area', async ({ page }) => {
     await page.route('**/api/boards/test-board/notes', async (route) => {
       const request = route.request();
       if (request.method() === 'GET') {

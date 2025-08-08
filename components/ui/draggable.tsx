@@ -1,13 +1,13 @@
-import React from "react";
+import React from "react"
 import {
   DndContext,
-  DragEndEvent,
-  DragStartEvent,
-  PointerSensor,
   closestCenter,
-  type UniqueIdentifier,
+  PointerSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  type UniqueIdentifier,
 } from "@dnd-kit/core"
 import {
   arrayMove,
@@ -21,12 +21,14 @@ import {
 } from "@dnd-kit/modifiers"
 import { CSS } from "@dnd-kit/utilities"
 
-export interface DraggableItem {
-  id: UniqueIdentifier
-}
-
 interface DraggableInternalContextValue {
   isDragging: (id: UniqueIdentifier) => boolean
+}
+
+const DraggableInternalContext = React.createContext<DraggableInternalContextValue | null>(null)
+
+export interface DraggableItem {
+  id: UniqueIdentifier
 }
 
 export interface DraggableRootProps<T extends DraggableItem> {
@@ -35,28 +37,13 @@ export interface DraggableRootProps<T extends DraggableItem> {
   children: React.ReactNode
 }
 
-export interface DraggableContainerProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode
-}
-
-export interface DraggableItemProps extends React.HTMLAttributes<HTMLDivElement> {
-  id: string
-  children: React.ReactNode
-  disabled?: boolean
-}
-
-export interface DraggableTriggerProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode
-}
-
-export const DraggableInternalContext = React.createContext<DraggableInternalContextValue | null>(null);
-
 export function DraggableRoot<T extends DraggableItem>({
   items,
   onItemsChange,
   children,
 }: DraggableRootProps<T>) {
   const [activeId, setActiveId] = React.useState<UniqueIdentifier | null>(null)
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -64,9 +51,11 @@ export function DraggableRoot<T extends DraggableItem>({
       }
     })
   )
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id)
   }
+  
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     setActiveId(null)
@@ -80,6 +69,7 @@ export function DraggableRoot<T extends DraggableItem>({
       }
     }
   }
+
   const contextValue: DraggableInternalContextValue = {
     isDragging: (id: UniqueIdentifier) => activeId === id,
   }
@@ -101,6 +91,10 @@ export function DraggableRoot<T extends DraggableItem>({
   )
 }
 
+export interface DraggableContainerProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode
+}
+
 export function DraggableContainer({ 
   children, 
   className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
@@ -111,6 +105,12 @@ export function DraggableContainer({
       {children}
     </div>
   )
+}
+
+export interface DraggableItemProps extends React.HTMLAttributes<HTMLDivElement> {
+  id: string
+  children: React.ReactNode
+  disabled?: boolean
 }
 
 export function DraggableItem({ 
@@ -166,3 +166,113 @@ export function DraggableItem({
   )
 }
 
+export interface DraggableTriggerProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode
+}
+
+export function DraggableTrigger({ children, style, ...props }: DraggableTriggerProps) {
+  return (
+    <div 
+      className="contents"
+      style={style}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
+
+// ============================================================================
+// USAGE EXAMPLES
+// ============================================================================
+
+/*
+// BASIC USAGE
+function MyComponent() {
+  const [items, setItems] = useState([
+    { id: "1", name: "Item 1" },
+    { id: "2", name: "Item 2" },
+    { id: "3", name: "Item 3" },
+  ])
+
+  return (
+    <DraggableRoot items={items} onItemsChange={setItems}>
+      <DraggableContainer>
+        {items.map((item) => (
+          <DraggableItem key={item.id} id={item.id}>
+            <div className="p-4 border rounded">
+              {item.name}
+            </div>
+          </DraggableItem>
+        ))}
+      </DraggableContainer>
+    </DraggableRoot>
+  )
+}
+
+// WITH CUSTOM HANDLE - Default wrapper
+function MyComponentWithHandle() {
+  const [items, setItems] = useState([...])
+
+  return (
+    <DraggableRoot items={items} onItemsChange={setItems}>
+      <DraggableContainer>
+        {items.map((item) => (
+          <DraggableItem key={item.id} id={item.id}>
+            <div className="p-4 border rounded flex items-center gap-2">
+              <DraggableTrigger className="cursor-grab hover:bg-gray-100 p-1 rounded">
+                <GripIcon />
+              </DraggableTrigger>
+              <span>{item.name}</span>
+            </div>
+          </DraggableItem>
+        ))}
+      </DraggableContainer>
+    </DraggableRoot>
+  )
+}
+
+// WITH CUSTOM HANDLE - display: contents (no wrapper)
+function MyComponentWithHandle() {
+  const [items, setItems] = useState([...])
+
+  return (
+    <DraggableRoot items={items} onItemsChange={setItems}>
+      <DraggableContainer>
+        {items.map((item) => (
+          <DraggableItem key={item.id} id={item.id}>
+            <div className="p-4 border rounded flex items-center gap-2">
+              <DraggableTrigger>
+                <button className="p-2 hover:bg-gray-100 rounded cursor-grab">
+                  <GripIcon />
+                </button>
+              </DraggableTrigger>
+              <span>{item.name}</span>
+            </div>
+          </DraggableItem>
+        ))}
+      </DraggableContainer>
+    </DraggableRoot>
+  )
+}
+
+// CUSTOM LAYOUT
+function CustomLayoutExample() {
+  return (
+    <DraggableRoot items={items} onItemsChange={setItems}>
+      <DraggableContainer className="flex flex-col space-y-2">
+        {items.map((item) => (
+          <DraggableItem 
+            key={item.id} 
+            id={item.id}
+            className="hover:bg-gray-50 transition-colors"
+          >
+            <MyCustomCard item={item} />
+          </DraggableItem>
+        ))}
+      </DraggableContainer>
+    </DraggableRoot>
+  )
+}
+*/
