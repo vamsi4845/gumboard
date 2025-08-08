@@ -47,15 +47,7 @@ export async function PUT(
     // Verify user has access to this board (same organization)
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { 
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            slackWebhookUrl: true
-          }
-        }
-      }
+      include: { organization: true }
     })
 
     if (!user?.organizationId) {
@@ -111,12 +103,7 @@ export async function PUT(
             email: true
           }
         },
-        board: {
-          select: {
-            name: true,
-            sendSlackUpdates: true
-          }
-        }
+        board: true
       }
     })
 
@@ -252,4 +239,4 @@ export async function DELETE(
     console.error("Error deleting note:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-}                                                                                                                                
+}                                                                                                                                                                                                                                                                
