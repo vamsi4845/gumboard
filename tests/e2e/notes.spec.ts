@@ -132,6 +132,45 @@ test.describe('Note Management with Newlines', () => {
         });
       }
     });
+
+    await page.route('**/api/boards/all-notes/notes', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ notes: [] }),
+        });
+      }
+    
+      if (route.request().method() === 'POST') {
+        const postData = await route.request().postDataJSON();
+    
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            note: {
+              id: 'all-notes-note-id',
+              content: postData.content || '',
+              color: '#fef3c7',
+              done: false,
+              checklistItems: postData.checklistItems || [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              user: {
+                id: 'test-user',
+                name: 'Test User',
+                email: 'test@example.com',
+              },
+              board: {
+                id: postData.boardId || 'target-board-id',
+                name: 'Target Board',
+              }
+            }
+          }),
+        });
+      }
+    });
   });
 
   test('should create a checklist note and verify database state', async ({ page }) => {
@@ -203,6 +242,13 @@ test.describe('Note Management with Newlines', () => {
     expect(noteData).not.toBeNull();
     expect(noteData!.checklistItems).toBeDefined();
     expect(Array.isArray(noteData!.checklistItems)).toBe(true);
+  });
+
+  test('should create a note in the all notes view', async ({ page }) => {
+    await page.goto('/boards/all-notes');
+    await page.click('button:has(svg.lucide-pencil)');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.note-background')).toBeVisible();
   });
 
   test('should handle checklist item editing', async ({ page }) => {

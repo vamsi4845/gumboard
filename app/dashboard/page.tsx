@@ -21,6 +21,7 @@ import {
   Grid3x3,
   Copy,
   Edit3,
+  Archive,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FullPageLoader } from "@/components/ui/loader";
@@ -446,8 +447,8 @@ export default function Dashboard() {
 
         {boards.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
-            <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-950">
-              <Link href="/boards/all-notes">
+            <Card className="group relative hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-950 dark:hover:bg-zinc-900/75">
+              <Link className="after:absolute after:-inset-2.5" href="/boards/all-notes">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -465,13 +466,35 @@ export default function Dashboard() {
                 </CardHeader>
               </Link>
             </Card>
+
+            {/* Archive Board */}
+            <Card className="group relative hover:shadow-lg transition-shadow cursor-pointer bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 dark:hover:bg-zinc-900/75">
+              <Link className="after:absolute after:-inset-2.5" href="/boards/archive">
+                <CardHeader className="pb-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Archive className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-200">
+                          Archive
+                        </CardTitle>
+                      </div>
+                      <CardDescription className="text-gray-700 dark:text-gray-300">
+                        View archived notes
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Link>
+            </Card>
+
             {boards.map((board) => (
               <Card
                 key={board.id}
-                className="group hover:shadow-lg transition-shadow cursor-pointer dark:bg-zinc-900 dark:border-zinc-800"
+                className="group relative hover:shadow-lg transition-shadow cursor-pointer dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-900/75"
               >
-                <Link href={`/boards/${board.id}`}>
-                  <CardHeader className="pb-3">
+                <Link className="after:absolute after:-inset-2.5 after:z-1" href={`/boards/${board.id}`}>
+                  <CardHeader className="relative z-10 pb-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
@@ -534,7 +557,7 @@ export default function Dashboard() {
                               e.stopPropagation();
                               handleEditBoard(board);
                             }}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground dark:text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 p-1 rounded transition-opacity"
+                            className="md:opacity-0 md:group-hover:opacity-100 text-muted-foreground dark:text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 p-1 rounded transition-opacity"
                             title={
                               user?.id === board.createdBy
                                 ? "Edit board"
@@ -549,7 +572,7 @@ export default function Dashboard() {
                               e.stopPropagation();
                               handleDeleteBoard(board.id, board.name);
                             }}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded transition-opacity"
+                            className="md:opacity-0 md:group-hover:opacity-100 text-muted-foreground dark:text-zinc-400 hover:text-red-500 dark:hover:text-red-400 p-1 rounded transition-opacity"
                             title={
                               user?.id === board.createdBy
                                 ? "Delete board"

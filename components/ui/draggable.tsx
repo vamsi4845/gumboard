@@ -126,12 +126,14 @@ export function DraggableItem({
   }
 
   const {
+    active,
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ 
     id,
     disabled,
@@ -144,9 +146,10 @@ export function DraggableItem({
 
   const combinedClassName = [
     className,
-    isDragging && "z-50 scale-100 bg-blue-600/5",
+    isDragging && "z-50 scale-100 bg-blue-50 dark:bg-blue-800/20",
     disabled && "opacity-50",
-    !isDragging && "opacity-60 hover:bg-blue-50 dark:hover:bg-blue-800/20",
+    !disabled && "hover:bg-blue-50 dark:hover:bg-blue-800/20",
+    active && active.id !== id && isOver && "opacity-60 bg-blue-600/10",
     // Prevent scrolling on mobile devices
     "touch-none sm:touch-auto"
   ]

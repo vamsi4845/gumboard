@@ -370,15 +370,15 @@ export function StickyNotesDemo() {
   }
   
   const handleReorderChecklistItems = async (noteId: string, newItems: ChecklistItem[]) => {
-      const note = notes.find((n) => n.id === noteId)
-      if (!note || !note.checklistItems) return;
+    const note = notes.find((n) => n.id === noteId)
+    if (!note || !note.checklistItems) return;
 
-      const allItemsChecked = newItems.every((item) => item.checked);
+    const allItemsChecked = newItems.every((item) => item.checked);
 
-      setNotes(notes.map((n) =>
-        n.id === noteId ? { ...n, checklistItems: newItems, done: allItemsChecked } : n
-      ));
-    };
+    setNotes(notes.map((n) =>
+      n.id === noteId ? { ...n, checklistItems: newItems, done: allItemsChecked } : n
+    ));
+  }
 
   const handleDeleteChecklistItem = (noteId: string, itemId: string) => {
     const note = notes.find((n) => n.id === noteId)
@@ -396,24 +396,6 @@ export function StickyNotesDemo() {
     handleUpdateNote(updatedNote)
   }
 
-  const handleToggleAllChecklistItems = (noteId: string) => {
-    const note = notes.find((n) => n.id === noteId)
-    if (!note || !note.checklistItems) return
-
-    const allChecked = note.checklistItems.every((item) => item.checked)
-    const updatedItems = note.checklistItems.map((item) => ({
-      ...item,
-      checked: !allChecked,
-    }))
-
-    const updatedNote = {
-      ...note,
-      checklistItems: updatedItems,
-      done: !allChecked,
-    }
-
-    handleUpdateNote(updatedNote)
-  }
 
   const handleAddNote = () => {
     const randomColor = noteColors[Math.floor(Math.random() * noteColors.length)]
@@ -464,7 +446,6 @@ export function StickyNotesDemo() {
                   onToggleChecklistItem={handleToggleChecklistItem}
                   onEditChecklistItem={handleEditChecklistItem}
                   onDeleteChecklistItem={handleDeleteChecklistItem}
-                  onToggleAllChecklistItems={handleToggleAllChecklistItems}
                   onReorderChecklistItems={handleReorderChecklistItems}
                   className={`${note.color} bg-white dark:bg-zinc-900 p-4`}
                 />
