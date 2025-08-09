@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
@@ -8,34 +8,7 @@ import Link from "next/link";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { useBoardNotesPolling } from "@/lib/hooks/useBoardNotesPolling";
-
-interface ChecklistItem {
-  id: string;
-  content: string;
-  checked: boolean;
-  order: number;
-}
-
-interface Note {
-  id: string;
-  content: string;
-  color: string;
-  done: boolean;
-  createdAt: string;
-  updatedAt: string;
-  checklistItems?: ChecklistItem[];
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-  };
-}
-
-interface Board {
-  id: string;
-  name: string;
-  description: string | null;
-}
+import type { Note, Board } from "@/components/note";
 
 export default function PublicBoardPage({
   params,
@@ -56,7 +29,6 @@ export default function PublicBoardPage({
     endDate: null,
   });
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
-  const [showDoneNotes, setShowDoneNotes] = useState(true);
   const boardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   
@@ -194,14 +166,9 @@ export default function PublicBoardPage({
     notes: Note[],
     searchTerm: string,
     dateRange: { startDate: Date | null; endDate: Date | null },
-    authorId: string | null,
-    showDone: boolean
+    authorId: string | null
   ): Note[] => {
     let filteredNotes = notes;
-
-    if (!showDone) {
-      filteredNotes = filteredNotes.filter((note) => !note.done);
-    }
 
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
@@ -247,9 +214,6 @@ export default function PublicBoardPage({
     }
 
     filteredNotes.sort((a, b) => {
-      if (showDone && a.done !== b.done) {
-        return a.done ? 1 : -1;
-      }
       return (
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
@@ -437,20 +401,25 @@ export default function PublicBoardPage({
     }
   };
 
-  const uniqueAuthors = getUniqueAuthors(notes);
-  const filteredNotes = filterAndSortNotes(
-    notes,
-    searchTerm,
-    dateRange,
-    selectedAuthor,
-    showDoneNotes
+  const uniqueAuthors = useMemo(() => getUniqueAuthors(notes), [notes]);
+
+  const filteredNotes = useMemo(
+    () =>
+      filterAndSortNotes(
+        notes,
+        searchTerm,
+        dateRange,
+        selectedAuthor
+      ),
+    [notes, searchTerm, dateRange, selectedAuthor]
   );
 
-  const layoutNotes = isMobile
-    ? calculateMobileLayout()
-    : calculateGridLayout();
+  const layoutNotes = useMemo(
+    () => (isMobile ? calculateMobileLayout() : calculateGridLayout()),
+    [isMobile, filteredNotes, calculateMobileLayout, calculateGridLayout]
+  );
 
-  const calculateBoardHeight = () => {
+  const boardHeight = useMemo(() => {
     if (layoutNotes.length === 0) {
       return "calc(100vh - 64px)";
     }
@@ -463,7 +432,7 @@ export default function PublicBoardPage({
     const calculatedHeight = Math.max(minHeight, maxBottom + 100);
 
     return `${calculatedHeight}px`;
-  };
+  }, [layoutNotes]);
 
   if (loading) {
     return <FullPageLoader message="Loading board..." />;
@@ -517,10 +486,6 @@ export default function PublicBoardPage({
                 onAuthorChange={(authorId) => {
                   setSelectedAuthor(authorId);
                 }}
-                showCompleted={showDoneNotes}
-                onShowCompletedChange={(show) => {
-                  setShowDoneNotes(show);
-                }}
                 className="min-w-fit"
               />
             </div>
@@ -533,6 +498,7 @@ export default function PublicBoardPage({
                 <Search className="h-4 w-4 text-muted-foreground dark:text-zinc-400" />
               </div>
               <input
+                aria-label="Search notes"
                 type="text"
                 placeholder="Search notes..."
                 value={searchTerm}
@@ -550,7 +516,7 @@ export default function PublicBoardPage({
         </div>
       </div>
 
-      <div className="relative" style={{ height: calculateBoardHeight() }} ref={boardRef}>
+      <div className="relative" style={{ height: boardHeight }} ref={boardRef}>
         {layoutNotes.map((note) => (
           <div
             key={note.id}
