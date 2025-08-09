@@ -4,7 +4,6 @@ interface DiscordMessage {
   avatar_url?: string
 }
 
-
 export function formatNoteForDiscord(note: { content: string }, boardName: string, userName: string): string {
   return `:heavy_plus_sign: ${note.content} by ${userName} in ${boardName}`
 }
