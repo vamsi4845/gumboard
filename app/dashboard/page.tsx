@@ -447,8 +447,8 @@ export default function Dashboard() {
 
         {boards.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
-            <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-950">
-              <Link href="/boards/all-notes">
+            <Card className="group relative hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-950 dark:hover:bg-zinc-900/75">
+              <Link className="after:absolute after:-inset-2.5" href="/boards/all-notes">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -468,8 +468,8 @@ export default function Dashboard() {
             </Card>
 
             {/* Archive Board */}
-            <Card className="group hover:shadow-lg transition-shadow cursor-pointer bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
-              <Link href="/boards/archive">
+            <Card className="group relative hover:shadow-lg transition-shadow cursor-pointer bg-gray-50 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 dark:hover:bg-zinc-900/75">
+              <Link className="after:absolute after:-inset-2.5" href="/boards/archive">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -491,10 +491,10 @@ export default function Dashboard() {
             {boards.map((board) => (
               <Card
                 key={board.id}
-                className="group hover:shadow-lg transition-shadow cursor-pointer dark:bg-zinc-900 dark:border-zinc-800"
+                className="group relative hover:shadow-lg transition-shadow cursor-pointer dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-900/75"
               >
-                <Link href={`/boards/${board.id}`}>
-                  <CardHeader className="pb-3">
+                <Link className="after:absolute after:-inset-2.5 after:z-1" href={`/boards/${board.id}`}>
+                  <CardHeader className="relative z-10 pb-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
