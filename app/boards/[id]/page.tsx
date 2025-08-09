@@ -1592,7 +1592,7 @@ export default function BoardPage({
             dateRange.startDate ||
             dateRange.endDate ||
             selectedAuthor) && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-gray-500 dark:text-gray-400">
               <Search className="w-12 h-12 mb-4 text-gray-400 dark:text-gray-500" />
               <div className="text-xl mb-2">No notes found</div>
               <div className="text-sm mb-4 text-center">
@@ -1638,7 +1638,7 @@ export default function BoardPage({
           )}
 
         {notes.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             <div className="text-xl mb-2">No notes yet</div>
             <div className="text-sm mb-4">
               Click &ldquo;Add Note&rdquo; to get started
