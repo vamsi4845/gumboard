@@ -32,6 +32,7 @@ import {
 // Use shared types from components
 import type { Note, Board, User } from "@/components/note";
 import type { ChecklistItem } from "@/components/checklist-item";
+import { useTheme } from "next-themes";
 
 export default function BoardPage({
   params,
@@ -40,6 +41,7 @@ export default function BoardPage({
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
+  const { resolvedTheme } = useTheme();
   const [allBoards, setAllBoards] = useState<Board[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +62,6 @@ export default function BoardPage({
     endDate: null,
   });
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
-  const [showDoneNotes, setShowDoneNotes] = useState(true);
   const [addingChecklistItem, setAddingChecklistItem] = useState<string | null>(
     null
   );
@@ -84,8 +85,7 @@ export default function BoardPage({
   const updateURL = (
     newSearchTerm?: string,
     newDateRange?: { startDate: Date | null; endDate: Date | null },
-    newAuthor?: string | null,
-    newShowDone?: boolean
+    newAuthor?: string | null
   ) => {
     const params = new URLSearchParams();
 
@@ -94,8 +94,6 @@ export default function BoardPage({
     const currentDateRange =
       newDateRange !== undefined ? newDateRange : dateRange;
     const currentAuthor = newAuthor !== undefined ? newAuthor : selectedAuthor;
-    const currentShowDone =
-      newShowDone !== undefined ? newShowDone : showDoneNotes;
 
     if (currentSearchTerm) {
       params.set("search", currentSearchTerm);
@@ -119,11 +117,6 @@ export default function BoardPage({
       params.set("author", currentAuthor);
     }
 
-    if (!currentShowDone) {
-      // Only add if not default (true)
-      params.set("showDone", "false");
-    }
-
     const queryString = params.toString();
     const newURL = queryString ? `?${queryString}` : window.location.pathname;
     router.replace(newURL, { scroll: false });
@@ -135,7 +128,6 @@ export default function BoardPage({
     const urlStartDate = searchParams.get("startDate");
     const urlEndDate = searchParams.get("endDate");
     const urlAuthor = searchParams.get("author");
-    const urlShowDone = searchParams.get("showDone");
 
     setSearchTerm(urlSearchTerm);
 
@@ -159,8 +151,6 @@ export default function BoardPage({
 
     setDateRange({ startDate, endDate });
     setSelectedAuthor(urlAuthor);
-    // Default to true if not specified, otherwise parse the boolean
-    setShowDoneNotes(urlShowDone === null ? true : urlShowDone === "true");
   };
 
   // Enhanced responsive grid configuration
@@ -531,21 +521,15 @@ export default function BoardPage({
     );
   };
 
-  // Filter notes based on search term, date range, author, and done status
+  // Filter notes based on search term, date range, and author
   const filterAndSortNotes = (
     notes: Note[],
     searchTerm: string,
     dateRange: { startDate: Date | null; endDate: Date | null },
     authorId: string | null,
-    showDone: boolean,
     currentUser: User | null
   ): Note[] => {
     let filteredNotes = notes;
-
-    // Filter by done status
-    if (!showDone) {
-      filteredNotes = filteredNotes.filter((note) => !note.done);
-    }
 
     // Filter by search term
     if (searchTerm.trim()) {
@@ -608,10 +592,6 @@ export default function BoardPage({
         }
       }
 
-      // Second priority: done status (undone notes first) if showing done notes
-      if (showDone && a.done !== b.done) {
-        return a.done ? 1 : -1; // Undone notes (false) come first
-      }
 
       // Third priority: newest first
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -631,14 +611,13 @@ export default function BoardPage({
         searchTerm,
         dateRange,
         selectedAuthor,
-        showDoneNotes,
         user
       ),
-    [notes, searchTerm, dateRange, selectedAuthor, showDoneNotes, user]
+    [notes, searchTerm, dateRange, selectedAuthor, user]
   );
   const layoutNotes = useMemo(
     () => (isMobile ? calculateMobileLayout() : calculateGridLayout()),
-    [isMobile, filteredNotes, calculateMobileLayout, calculateGridLayout]
+    [isMobile, calculateMobileLayout, calculateGridLayout]
   );
 
   const boardHeight = useMemo(() => {
@@ -682,6 +661,19 @@ export default function BoardPage({
 
         // Fetch notes from all boards
         const notesResponse = await fetch(`/api/boards/all-notes/notes`);
+        if (notesResponse.ok) {
+          const { notes } = await notesResponse.json();
+          setNotes(notes);
+        }
+      } else if (boardId === "archive") {
+        setBoard({
+          id: "archive",
+          name: "Archive",
+          description: "Archived notes from all boards",
+        });
+
+        // Fetch archived notes from all boards
+        const notesResponse = await fetch(`/api/boards/archive/notes`);
         if (notesResponse.ok) {
           const { notes } = await notesResponse.json();
           setNotes(notes);
@@ -772,7 +764,6 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             checklistItems: updatedItems,
-            done: allItemsChecked,
           }),
         }
       );
@@ -956,6 +947,38 @@ export default function BoardPage({
   };
 
 
+  const handleArchiveNote = async (noteId: string) => {
+    try {
+      const currentNote = notes.find((n) => n.id === noteId);
+      if (!currentNote) return;
+      
+      const targetBoardId = boardId === "all-notes" && currentNote.board?.id 
+        ? currentNote.board.id 
+        : boardId;
+
+      const archivedNote = { ...currentNote, done: true };
+      setNotes(notes.map((n) => (n.id === noteId ? archivedNote : n)));
+
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: true }),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
+        setErrorDialog({
+          open: true,
+          title: "Archive Failed",
+          description: "Failed to archive note. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error("Error archiving note:", error);
+    }
+  };
+
   const handleSignOut = async () => {
     await signOut();
   };
@@ -1047,13 +1070,10 @@ export default function BoardPage({
           .sort((a, b) => a.order - b.order),
       ];
 
-      const allItemsChecked = sortedItems.every((item) => item.checked);
-
       // OPTIMISTIC UPDATE
       const optimisticNote = {
         ...currentNote,
         checklistItems: sortedItems,
-        done: allItemsChecked,
       };
 
       setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
@@ -1066,7 +1086,6 @@ export default function BoardPage({
         },
         body: JSON.stringify({
           checklistItems: sortedItems,
-          done: allItemsChecked,
         }),
       })
         .then(async (response) => {
@@ -1117,17 +1136,10 @@ export default function BoardPage({
         (item) => item.id !== itemId
       );
 
-      // Check if all remaining items are checked to mark note as done
-      const allItemsChecked =
-        updatedItems.length > 0
-          ? updatedItems.every((item) => item.checked)
-          : false;
-
       // OPTIMISTIC UPDATE: Update UI immediately
       const optimisticNote = {
         ...currentNote,
         checklistItems: updatedItems,
-        done: allItemsChecked,
       };
 
       setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
@@ -1142,7 +1154,6 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             checklistItems: updatedItems,
-            done: allItemsChecked,
           }),
         }
       );
@@ -1195,8 +1206,6 @@ export default function BoardPage({
         item.id === itemId ? { ...item, content } : item
       );
 
-      // Check if all items are checked to mark note as done
-      const allItemsChecked = updatedItems.every((item) => item.checked);
 
       const response = await fetch(
         `/api/boards/${targetBoardId}/notes/${noteId}`,
@@ -1207,7 +1216,6 @@ export default function BoardPage({
           },
           body: JSON.stringify({
             checklistItems: updatedItems,
-            done: allItemsChecked,
           }),
         }
       );
@@ -1223,63 +1231,6 @@ export default function BoardPage({
 
   // Removed external debounce; Note component handles UX concerns
 
-  const handleToggleAllChecklistItems = async (noteId: string) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote || !currentNote.checklistItems) return;
-
-      const targetBoardId =
-        boardId === "all-notes" && currentNote.board?.id
-          ? currentNote.board.id
-          : boardId;
-
-      // Check if all items are checked
-      const allChecked = currentNote.checklistItems.every(
-        (item) => item.checked
-      );
-
-      // Toggle all items to opposite state
-      const updatedItems = currentNote.checklistItems.map((item) => ({
-        ...item,
-        checked: !allChecked,
-      }));
-
-      // Sort items: unchecked first, then checked
-      const sortedItems = [
-        ...updatedItems
-          .filter((item) => !item.checked)
-          .sort((a, b) => a.order - b.order),
-        ...updatedItems
-          .filter((item) => item.checked)
-          .sort((a, b) => a.order - b.order),
-      ];
-
-      // The note should be marked as done if all items are checked
-      const noteIsDone = !allChecked; // If all were checked before, we're unchecking them (note becomes undone)
-      // If not all were checked before, we're checking them all (note becomes done)
-
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: sortedItems,
-            done: noteIsDone,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      }
-    } catch (error) {
-      console.error("Error toggling all checklist items:", error);
-    }
-  };
 
   const handleSplitChecklistItem = async (
     noteId: string,
@@ -1347,7 +1298,7 @@ export default function BoardPage({
     return <FullPageLoader message="Loading board..." />;
   }
 
-  if (!board && boardId !== "all-notes") {
+  if (!board && boardId !== "all-notes" && boardId !== "archive") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Board not found</div>
@@ -1359,8 +1310,8 @@ export default function BoardPage({
   return (
     <div className="min-h-screen max-w-screen bg-background dark:bg-zinc-950">
       <div className="bg-card dark:bg-zinc-900 border-b border-border dark:border-zinc-800 shadow-sm">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap sm:flex-nowrap justify-between items-center h-auto sm:h-16 p-2 sm:p-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:space-x-3 w-full sm:w-auto">
             {/* Company Name */}
             <Link
               href="/dashboard"
@@ -1372,14 +1323,14 @@ export default function BoardPage({
             </Link>
 
             {/* Board Selector Dropdown */}
-            <div className="relative board-dropdown block">
+            <div className="relative board-dropdown flex-1 sm:flex-none">
               <button
                 onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-                className="flex items-center border border-border dark:border-zinc-800 space-x-2 text-foreground dark:text-zinc-100 hover:text-foreground dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 rounded-md px-3 py-2 cursor-pointer"
+                className="flex items-center justify-between border border-border dark:border-zinc-800 space-x-2 text-foreground dark:text-zinc-100 hover:text-foreground dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 rounded-md px-3 py-2 cursor-pointer w-full sm:w-auto"
               >
                 <div>
                   <div className="text-sm font-semibold text-foreground dark:text-zinc-100">
-                    {boardId === "all-notes" ? "All notes" : board?.name}
+                    {boardId === "all-notes" ? "All notes" : boardId === "archive" ? "Archive" : board?.name}
                   </div>
                 </div>
                 <ChevronDown
@@ -1390,7 +1341,7 @@ export default function BoardPage({
               </button>
 
               {showBoardDropdown && (
-                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
+                <div className="fixed sm:absolute left-0 mt-2 w-full sm:w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
                   <div className="py-1">
                     {/* All Notes Option */}
                     <Link
@@ -1407,6 +1358,23 @@ export default function BoardPage({
                         Notes from all boards
                       </div>
                     </Link>
+
+                    {/* Archive Option */}
+                    <Link
+                      href="/boards/archive"
+                      className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
+                        boardId === "archive"
+                          ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                          : "text-foreground dark:text-zinc-100"
+                      }`}
+                      onClick={() => setShowBoardDropdown(false)}
+                    >
+                      <div className="font-medium">Archive</div>
+                      <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
+                        Archived notes from all boards
+                      </div>
+                    </Link>
+
                     {allBoards.length > 0 && (
                       <div className="border-t border-border dark:border-zinc-800 my-1"></div>
                     )}
@@ -1442,7 +1410,7 @@ export default function BoardPage({
                       <Plus className="w-4 h-4 mr-2" />
                       <span className="font-medium">Create new board</span>
                     </button>
-                    {boardId !== "all-notes" && (
+                    {boardId !== "all-notes" && boardId !== "archive" && (
                       <button
                         onClick={() => {
                           setBoardSettings({ sendSlackUpdates: (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true });
@@ -1461,7 +1429,7 @@ export default function BoardPage({
             </div>
 
             {/* Filter Popover */}
-            <div className="block">
+            <div className="relative board-dropdown flex-1 sm:flex-none">
               <FilterPopover
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
@@ -1476,20 +1444,15 @@ export default function BoardPage({
                   setSelectedAuthor(authorId);
                   updateURL(undefined, undefined, authorId);
                 }}
-                showCompleted={showDoneNotes}
-                onShowCompletedChange={(show) => {
-                  setShowDoneNotes(show);
-                  updateURL(undefined, undefined, undefined, show);
-                }}
                 className="min-w-fit"
               />
             </div>
           </div>
 
           {/* Right side - Search, Add Note and User dropdown */}
-          <div className="flex items-center space-x-2 px-3 ">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
             {/* Search Box */}
-            <div className="relative block">
+            <div className="relative flex-1 sm:flex-none min-w-[150px]">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-muted-foreground dark:text-zinc-400" />
               </div>
@@ -1502,7 +1465,7 @@ export default function BoardPage({
                   setSearchTerm(e.target.value);
                   updateURL(e.target.value);
                 }}
-                className="w-64 pl-10 pr-4 py-2 border border-border dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent text-sm bg-background dark:bg-zinc-900 text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-400"
+                className="w-full sm:w-64 pl-10 pr-8 py-2 border border-border dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent text-sm bg-background dark:bg-zinc-900 text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-400"
               />
               {searchTerm && (
                 <button
@@ -1525,7 +1488,7 @@ export default function BoardPage({
                   handleAddNote();
                 }
               }}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer font-medium"
+              className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer font-medium"
             >
               <Pencil className="w-4 h-4" />
             </Button>
@@ -1591,76 +1554,6 @@ export default function BoardPage({
           minHeight: "calc(100vh - 64px)", // Account for header height
         }}
       >
-        {/* Search Results Info */}
-        {(searchTerm ||
-          dateRange.startDate ||
-          dateRange.endDate ||
-          selectedAuthor ||
-          showDoneNotes) && (
-          <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/50 border-b border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300">
-            <div className="flex flex-wrap items-center gap-2">
-              <span>
-                {filteredNotes.length === 1
-                  ? `1 note found`
-                  : `${filteredNotes.length} notes found`}
-              </span>
-              {searchTerm && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
-                  Search: &quot;{searchTerm}&quot;
-                </span>
-              )}
-              {selectedAuthor && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
-                  Author:{" "}
-                  {uniqueAuthors.find((a) => a.id === selectedAuthor)?.name ||
-                    "Unknown"}
-                </span>
-              )}
-              {(dateRange.startDate || dateRange.endDate) && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
-                  Date:{" "}
-                  {dateRange.startDate
-                    ? dateRange.startDate.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "..."}{" "}
-                  -{" "}
-                  {dateRange.endDate
-                    ? dateRange.endDate.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "..."}
-                </span>
-              )}
-              {showDoneNotes && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-800/50 text-blue-800 dark:text-blue-200">
-                  Completed notes shown
-                </span>
-              )}
-              <button
-                onClick={() => {
-                  setSearchTerm("");
-                  setDateRange({ startDate: null, endDate: null });
-                  setSelectedAuthor(null);
-                  setShowDoneNotes(true);
-                  updateURL(
-                    "",
-                    { startDate: null, endDate: null },
-                    null,
-                    true
-                  );
-                }}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-xs underline"
-              >
-                Clear all filters
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Notes */}
         <div className="relative w-full h-full">
@@ -1671,13 +1564,13 @@ export default function BoardPage({
               currentUser={user as User}
               onUpdate={handleUpdateNoteFromComponent}
               onDelete={handleDeleteNote}
+              onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
               onAddChecklistItem={handleAddChecklistItemFromComponent}
               onToggleChecklistItem={handleToggleChecklistItem}
               onEditChecklistItem={handleEditChecklistItem}
               onDeleteChecklistItem={handleDeleteChecklistItem}
               onSplitChecklistItem={handleSplitChecklistItem}
-              onToggleAllChecklistItems={handleToggleAllChecklistItems}
-              showBoardName={boardId === "all-notes"}
+              showBoardName={boardId === "all-notes" || boardId === "archive"}
               className="note-background"
               style={{
                 position: "absolute",
@@ -1686,12 +1579,7 @@ export default function BoardPage({
                 width: note.width,
                 height: note.height,
                 padding: `${getResponsiveConfig().notePadding}px`,
-                backgroundColor:
-                  typeof window !== "undefined" &&
-                  window.matchMedia &&
-                  window.matchMedia("(prefers-color-scheme: dark)").matches
-                    ? `${note.color}20`
-                    : note.color,
+                backgroundColor: resolvedTheme === 'dark' ? "#18181B" : note.color,
               }}
             />
           ))}
@@ -1703,9 +1591,8 @@ export default function BoardPage({
           (searchTerm ||
             dateRange.startDate ||
             dateRange.endDate ||
-            selectedAuthor ||
-            !showDoneNotes) && (
-            <div className="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+            selectedAuthor) && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center text-gray-500 dark:text-gray-400">
               <Search className="w-12 h-12 mb-4 text-gray-400 dark:text-gray-500" />
               <div className="text-xl mb-2">No notes found</div>
               <div className="text-sm mb-4 text-center">
@@ -1730,19 +1617,16 @@ export default function BoardPage({
                       : "..."}
                   </div>
                 )}
-                {!showDoneNotes && <div>Completed notes are hidden</div>}
               </div>
               <Button
                 onClick={() => {
                   setSearchTerm("");
                   setDateRange({ startDate: null, endDate: null });
                   setSelectedAuthor(null);
-                  setShowDoneNotes(true);
                   updateURL(
                     "",
                     { startDate: null, endDate: null },
-                    null,
-                    true
+                    null
                   );
                 }}
                 variant="outline"
@@ -1754,7 +1638,7 @@ export default function BoardPage({
           )}
 
         {notes.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-96 text-gray-500 dark:text-gray-400">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             <div className="text-xl mb-2">No notes yet</div>
             <div className="text-sm mb-4">
               Click &ldquo;Add Note&rdquo; to get started
@@ -1763,6 +1647,12 @@ export default function BoardPage({
               onClick={() => {
                 if (boardId === "all-notes" && allBoards.length > 0) {
                   handleAddNote(allBoards[0].id);
+                } else if (boardId === "archive") {
+                  setErrorDialog({
+                    open: true,
+                    title: "Cannot Add Note",
+                    description: "You cannot add notes directly to the archive. Notes are archived from other boards.",
+                  });
                 } else {
                   handleAddNote();
                 }

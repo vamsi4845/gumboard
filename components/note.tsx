@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ChecklistItem as ChecklistItemComponent, ChecklistItem } from "@/components/checklist-item";
 import { cn } from "@/lib/utils";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Archive } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // Core domain types
 export interface User {
@@ -53,12 +54,12 @@ interface NoteProps {
   currentUser?: User;
   onUpdate?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
+  onArchive?: (noteId: string) => void;
   onAddChecklistItem?: (noteId: string, content: string) => void;
   onToggleChecklistItem?: (noteId: string, itemId: string) => void;
   onEditChecklistItem?: (noteId: string, itemId: string, content: string) => void;
   onDeleteChecklistItem?: (noteId: string, itemId: string) => void;
   onSplitChecklistItem?: (noteId: string, itemId: string, content: string, cursorPosition: number) => void;
-  onToggleAllChecklistItems?: (noteId: string) => void;
   readonly?: boolean;
   showBoardName?: boolean;
   className?: string;
@@ -70,18 +71,19 @@ export function Note({
   currentUser,
   onUpdate,
   onDelete,
+  onArchive,
   onAddChecklistItem,
   onToggleChecklistItem,
   onEditChecklistItem,
   onDeleteChecklistItem,
   onSplitChecklistItem,
-  onToggleAllChecklistItems,
   readonly = false,
   showBoardName = false,
   className,
   style,
 }: NoteProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const { resolvedTheme } = useTheme();
   const [editContent, setEditContent] = useState(note.content);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingItemContent, setEditingItemContent] = useState("");
@@ -166,11 +168,10 @@ export function Note({
     <div
       className={cn(
         "rounded-lg shadow-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border",
-        note.done && "opacity-80",
         className
       )}
       style={{
-        backgroundColor: note.color,
+        backgroundColor: resolvedTheme === 'dark' ? "#18181B" : note.color,
         ...style,
       }}
     >
@@ -200,7 +201,7 @@ export function Note({
         </div>
         <div className="flex items-center space-x-2">
           {canEdit && (
-            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex space-x-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -214,14 +215,20 @@ export function Note({
               </Button>
             </div>
           )}
-          {canEdit && (
+          {canEdit && onArchive && (
             <div className="flex items-center">
-              <Checkbox
-                checked={note.done}
-                onCheckedChange={() => onToggleAllChecklistItems?.(note.id)}
-                className="border-slate-500 bg-white/50 dark:bg-zinc-800 dark:border-zinc-600"
-                title={note.done ? "Uncheck all items" : "Check all items"}
-              />
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onArchive(note.id);
+                }}
+                className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
+                variant="ghost"
+                size="icon"
+                title="Archive note"
+              >
+                <Archive className="w-3 h-3" />
+              </Button>
             </div>
           )}
         </div>
@@ -277,7 +284,7 @@ export function Note({
                   type="text"
                   value={newItemContent}
                   onChange={(e) => setNewItemContent(e.target.value)}
-                  className="h-auto flex-1 border-none bg-transparent p-0 text-sm text-zinc-900 dark:text-zinc-100 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="h-auto flex-1 border-none bg-transparent px-1 py-0.5 text-sm text-zinc-900 dark:text-zinc-100 focus-visible:ring-0 focus-visible:ring-offset-0"
                   placeholder="Add new item..."
                   onBlur={handleAddItem}
                   onKeyDown={handleKeyDownNewItem}
