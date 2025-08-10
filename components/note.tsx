@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ChecklistItem as ChecklistItemComponent, ChecklistItem } from "@/components/checklist-item";
 import { cn } from "@/lib/utils";
 import { Trash2, Plus, Archive } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // Core domain types
 export interface User {
@@ -41,6 +42,7 @@ export interface Note {
     id: string;
     name: string;
   };
+  boardId: string;
   // Optional positioning properties for board layout
   x?: number;
   y?: number;
@@ -51,14 +53,11 @@ export interface Note {
 interface NoteProps {
   note: Note;
   currentUser?: User;
+  boardId: string;
+  addingChecklistItem?: string | null;
   onUpdate?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
   onArchive?: (noteId: string) => void;
-  onAddChecklistItem?: (noteId: string, content: string) => void;
-  onToggleChecklistItem?: (noteId: string, itemId: string) => void;
-  onEditChecklistItem?: (noteId: string, itemId: string, content: string) => void;
-  onDeleteChecklistItem?: (noteId: string, itemId: string) => void;
-  onSplitChecklistItem?: (noteId: string, itemId: string, content: string, cursorPosition: number) => void;
   readonly?: boolean;
   showBoardName?: boolean;
   className?: string;
@@ -68,20 +67,18 @@ interface NoteProps {
 export function Note({
   note,
   currentUser,
+  boardId,
+  addingChecklistItem,
   onUpdate,
   onDelete,
   onArchive,
-  onAddChecklistItem,
-  onToggleChecklistItem,
-  onEditChecklistItem,
-  onDeleteChecklistItem,
-  onSplitChecklistItem,
   readonly = false,
   showBoardName = false,
   className,
   style,
 }: NoteProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const { resolvedTheme } = useTheme();
   const [editContent, setEditContent] = useState(note.content);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editingItemContent, setEditingItemContent] = useState("");
@@ -94,6 +91,241 @@ export function Note({
   const [newItemContent, setNewItemContent] = useState("");
 
   const canEdit = !readonly && (currentUser?.id === note.user.id || currentUser?.isAdmin);
+
+  useEffect(() => {
+    if (addingChecklistItem === note.id && canEdit) {
+      setAddingItem(true);
+    }
+  }, [addingChecklistItem, note.id, canEdit]);
+
+  const handleToggleChecklistItem = async (itemId: string) => {
+    try {
+      if (!note.checklistItems) return;
+
+      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
+
+      const updatedItems = note.checklistItems.map((item) =>
+        item.id === itemId ? { ...item, checked: !item.checked } : item
+      );
+
+      const sortedItems = [
+        ...updatedItems
+          .filter((item) => !item.checked)
+          .sort((a, b) => a.order - b.order),
+        ...updatedItems
+          .filter((item) => item.checked)
+          .sort((a, b) => a.order - b.order),
+      ];
+
+      const optimisticNote = {
+        ...note,
+        checklistItems: sortedItems,
+      };
+
+      onUpdate?.(optimisticNote);
+
+      fetch(`/api/boards/${targetBoardId}/notes/${note.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          checklistItems: sortedItems,
+        }),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            console.error("Server error, reverting optimistic update");
+            onUpdate?.(note);
+          } else {
+            const { note: updatedNote } = await response.json();
+            onUpdate?.(updatedNote);
+          }
+        })
+        .catch((error) => {
+          console.error("Error toggling checklist item:", error);
+          onUpdate?.(note);
+        });
+    } catch (error) {
+      console.error("Error toggling checklist item:", error);
+    }
+  };
+
+  const handleDeleteChecklistItem = async (itemId: string) => {
+    try {
+      if (!note.checklistItems) return;
+
+      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
+
+      const updatedItems = note.checklistItems.filter(
+        (item) => item.id !== itemId
+      );
+
+      const optimisticNote = {
+        ...note,
+        checklistItems: updatedItems,
+      };
+
+      onUpdate?.(optimisticNote);
+
+      const response = await fetch(
+        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            checklistItems: updatedItems,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const { note: updatedNote } = await response.json();
+        onUpdate?.(updatedNote);
+      } else {
+        console.error("Server error, reverting optimistic update");
+        onUpdate?.(note);
+      }
+    } catch (error) {
+      console.error("Error deleting checklist item:", error);
+      onUpdate?.(note);
+    }
+  };
+
+  const handleEditChecklistItem = async (itemId: string, content: string) => {
+    try {
+      if (!note.checklistItems) return;
+
+      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
+
+      const updatedItems = note.checklistItems.map((item) =>
+        item.id === itemId ? { ...item, content } : item
+      );
+
+      const response = await fetch(
+        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            checklistItems: updatedItems,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const { note: updatedNote } = await response.json();
+        onUpdate?.(updatedNote);
+      }
+    } catch (error) {
+      console.error("Error editing checklist item:", error);
+    }
+  };
+
+  const handleSplitChecklistItem = async (
+    itemId: string,
+    content: string,
+    cursorPosition: number
+  ) => {
+    try {
+      if (!note.checklistItems) return;
+
+      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
+
+      const firstHalf = content.substring(0, cursorPosition).trim();
+      const secondHalf = content.substring(cursorPosition).trim();
+
+      const updatedItems = note.checklistItems.map((item) =>
+        item.id === itemId ? { ...item, content: firstHalf } : item
+      );
+
+      const currentItem = note.checklistItems.find(
+        (item) => item.id === itemId
+      );
+      const currentOrder = currentItem?.order || 0;
+
+      const newItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content: secondHalf,
+        checked: false,
+        order: currentOrder + 0.5,
+      };
+
+      const allItems = [...updatedItems, newItem].sort(
+        (a, b) => a.order - b.order
+      );
+
+      const response = await fetch(
+        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            checklistItems: allItems,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const { note: updatedNote } = await response.json();
+        onUpdate?.(updatedNote);
+      }
+    } catch (error) {
+      console.error("Error splitting checklist item:", error);
+    }
+  };
+
+  const handleAddChecklistItem = async (content: string) => {
+    try {
+      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
+
+      const newItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        content,
+        checked: false,
+        order: (note.checklistItems?.length || 0) + 1,
+      };
+
+      const allItemsChecked = [...(note.checklistItems || []), newItem].every(
+        (item) => item.checked
+      );
+
+      const optimisticNote = {
+        ...note,
+        checklistItems: [...(note.checklistItems || []), newItem],
+        done: allItemsChecked,
+      };
+
+      onUpdate?.(optimisticNote);
+
+      const response = await fetch(
+        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            checklistItems: [...(note.checklistItems || []), newItem],
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const { note: updatedNote } = await response.json();
+        onUpdate?.(updatedNote);
+      } else {
+        onUpdate?.(note);
+      }
+    } catch (error) {
+      console.error("Error adding checklist item:", error);
+      onUpdate?.(note);
+    }
+  };
 
   const handleStartEdit = () => {
     if (canEdit) {
@@ -123,29 +355,23 @@ export function Note({
   };
 
   const handleEditItem = (itemId: string, content: string) => {
-    if (onEditChecklistItem) {
-      onEditChecklistItem(note.id, itemId, content);
-    }
+    handleEditChecklistItem(itemId, content);
     handleStopEditItem();
   };
 
   const handleDeleteItem = (itemId: string) => {
-    if (onDeleteChecklistItem) {
-      onDeleteChecklistItem(note.id, itemId);
-    }
+    handleDeleteChecklistItem(itemId);
     handleStopEditItem();
   };
 
   const handleSplitItem = (itemId: string, content: string, cursorPosition: number) => {
-    if (onSplitChecklistItem) {
-      onSplitChecklistItem(note.id, itemId, content, cursorPosition);
-    }
+    handleSplitChecklistItem(itemId, content, cursorPosition);
     handleStopEditItem();
   };
 
   const handleAddItem = () => {
-    if (newItemContent.trim() && onAddChecklistItem) {
-      onAddChecklistItem(note.id, newItemContent.trim());
+    if (newItemContent.trim()) {
+      handleAddChecklistItem(newItemContent.trim());
       setNewItemContent("");
       setAddingItem(false);
     }
@@ -169,7 +395,7 @@ export function Note({
         className
       )}
       style={{
-        backgroundColor: note.color,
+        backgroundColor: resolvedTheme === 'dark' ? "#18181B" : note.color,
         ...style,
       }}
     >
@@ -199,7 +425,7 @@ export function Note({
         </div>
         <div className="flex items-center space-x-2">
           {canEdit && (
-            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex space-x-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -260,7 +486,7 @@ export function Note({
               <ChecklistItemComponent
                 key={item.id}
                 item={item}
-                onToggle={(itemId) => onToggleChecklistItem?.(note.id, itemId)}
+                onToggle={handleToggleChecklistItem}
                 onEdit={handleEditItem}
                 onDelete={handleDeleteItem}
                 onSplit={handleSplitItem}
