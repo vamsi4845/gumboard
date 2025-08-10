@@ -55,6 +55,7 @@ interface NoteProps {
   currentUser?: User;
   boardId: string;
   addingChecklistItem?: string | null;
+  onHeightMeasured?: (noteId: string, height: number) => void;
   onUpdate?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
   onArchive?: (noteId: string) => void;
@@ -69,6 +70,7 @@ export function Note({
   currentUser,
   boardId,
   addingChecklistItem,
+  onHeightMeasured,
   onUpdate,
   onDelete,
   onArchive,
@@ -90,8 +92,25 @@ export function Note({
   );
   const [newItemContent, setNewItemContent] = useState("");
   const newItemInputRef = useRef<HTMLInputElement>(null);
+  const checklistContainerRef = useRef<HTMLDivElement>(null);
 
   const canEdit = !readonly && (currentUser?.id === note.user.id || currentUser?.isAdmin);
+
+  // Measure checklist content height with ResizeObserver
+  useEffect(() => {
+    if (!onHeightMeasured) return;
+    const el = checklistContainerRef.current;
+    if (!el) return;
+
+    const report = () => {
+      const height = el.scrollHeight;
+      onHeightMeasured(note.id, height);
+    };
+    report();
+    const ro = new ResizeObserver(() => report());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [note.id, onHeightMeasured, note.checklistItems?.length]);
 
   useEffect(() => {
     if (addingChecklistItem === note.id && canEdit) {
@@ -481,7 +500,7 @@ export function Note({
         </div>
       ) : (
         <div className="flex flex-col">
-          <div className="overflow-y-auto space-y-1">
+          <div ref={checklistContainerRef} className="overflow-y-auto space-y-1">
             {/* Checklist Items */}
             {note.checklistItems?.map((item) => (
               <ChecklistItemComponent

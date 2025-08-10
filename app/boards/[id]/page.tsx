@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -65,6 +65,7 @@ export default function BoardPage({
   const [addingChecklistItem, setAddingChecklistItem] = useState<string | null>(
     null
   );
+  const [measuredHeights, setMeasuredHeights] = useState<Record<string, number>>({});
   // Per-item edit and animations are handled inside Note component now
   const [deleteNoteDialog, setDeleteNoteDialog] = useState<{
     open: boolean;
@@ -229,36 +230,20 @@ export default function BoardPage({
     const minContentHeight = 60; // Minimum content area
 
     if (note.checklistItems && note.checklistItems.length > 0) {
-      // Estimate height for checklist items accounting for line wrapping
-      const lineHeight = 24; // Tailwind leading-6 ~= 24px
-      const itemSpacing = 4; // space-y-1 between items
-      const checkboxAndGapWidth = 28; // 16px checkbox + 12px gap
-      const addTaskButtonHeight = 36; // "Add task" button
-      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // input field
-
-      const contentWidth = Math.max(
-        50,
-        actualNoteWidth - actualNotePadding * 2 - checkboxAndGapWidth - 8 // small safety margin
-      );
-      const avgCharWidth = 8; // smaller characters for text-sm
-      const charsPerLine = Math.max(1, Math.floor(contentWidth / avgCharWidth));
-
-      let totalItemsHeight = 0;
-      note.checklistItems.forEach((item, index) => {
-        const text = (item.content || "").trim();
-        const lines = text.length === 0 ? 1 : Math.ceil(text.length / charsPerLine);
-        const itemHeight = Math.max(lineHeight, lines * lineHeight);
-        totalItemsHeight += itemHeight;
-        if (index < note.checklistItems!.length - 1) {
-          totalItemsHeight += itemSpacing;
-        }
-      });
-
-      const totalChecklistHeight = Math.max(
-        minContentHeight,
-        totalItemsHeight + addingItemHeight
-      );
-
+      // Prefer measured height from the Note component
+      const addTaskButtonHeight = 36; // height for the Add task button
+      const measured = measuredHeights[note.id];
+      if (typeof measured === "number") {
+        const totalChecklistHeight = Math.max(minContentHeight, measured);
+        return headerHeight + paddingHeight + totalChecklistHeight + addTaskButtonHeight;
+      }
+      // Fallback before measurement available: approximate by item count
+      const lineHeight = 24;
+      const itemSpacing = 4;
+      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0;
+      const count = note.checklistItems.length;
+      const fallback = count * lineHeight + (count > 0 ? (count - 1) * itemSpacing : 0) + addingItemHeight;
+      const totalChecklistHeight = Math.max(minContentHeight, fallback);
       return headerHeight + paddingHeight + totalChecklistHeight + addTaskButtonHeight;
     } else {
       // Original logic for regular notes
@@ -292,6 +277,13 @@ export default function BoardPage({
       );
     }
   };
+
+  const handleHeightMeasured = useCallback((noteId: string, height: number) => {
+    setMeasuredHeights((prev) => {
+      if (prev[noteId] === height) return prev;
+      return { ...prev, [noteId]: height };
+    });
+  }, []);
 
   // Helper function to calculate bin-packed layout for desktop
   const calculateGridLayout = () => {
@@ -1260,6 +1252,7 @@ export default function BoardPage({
               currentUser={user as User}
               boardId={boardId || "all-notes"}
               addingChecklistItem={addingChecklistItem}
+              onHeightMeasured={handleHeightMeasured}
               onUpdate={handleUpdateNoteFromComponent}
               onDelete={handleDeleteNote}
               onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
