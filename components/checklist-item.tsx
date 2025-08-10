@@ -100,7 +100,7 @@ export function ChecklistItem({
       ) : (
         <span
           className={cn(
-            "flex-1 text-sm leading-6 cursor-pointer select-none",
+            "flex-1 min-w-0 text-sm leading-6 cursor-pointer select-none break-words whitespace-pre-wrap",
             item.checked
               ? "line-through text-gray-500 dark:text-gray-400"
               : "text-gray-900 dark:text-gray-100",

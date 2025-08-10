@@ -228,19 +228,36 @@ export default function BoardPage({
     const paddingHeight = actualNotePadding * 2; // Top and bottom padding
     const minContentHeight = 60; // Minimum content area
 
-    if (note.checklistItems) {
-      // For checklist items, calculate height based on number of items
-      const itemHeight = 28; // Each checklist item is about 28px tall (more accurate)
-      const itemSpacing = 4; // Space between items (space-y-1 = 4px)
-      const checklistItemsCount = note.checklistItems.length;
-      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // Add height for input field
-      const addTaskButtonHeight = 36; // Height for the "Add task" button including margin
+    if (note.checklistItems && note.checklistItems.length > 0) {
+      // Estimate height for checklist items accounting for line wrapping
+      const lineHeight = 24; // Tailwind leading-6 ~= 24px
+      const itemSpacing = 4; // space-y-1 between items
+      const checkboxAndGapWidth = 28; // 16px checkbox + 12px gap
+      const addTaskButtonHeight = 36; // "Add task" button
+      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // input field
 
-      const checklistHeight =
-        checklistItemsCount * itemHeight +
-        (checklistItemsCount > 0 ? (checklistItemsCount - 1) * itemSpacing : 0) +
-        addingItemHeight;
-      const totalChecklistHeight = Math.max(minContentHeight, checklistHeight);
+      const contentWidth = Math.max(
+        50,
+        actualNoteWidth - actualNotePadding * 2 - checkboxAndGapWidth - 8 // small safety margin
+      );
+      const avgCharWidth = 8; // smaller characters for text-sm
+      const charsPerLine = Math.max(1, Math.floor(contentWidth / avgCharWidth));
+
+      let totalItemsHeight = 0;
+      note.checklistItems.forEach((item, index) => {
+        const text = (item.content || "").trim();
+        const lines = text.length === 0 ? 1 : Math.ceil(text.length / charsPerLine);
+        const itemHeight = Math.max(lineHeight, lines * lineHeight);
+        totalItemsHeight += itemHeight;
+        if (index < note.checklistItems!.length - 1) {
+          totalItemsHeight += itemSpacing;
+        }
+      });
+
+      const totalChecklistHeight = Math.max(
+        minContentHeight,
+        totalItemsHeight + addingItemHeight
+      );
 
       return headerHeight + paddingHeight + totalChecklistHeight + addTaskButtonHeight;
     } else {
