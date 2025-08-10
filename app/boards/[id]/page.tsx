@@ -251,24 +251,25 @@ export default function BoardPage({
     const actualNotePadding = notePadding || config.notePadding;
     const actualNoteWidth = noteWidth || config.noteWidth;
 
-    const headerHeight = 76; 
-    const paddingHeight = actualNotePadding * 2; 
-    const minContentHeight = 84; 
+    const headerHeight = 60; // User info header + margins
+    const paddingHeight = actualNotePadding * 2; // Top and bottom padding
+    const minContentHeight = 60; // Minimum content area
 
     if (note.checklistItems) {
-      
-      const itemHeight = 32; 
-      const itemSpacing = 8; 
+      // For checklist items, calculate height based on number of items
+      const itemHeight = 28; // Each checklist item is about 28px tall (more accurate)
+      const itemSpacing = 4; // Space between items (space-y-1 = 4px)
       const checklistItemsCount = note.checklistItems.length;
-      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; 
+      const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // Add height for input field
+      const addTaskButtonHeight = 36; // Height for the "Add task" button including margin
 
       const checklistHeight =
         checklistItemsCount * itemHeight +
-        (checklistItemsCount - 1) * itemSpacing +
+        (checklistItemsCount > 0 ? (checklistItemsCount - 1) * itemSpacing : 0) +
         addingItemHeight;
       const totalChecklistHeight = Math.max(minContentHeight, checklistHeight);
 
-      return headerHeight + paddingHeight + totalChecklistHeight + 40; 
+      return headerHeight + paddingHeight + totalChecklistHeight + addTaskButtonHeight;
     } else {
       
       const lines = note.content.split("\n");
