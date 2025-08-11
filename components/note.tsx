@@ -243,18 +243,64 @@ export function Note({
       const firstHalf = content.substring(0, cursorPosition).trim();
       const secondHalf = content.substring(cursorPosition).trim();
 
-      // If there's no second half, just update the first half
+      // If there's no second half, create a new item below the current one
       if (!secondHalf) {
+        const currentItemIndex = note.checklistItems.findIndex(
+          (item) => item.id === itemId
+        );
+        
+        if (currentItemIndex === -1) return;
+
         const updatedItems = note.checklistItems.map((item) =>
           item.id === itemId ? { ...item, content: firstHalf } : item
         );
-        
+
+        const newItem = {
+          id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          content: "",
+          checked: false,
+          order: 0,
+        };
+
+        const allItemsUnsorted = [
+          ...updatedItems.slice(0, currentItemIndex + 1),
+          newItem,
+          ...updatedItems.slice(currentItemIndex + 1)
+        ];
+
+        const allItems = allItemsUnsorted.map((item, index) => ({
+          ...item,
+          order: index
+        }));
+
         const optimisticNote = {
           ...note,
-          checklistItems: updatedItems,
+          checklistItems: allItems,
         };
-        
+
         onUpdate?.(optimisticNote);
+
+        // Start editing the new empty item
+        setEditingItem(newItem.id);
+        setEditingItemContent("");
+
+        if (syncDB) {
+          const response = await fetch(
+            `/api/boards/${note.boardId}/notes/${note.id}`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                checklistItems: allItems,
+              }),
+            }
+          );
+
+          if (response.ok) {
+            const { note: updatedNote } = await response.json();
+            onUpdate?.(updatedNote);
+          }
+        }
         return;
       }
 
@@ -400,8 +446,14 @@ export function Note({
   };
 
   const handleSplitItem = (itemId: string, content: string, cursorPosition: number) => {
+    const secondHalf = content.substring(cursorPosition).trim();
     handleSplitChecklistItem(itemId, content, cursorPosition);
-    handleStopEditItem();
+    
+    // Only stop editing if there was a second half (normal split)
+    // If there's no second half, we want to continue editing the new item
+    if (secondHalf) {
+      handleStopEditItem();
+    }
   };
 
   const handleAddItem = () => {
