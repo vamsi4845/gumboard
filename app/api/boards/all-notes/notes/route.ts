@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const notes = await db.note.findMany({
       where: {
         deletedAt: null, // Only include non-deleted notes
-        done: false,
+        archivedAt: false,
         board: {
           organizationId: user.organizationId
         }

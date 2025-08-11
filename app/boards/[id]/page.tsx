@@ -832,7 +832,7 @@ export default function BoardPage({
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ done: true }),
+          body: JSON.stringify({ archivedAt:true }),
         }
       );
 
@@ -862,7 +862,7 @@ export default function BoardPage({
       const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ done: false }),
+        body: JSON.stringify({ archivedAt: false }),
       });
 
       if (!response.ok) {

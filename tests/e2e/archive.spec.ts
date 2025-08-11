@@ -105,7 +105,7 @@ test.describe('Archive Functionality', () => {
               id: 'archived-note-1',
               content: 'This is an archived note',
               color: '#fef3c7',
-              done: true,
+              archivedAt: true,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -147,7 +147,7 @@ test.describe('Archive Functionality', () => {
                 id: 'test-note-1',
                 content: 'Test note to archive',
                 color: '#fef3c7',
-                done: false,
+                archivedAt: false,
                 checklistItems: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -171,7 +171,7 @@ test.describe('Archive Functionality', () => {
     await page.route('**/api/boards/test-board/notes/test-note-1', async (route) => {
       if (route.request().method() === 'PUT') {
         const putData = await route.request().postDataJSON();
-        if (putData.done === true) {
+        if (putData.archivedAt === true) {
           noteArchived = true;
           archivedNoteData = putData;
         }
@@ -184,7 +184,7 @@ test.describe('Archive Functionality', () => {
               id: 'test-note-1',
               content: 'Test note to archive',
               color: '#fef3c7',
-              done: true,
+              archivedAt: true,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -210,7 +210,7 @@ test.describe('Archive Functionality', () => {
     await page.waitForTimeout(500);
     
     expect(noteArchived).toBe(true);
-    expect(archivedNoteData.done).toBe(true);
+    expect(archivedNoteData.archivedAt).toBe(true);
   });
 
   test('should not show archive button on Archive board', async ({ page }) => {
@@ -224,7 +224,7 @@ test.describe('Archive Functionality', () => {
               id: 'archived-note-1',
               content: 'This is an archived note',
               color: '#fef3c7',
-              done: true,
+              archivedAt: true,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -295,7 +295,7 @@ test.describe('Archive Functionality', () => {
               id: 'note1',
               content: 'This is an archived note',
               color: '#fef3c7',
-              done: true,
+              archivedAt: true,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -338,7 +338,7 @@ test.describe('Archive Functionality', () => {
               id: 'note1',
               content: 'Test note to unarchive',
               color: '#fef3c7',
-              done: true,
+              archivedAt: true,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -360,7 +360,7 @@ test.describe('Archive Functionality', () => {
     await page.route('**/api/boards/1/notes/note1', async (route) => {
       if (route.request().method() === 'PUT') {
         const putData = await route.request().postDataJSON();
-        if (putData.done === false) {
+        if (putData.archivedAt === false) {
           noteUnarchived = true;
           unarchivedNoteData = putData;
         }
@@ -373,7 +373,7 @@ test.describe('Archive Functionality', () => {
               id: 'note1',
               content: 'Test note to unarchive',
               color: '#fef3c7',
-              done: false,
+              archivedAt: false,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
@@ -402,7 +402,7 @@ test.describe('Archive Functionality', () => {
     await page.waitForTimeout(500);
     await expect(page.locator('text=Test note to unarchive')).not.toBeVisible();
     expect(noteUnarchived).toBe(true);
-    expect(unarchivedNoteData.done).toBe(false);
+    expect(unarchivedNoteData.archivedAt).toBe(false);
     await expect(page.locator('text=Test note to unarchive')).not.toBeVisible();
   });
 
@@ -418,7 +418,7 @@ test.describe('Archive Functionality', () => {
                 id: 'workflow-note',
                 content: 'Note for archive-unarchive workflow test',
                 color: '#fef3c7',
-                done: false,
+                archivedAt: false,
                 checklistItems: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -444,7 +444,7 @@ test.describe('Archive Functionality', () => {
               id: 'workflow-note',
               content: 'Note for archive-unarchive workflow test',
               color: '#fef3c7',
-              done: true,
+              archivedAt: true,
               checklistItems: [],
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),

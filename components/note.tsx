@@ -29,7 +29,7 @@ export interface Note {
   id: string;
   content: string;
   color: string;
-  done: boolean;
+  archivedAt?: boolean;
   createdAt: string;
   updatedAt: string;
   checklistItems?: ChecklistItem[];
@@ -310,7 +310,7 @@ export function Note({
       const optimisticNote = {
         ...note,
         checklistItems: [...(note.checklistItems || []), newItem],
-        done: allItemsChecked,
+        archivedAt: allItemsChecked,
       };
 
       onUpdate?.(optimisticNote);
