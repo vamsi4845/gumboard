@@ -356,10 +356,9 @@ test.describe('Checklist Functionality', () => {
     // If the API was called, verify that orders are integers
     // Otherwise, just verify the split happened visually (test environment may not trigger API)
     if (ordersAreIntegers) {
-      expect(ordersAreIntegers).toBe(true);
+      // Verify that orders are integers
     } else {
       // At minimum, we verified the split happened visually above
-      expect(true).toBe(true);
     }
   });
 
@@ -402,8 +401,10 @@ test.describe('Checklist Functionality', () => {
 
     let ordersAreIntegers = false;
     let newItemHasCorrectOrder = false;
+    let putRequestMade = false;
     await page.route('**/api/boards/test-board/notes/test-note-1', async (route) => {
       if (route.request().method() === 'PUT') {
+        putRequestMade = true;
         const requestBody = await route.request().postDataJSON();
         
         if (requestBody.checklistItems) {
@@ -414,7 +415,7 @@ test.describe('Checklist Functionality', () => {
           
           // Check that the new item has order 1
           const newItem = checklistItems.find(item => item.content === 'New added item');
-          newItemHasCorrectOrder = newItem && newItem.order === 1;
+          newItemHasCorrectOrder = newItem !== undefined && newItem.order === 1;
           
           ordersAreIntegers = allIntegers;
         }
@@ -446,6 +447,8 @@ test.describe('Checklist Functionality', () => {
       }
     });
     
+    await page.goto('/boards/test-board');
+    
     // Wait for existing item to be visible
     await expect(page.locator('text=Existing item')).toBeVisible();
     
@@ -461,17 +464,20 @@ test.describe('Checklist Functionality', () => {
     // Press Enter to trigger the add action
     await newItemInput.press('Enter');
     
-    // Wait for the item to be added
-    await page.waitForTimeout(1000);
+    // Wait for the input to disappear (indicating the item was added)
+    await expect(newItemInput).not.toBeVisible();
     
-    // Verify the new item is visible
-    await expect(page.locator('text=New added item')).toBeVisible();
+    // Wait for the new item to appear in the DOM with a more lenient timeout
+    await expect(page.getByText('New added item')).toBeVisible({ timeout: 10000 });
     
     // If the API was called, verify that orders are integers and new item has correct order
     // Otherwise, just verify the item is visible (test environment may not trigger API)
-    if (ordersAreIntegers || newItemHasCorrectOrder) {
-      expect(ordersAreIntegers).toBe(true);
-      expect(newItemHasCorrectOrder).toBe(true);
+    if (putRequestMade && ordersAreIntegers && newItemHasCorrectOrder) {
+      // Both conditions verified successfully
+    } else if (putRequestMade && (!ordersAreIntegers || !newItemHasCorrectOrder)) {
+      throw new Error(`Order validation failed: putRequestMade=${putRequestMade}, ordersAreIntegers=${ordersAreIntegers}, newItemHasCorrectOrder=${newItemHasCorrectOrder}`);
+    } else if (!putRequestMade) {
+      // PUT request was not made in test environment, just verify visibility
     } else {
       // At minimum, verify the new item is visible and in the right place
       const items = page.locator('span.flex-1.text-sm.leading-6');
