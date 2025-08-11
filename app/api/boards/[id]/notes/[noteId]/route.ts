@@ -100,7 +100,7 @@ export async function PUT(
       data: {
         ...(content !== undefined && { content }),
         ...(color !== undefined && { color }),
-        ...(archivedAt !== undefined && { archivedAt}),
+        ...(archivedAt !== undefined && { archivedAt: archivedAt ? new Date(archivedAt) : null }),
         ...(checklistItems !== undefined && { checklistItems }),
       },
       include: {
@@ -178,11 +178,12 @@ export async function PUT(
       }
     }
 
-    // Update existing Slack message when done status changes
+    // Update existing Slack message when archive status changes
     if (archivedAt !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
       const userName = note.user?.name || note.user?.email || 'Unknown User'
       const boardName = note.board.name
-      await updateSlackMessage(user.organization.slackWebhookUrl, note.content, archivedAt, boardName, userName)
+      const isArchived = archivedAt !== null
+      await updateSlackMessage(user.organization.slackWebhookUrl, note.content, isArchived, boardName, userName)
     }
 
     return NextResponse.json({ note: updatedNote })
