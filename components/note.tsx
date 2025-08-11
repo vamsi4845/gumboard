@@ -258,34 +258,29 @@ export function Note({
         return;
       }
 
-      // Find the index of the current item being split
       const currentItemIndex = note.checklistItems.findIndex(
         (item) => item.id === itemId
       );
       
       if (currentItemIndex === -1) return;
 
-      // Update the current item with the first half of the content
       const updatedItems = note.checklistItems.map((item) =>
         item.id === itemId ? { ...item, content: firstHalf } : item
       );
 
-      // Create the new item that will be inserted after the current item
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content: secondHalf,
         checked: false,
-        order: 0, // Will be recalculated below
+        order: 0,
       };
 
-      // Insert the new item right after the current item
       const allItemsUnsorted = [
         ...updatedItems.slice(0, currentItemIndex + 1),
         newItem,
         ...updatedItems.slice(currentItemIndex + 1)
       ];
 
-      // Recalculate all orders to maintain integers (0, 1, 2, 3...)
       const allItems = allItemsUnsorted.map((item, index) => ({
         ...item,
         order: index
@@ -326,7 +321,7 @@ export function Note({
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content,
         checked: false,
-        order: note.checklistItems?.length || 0, // Use 0-indexed order
+        order: note.checklistItems?.length || 0,
       };
 
       const allItemsChecked = [...(note.checklistItems || []), newItem].every(
