@@ -143,7 +143,6 @@ test.describe('Checklist Functionality', () => {
   test('should create new item below when splitting at end of checklist item', async ({ page }) => {
     let itemCount = 1;
     
-    // Mock initial note with one checklist item
     await page.route('**/api/boards/test-board/notes', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
@@ -182,12 +181,10 @@ test.describe('Checklist Functionality', () => {
       }
     });
 
-    // Mock the API response for when splitting creates a new item
     await page.route('**/api/boards/test-board/notes/test-note-1', async (route) => {
       if (route.request().method() === 'PUT') {
         const requestBody = await route.request().postDataJSON();
         
-        // Check if this is the split operation (should have 2 items now)
         if (requestBody.checklistItems && requestBody.checklistItems.length > itemCount) {
           itemCount = requestBody.checklistItems.length;
         }
@@ -219,36 +216,25 @@ test.describe('Checklist Functionality', () => {
       }
     });
     
-    // Wait for the note to be visible
     await expect(page.locator('text=First item')).toBeVisible();
     
-    // Click on the checklist item to start editing
     const checklistItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'First item' });
     await checklistItemElement.click();
     
-    // Wait for the checklist item input to be visible and focused
-    // Use data-testid to be more specific
     const inputElement = page.locator('[data-testid="item-1"] input[type="text"]');
     await expect(inputElement).toBeVisible();
     await expect(inputElement).toBeFocused();
     
-    // Move cursor to the end and press Enter to split at the end
     await inputElement.press('End');
     await inputElement.press('Enter');
     
-    // Wait a moment for the new item to be created and start editing
     await page.waitForTimeout(500);
-    
-    // Look for any input that's empty (the new item being edited)
-    // We need to be less specific since the new item ID is dynamically generated
     const emptyInput = page.locator('input[type="text"][value=""]').last();
     await expect(emptyInput).toBeVisible();
     
-    // Type in the new item to verify it works
     await emptyInput.fill('Second item');
     await emptyInput.press('Enter');
     
-    // Verify both items are now visible as text (not inputs)
     await expect(page.locator('text=First item')).toBeVisible();
     await expect(page.locator('text=Second item')).toBeVisible();
   });
@@ -260,7 +246,6 @@ test.describe('Checklist Functionality', () => {
       { id: 'item-3', content: 'Third task', checked: false, order: 2 }
     ];
     
-    // Mock initial note with multiple checklist items
     await page.route('**/api/boards/test-board/notes', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
@@ -297,11 +282,9 @@ test.describe('Checklist Functionality', () => {
       if (route.request().method() === 'PUT') {
         const requestBody = await route.request().postDataJSON();
         
-        // Update our stored items and verify integer orders
         if (requestBody.checklistItems) {
           checklistItems = requestBody.checklistItems;
           
-          // Check that all orders are integers and sequential
           const allIntegers = checklistItems.every(item => Number.isInteger(item.order));
           const orders = checklistItems.map(item => item.order).sort((a, b) => a - b);
           const isSequential = orders.every((order, index) => order === index);
@@ -336,12 +319,10 @@ test.describe('Checklist Functionality', () => {
       }
     });
     
-    // Wait for items to be visible
     await expect(page.locator('text=First task')).toBeVisible();
     await expect(page.locator('text=Second task')).toBeVisible();
     await expect(page.locator('text=Third task')).toBeVisible();
     
-    // Click on the second item to edit it
     const secondItemElement = page.locator('span.flex-1.text-sm.leading-6.cursor-pointer').filter({ hasText: 'Second task' });
     await secondItemElement.click();
     
@@ -425,7 +406,6 @@ test.describe('Checklist Functionality', () => {
       if (route.request().method() === 'PUT') {
         const requestBody = await route.request().postDataJSON();
         
-        // Update our stored items and verify integer orders
         if (requestBody.checklistItems) {
           checklistItems = requestBody.checklistItems;
           

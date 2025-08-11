@@ -243,7 +243,6 @@ export function Note({
       const firstHalf = content.substring(0, cursorPosition).trim();
       const secondHalf = content.substring(cursorPosition).trim();
 
-      // If there's no second half, create a new item below the current one
       if (!secondHalf) {
         const currentItemIndex = note.checklistItems.findIndex(
           (item) => item.id === itemId
@@ -280,7 +279,6 @@ export function Note({
 
         onUpdate?.(optimisticNote);
 
-        // Start editing the new empty item
         setEditingItem(newItem.id);
         setEditingItemContent("");
 
@@ -449,8 +447,6 @@ export function Note({
     const secondHalf = content.substring(cursorPosition).trim();
     handleSplitChecklistItem(itemId, content, cursorPosition);
     
-    // Only stop editing if there was a second half (normal split)
-    // If there's no second half, we want to continue editing the new item
     if (secondHalf) {
       handleStopEditItem();
     }
