@@ -379,7 +379,7 @@ export default function Dashboard() {
                     </Link>
                     <Button
                       onClick={handleSignOut}
-                      className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
+                      className="flex items-center px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
                     >
                       <LogOut className="w-4 h-4 mr-2" />
                       Sign Out
