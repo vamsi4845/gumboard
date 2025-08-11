@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,7 +13,8 @@ import {
   LogOut,
   Search,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "next/link"
+import { BetaBadge } from "@/components/ui/beta-badge";
 import { signOut } from "next-auth/react";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
@@ -31,7 +32,6 @@ import {
 } from "@/components/ui/alert-dialog";
 // Use shared types from components
 import type { Note, Board, User } from "@/components/note";
-import type { ChecklistItem } from "@/components/checklist-item";
 import { useTheme } from "next-themes";
 
 export default function BoardPage({
@@ -54,6 +54,7 @@ export default function BoardPage({
   const [boardId, setBoardId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
     startDate: Date | null;
     endDate: Date | null;
@@ -76,7 +77,9 @@ export default function BoardPage({
     description: string;
   }>({ open: false, title: "", description: "" });
   const [boardSettingsDialog, setBoardSettingsDialog] = useState(false);
-  const [boardSettings, setBoardSettings] = useState({ sendSlackUpdates: true });
+  const [boardSettings, setBoardSettings] = useState({
+    sendSlackUpdates: true,
+  });
   const boardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -222,24 +225,25 @@ export default function BoardPage({
     const actualNotePadding = notePadding || config.notePadding;
     const actualNoteWidth = noteWidth || config.noteWidth;
 
-    const headerHeight = 76; // User info header + margins (more accurate)
+    const headerHeight = 60; // User info header + margins
     const paddingHeight = actualNotePadding * 2; // Top and bottom padding
-    const minContentHeight = 84; // Minimum content area (3 lines)
+    const minContentHeight = 60; // Minimum content area
 
     if (note.checklistItems) {
       // For checklist items, calculate height based on number of items
-      const itemHeight = 32; // Each checklist item is about 32px tall (text + padding)
-      const itemSpacing = 8; // Space between items
+      const itemHeight = 28; // Each checklist item is about 28px tall (more accurate)
+      const itemSpacing = 4; // Space between items (space-y-1 = 4px)
       const checklistItemsCount = note.checklistItems.length;
       const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // Add height for input field
+      const addTaskButtonHeight = 36; // Height for the "Add task" button including margin
 
       const checklistHeight =
         checklistItemsCount * itemHeight +
-        (checklistItemsCount - 1) * itemSpacing +
+        (checklistItemsCount > 0 ? (checklistItemsCount - 1) * itemSpacing : 0) +
         addingItemHeight;
       const totalChecklistHeight = Math.max(minContentHeight, checklistHeight);
 
-      return headerHeight + paddingHeight + totalChecklistHeight + 40; // Extra space for + button
+      return headerHeight + paddingHeight + totalChecklistHeight + addTaskButtonHeight;
     } else {
       // Original logic for regular notes
       const lines = note.content.split("\n");
@@ -463,12 +467,7 @@ export default function BoardPage({
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [
-    showBoardDropdown,
-    showUserDropdown,
-    showAddBoard,
-    addingChecklistItem,
-  ]);
+  }, [showBoardDropdown, showUserDropdown, showAddBoard, addingChecklistItem]);
 
   // Removed debounce cleanup effect; editing is scoped to Note
 
@@ -498,6 +497,15 @@ export default function BoardPage({
       clearTimeout(resizeTimeout);
     };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      updateURL(searchTerm);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Get unique authors from notes
   const getUniqueAuthors = (notes: Note[]) => {
@@ -592,7 +600,6 @@ export default function BoardPage({
         }
       }
 
-
       // Third priority: newest first
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
@@ -608,12 +615,12 @@ export default function BoardPage({
     () =>
       filterAndSortNotes(
         notes,
-        searchTerm,
+        debouncedSearchTerm,
         dateRange,
         selectedAuthor,
         user
       ),
-    [notes, searchTerm, dateRange, selectedAuthor, user]
+    [notes, debouncedSearchTerm, dateRange, selectedAuthor, user]
   );
   const layoutNotes = useMemo(
     () => (isMobile ? calculateMobileLayout() : calculateGridLayout()),
@@ -624,8 +631,11 @@ export default function BoardPage({
     if (layoutNotes.length === 0) {
       return "calc(100vh - 64px)";
     }
-    const maxBottom = Math.max(...layoutNotes.map((note) => note.y + note.height));
-    const minHeight = typeof window !== "undefined" && window.innerWidth < 768 ? 500 : 600;
+    const maxBottom = Math.max(
+      ...layoutNotes.map((note) => note.y + note.height)
+    );
+    const minHeight =
+      typeof window !== "undefined" && window.innerWidth < 768 ? 500 : 600;
     const calculatedHeight = Math.max(minHeight, maxBottom + 100);
     return `${calculatedHeight}px`;
   }, [layoutNotes]);
@@ -688,7 +698,11 @@ export default function BoardPage({
         if (boardResponse.ok) {
           const { board } = await boardResponse.json();
           setBoard(board);
-          setBoardSettings({ sendSlackUpdates: (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true });
+          setBoardSettings({
+            sendSlackUpdates:
+              (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ??
+              true,
+          });
         }
 
         // Fetch notes for specific board
@@ -714,80 +728,13 @@ export default function BoardPage({
   };
 
   // Adapter: bridge component Note -> existing update handler
-  const handleUpdateNoteFromComponent = async (
-    updatedNote: { id: string; content: string }
-  ) => {
-    await handleUpdateNote(updatedNote.id, updatedNote.content);
-  };
-
-  // Adapter: component Note provides content directly
-  const handleAddChecklistItemFromComponent = async (
-    noteId: string,
-    content: string
-  ) => {
-    if (!content.trim()) return;
-
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
+  const handleUpdateNoteFromComponent = async (updatedNote: Note) => {
+      // Find the note to get its board ID for all notes view
+      const currentNote = notes.find((n) => n.id === updatedNote.id);
       if (!currentNote) return;
 
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
-      const newItem: ChecklistItem = {
-        id: `item-${Date.now()}`,
-        content: content.trim(),
-        checked: false,
-        order: (currentNote.checklistItems || []).length,
-      };
-
-      const updatedItems = [...(currentNote.checklistItems || []), newItem];
-
-      const allItemsChecked = updatedItems.every((item) => item.checked);
-
-      const optimisticNote = {
-        ...currentNote,
-        checklistItems: updatedItems,
-        done: allItemsChecked,
-      };
-
-      setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
-
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      } else {
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-        setErrorDialog({
-          open: true,
-          title: "Failed to Add Item",
-          description: "Failed to add checklist item. Please try again.",
-        });
-      }
-    } catch (error) {
-      console.error("Error adding checklist item:", error);
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (currentNote) {
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-      }
-      setErrorDialog({
-        open: true,
-        title: "Connection Error",
-        description: "Failed to add item. Please check your connection.",
-      });
-    }
+      // OPTIMISTIC UPDATE: Update UI immediately
+      setNotes(notes.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
@@ -831,72 +778,6 @@ export default function BoardPage({
     }
   };
 
-  const handleUpdateNote = async (noteId: string, content: string) => {
-    try {
-      // Find the note to get its board ID for all notes view
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote) return;
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
-      // Store original content for potential rollback
-      const originalContent = currentNote.content;
-
-      // OPTIMISTIC UPDATE: Update UI immediately
-      const optimisticNote = {
-        ...currentNote,
-        content: content,
-      };
-
-      setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
-
-      // Send to server in background
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ content }),
-        }
-      );
-
-      if (response.ok) {
-        // Server succeeded, confirm with actual server response
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      } else {
-        // Server failed, revert to original content
-        console.error("Server error, reverting optimistic update");
-        const revertedNote = { ...currentNote, content: originalContent };
-        setNotes(notes.map((n) => (n.id === noteId ? revertedNote : n)));
-        
-        // Show error dialog; editing handled inside Note component
-
-        const errorData = await response.json();
-        setErrorDialog({
-          open: true,
-          title: "Failed to update note",
-          description: errorData.error || "Failed to update note",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating note:", error);
-      
-      // Revert optimistic update on network error
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (currentNote) {
-        // Editing handled within Note component; just keep UI consistent
-      }
-      
-      setErrorDialog({
-        open: true,
-        title: "Connection Error", 
-        description: "Failed to save note. Please try again.",
-      });
-    }
-  };
-
   const handleDeleteNote = (noteId: string) => {
     setDeleteNoteDialog({
       open: true,
@@ -908,7 +789,7 @@ export default function BoardPage({
     try {
       // Find the note to get its board ID for all notes view
       const currentNote = notes.find((n) => n.id === deleteNoteDialog.noteId);
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
+      const targetBoardId = currentNote?.board?.id ?? currentNote?.boardId;
 
       const response = await fetch(
         `/api/boards/${targetBoardId}/notes/${deleteNoteDialog.noteId}`,
@@ -937,26 +818,27 @@ export default function BoardPage({
     }
   };
 
-
   const handleArchiveNote = async (noteId: string) => {
     try {
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote) return;
-      
+
       const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
 
-      const archivedNote = { ...currentNote, done: true };
-      setNotes(notes.map((n) => (n.id === noteId ? archivedNote : n)));
+      setNotes(notes.filter((n) => n.id !== noteId));
 
-      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ done: true }),
-      });
+      const response = await fetch(
+        `/api/boards/${targetBoardId}/notes/${noteId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ done: true }),
+        }
+      );
 
       if (!response.ok) {
         // Revert on error
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
+        setNotes([...notes, currentNote]);
         setErrorDialog({
           open: true,
           title: "Archive Failed",
@@ -965,6 +847,34 @@ export default function BoardPage({
       }
     } catch (error) {
       console.error("Error archiving note:", error);
+    }
+  };
+  const handleUnarchiveNote = async (noteId: string) => {
+    try {
+      const currentNote = notes.find((n) => n.id === noteId);
+      if (!currentNote) return;
+      
+      const targetBoardId = currentNote.board?.id ?? currentNote.boardId;
+      if (!targetBoardId) return;
+
+      setNotes(notes.filter((n) => n.id !== noteId));
+
+      const response = await fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ done: false }),
+      });
+
+      if (!response.ok) {
+        setNotes([...notes, currentNote]);
+        setErrorDialog({
+          open: true,
+          title: "Unarchive Failed",
+          description: "Failed to unarchive note. Please try again.",
+        });
+      }
+    } catch (error) {
+      console.error("Error unarchiving note:", error);
     }
   };
 
@@ -1014,12 +924,14 @@ export default function BoardPage({
     }
   };
 
-  const handleUpdateBoardSettings = async (settings: { sendSlackUpdates: boolean }) => {
+  const handleUpdateBoardSettings = async (settings: {
+    sendSlackUpdates: boolean;
+  }) => {
     try {
       const response = await fetch(`/api/boards/${boardId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings)
+        body: JSON.stringify(settings),
       });
 
       if (response.ok) {
@@ -1030,244 +942,6 @@ export default function BoardPage({
       }
     } catch (error) {
       console.error("Error updating board settings:", error);
-    }
-  };
-
-  // Note: add-checklist-item logic is handled by the Note component via handleAddChecklistItemFromComponent
-
-  const handleToggleChecklistItem = async (noteId: string, itemId: string) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote || !currentNote.checklistItems) return;
-
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
-      // OPTIMISTIC UPDATE
-      const updatedItems = currentNote.checklistItems.map((item) =>
-        item.id === itemId ? { ...item, checked: !item.checked } : item
-      );
-
-      const sortedItems = [
-        ...updatedItems
-          .filter((item) => !item.checked)
-          .sort((a, b) => a.order - b.order),
-        ...updatedItems
-          .filter((item) => item.checked)
-          .sort((a, b) => a.order - b.order),
-      ];
-
-      // OPTIMISTIC UPDATE
-      const optimisticNote = {
-        ...currentNote,
-        checklistItems: sortedItems,
-      };
-
-      setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
-
-      // Send to server in background
-      fetch(`/api/boards/${targetBoardId}/notes/${noteId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          checklistItems: sortedItems,
-        }),
-      })
-        .then(async (response) => {
-          if (!response.ok) {
-            console.error("Server error, reverting optimistic update");
-            setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-            
-            setErrorDialog({
-              open: true,
-              title: "Update Failed",
-              description: "Failed to update checklist item. Please try again.",
-            });
-          } else {
-            const { note } = await response.json();
-            setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-          }
-        })
-        .catch((error) => {
-          console.error("Error toggling checklist item:", error);
-          setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-          
-          setErrorDialog({
-            open: true,
-            title: "Connection Error",
-            description: "Failed to sync changes. Please check your connection.",
-          });
-        });
-    } catch (error) {
-      console.error("Error toggling checklist item:", error);
-    }
-  };
-
-  const handleDeleteChecklistItem = async (noteId: string, itemId: string) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote || !currentNote.checklistItems) return;
-
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
-      // Store the item being deleted for potential rollback
-      const deletedItem = currentNote.checklistItems.find((item) => item.id === itemId);
-      if (!deletedItem) return;
-
-      const updatedItems = currentNote.checklistItems.filter(
-        (item) => item.id !== itemId
-      );
-
-      // OPTIMISTIC UPDATE: Update UI immediately
-      const optimisticNote = {
-        ...currentNote,
-        checklistItems: updatedItems,
-      };
-
-      setNotes(notes.map((n) => (n.id === noteId ? optimisticNote : n)));
-
-      // Send to server in background
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      } else {
-        console.error("Server error, reverting optimistic update");
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-
-        setErrorDialog({
-          open: true,
-          title: "Failed to Delete Item",
-          description: "Failed to delete checklist item. Please try again.",
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting checklist item:", error);
-      
-      // Revert optimistic update on network error
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (currentNote) {
-        setNotes(notes.map((n) => (n.id === noteId ? currentNote : n)));
-      }
-      
-      setErrorDialog({
-        open: true,
-        title: "Connection Error",
-        description: "Failed to delete item. Please check your connection.",
-      });
-    }
-  };
-
-  const handleEditChecklistItem = useCallback(async (
-    noteId: string,
-    itemId: string,
-    content: string
-  ) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote || !currentNote.checklistItems) return;
-
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
-      const updatedItems = currentNote.checklistItems.map((item) =>
-        item.id === itemId ? { ...item, content } : item
-      );
-
-
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      }
-    } catch (error) {
-      console.error("Error editing checklist item:", error);
-    }
-  }, [notes, boardId]);
-
-  // Removed external debounce; Note component handles UX concerns
-
-
-  const handleSplitChecklistItem = async (
-    noteId: string,
-    itemId: string,
-    content: string,
-    cursorPosition: number
-  ) => {
-    try {
-      const currentNote = notes.find((n) => n.id === noteId);
-      if (!currentNote || !currentNote.checklistItems) return;
-
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
-      const firstHalf = content.substring(0, cursorPosition).trim();
-      const secondHalf = content.substring(cursorPosition).trim();
-
-      // Update current item with first half
-      const updatedItems = currentNote.checklistItems.map((item) =>
-        item.id === itemId ? { ...item, content: firstHalf } : item
-      );
-
-      // Find the current item's order to insert new item after it
-      const currentItem = currentNote.checklistItems.find(
-        (item) => item.id === itemId
-      );
-      const currentOrder = currentItem?.order || 0;
-
-      // Create new item with second half
-      const newItem = {
-        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        content: secondHalf,
-        checked: false,
-        order: currentOrder + 0.5,
-      };
-
-      const allItems = [...updatedItems, newItem].sort(
-        (a, b) => a.order - b.order
-      );
-
-      // Update the note with both changes
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${noteId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            checklistItems: allItems,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === noteId ? note : n)));
-      }
-    } catch (error) {
-      console.error("Error splitting checklist item:", error);
     }
   };
 
@@ -1283,7 +957,6 @@ export default function BoardPage({
     );
   }
 
-
   return (
     <div className="min-h-screen max-w-screen bg-background dark:bg-zinc-950">
       <div className="bg-card dark:bg-zinc-900 border-b border-border dark:border-zinc-800 shadow-sm">
@@ -1294,8 +967,9 @@ export default function BoardPage({
               href="/dashboard"
               className="flex-shrink-0 pl-4 sm:pl-2 lg:pl-4"
             >
-              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
                 Gumboard
+                <BetaBadge />
               </h1>
             </Link>
 
@@ -1307,7 +981,11 @@ export default function BoardPage({
               >
                 <div>
                   <div className="text-sm font-semibold text-foreground dark:text-zinc-100">
-                    {boardId === "all-notes" ? "All notes" : boardId === "archive" ? "Archive" : board?.name}
+                    {boardId === "all-notes"
+                      ? "All notes"
+                      : boardId === "archive"
+                        ? "Archive"
+                        : board?.name}
                   </div>
                 </div>
                 <ChevronDown
@@ -1390,7 +1068,11 @@ export default function BoardPage({
                     {boardId !== "all-notes" && boardId !== "archive" && (
                       <Button
                         onClick={() => {
-                          setBoardSettings({ sendSlackUpdates: (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true });
+                          setBoardSettings({
+                            sendSlackUpdates:
+                              (board as { sendSlackUpdates?: boolean })
+                                ?.sendSlackUpdates ?? true,
+                          });
                           setBoardSettingsDialog(true);
                           setShowBoardDropdown(false);
                         }}
@@ -1440,7 +1122,6 @@ export default function BoardPage({
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
-                  updateURL(e.target.value);
                 }}
                 className="w-full sm:w-64 pl-10 pr-8 py-2 border border-border dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent text-sm bg-background dark:bg-zinc-900 text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-400"
               />
@@ -1448,6 +1129,7 @@ export default function BoardPage({
                 <Button
                   onClick={() => {
                     setSearchTerm("");
+                    setDebouncedSearchTerm("");
                     updateURL("");
                   }}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-100 cursor-pointer"
@@ -1480,7 +1162,7 @@ export default function BoardPage({
                   <span className="text-sm font-medium text-white">
                     {user?.name
                       ? user.name.charAt(0).toUpperCase()
-                      : user?.email?.charAt(0).toUpperCase()}
+                      : user?.email?.charAt(0).toUpperCase() || "U"}
                   </span>
                 </div>
                 <span className="text-sm font-medium hidden md:inline">
@@ -1531,7 +1213,6 @@ export default function BoardPage({
           minHeight: "calc(100vh - 64px)", // Account for header height
         }}
       >
-
         {/* Notes */}
         <div className="relative w-full h-full">
           {layoutNotes.map((note) => (
@@ -1539,14 +1220,11 @@ export default function BoardPage({
               key={note.id}
               note={note as Note}
               currentUser={user as User}
+              addingChecklistItem={addingChecklistItem}
               onUpdate={handleUpdateNoteFromComponent}
               onDelete={handleDeleteNote}
               onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
-              onAddChecklistItem={handleAddChecklistItemFromComponent}
-              onToggleChecklistItem={handleToggleChecklistItem}
-              onEditChecklistItem={handleEditChecklistItem}
-              onDeleteChecklistItem={handleDeleteChecklistItem}
-              onSplitChecklistItem={handleSplitChecklistItem}
+              onUnarchive={boardId === "archive" ? handleUnarchiveNote : undefined}
               showBoardName={boardId === "all-notes" || boardId === "archive"}
               className="note-background"
               style={{
@@ -1556,7 +1234,8 @@ export default function BoardPage({
                 width: note.width,
                 height: note.height,
                 padding: `${getResponsiveConfig().notePadding}px`,
-                backgroundColor: resolvedTheme === 'dark' ? "#18181B" : note.color,
+                backgroundColor:
+                  resolvedTheme === "dark" ? "#18181B" : note.color,
               }}
             />
           ))}
@@ -1598,13 +1277,10 @@ export default function BoardPage({
               <Button
                 onClick={() => {
                   setSearchTerm("");
+                  setDebouncedSearchTerm("");
                   setDateRange({ startDate: null, endDate: null });
                   setSelectedAuthor(null);
-                  updateURL(
-                    "",
-                    { startDate: null, endDate: null },
-                    null
-                  );
+                  updateURL("", { startDate: null, endDate: null }, null);
                 }}
                 variant="outline"
                 className="flex items-center space-x-2 cursor-pointer"
@@ -1628,7 +1304,8 @@ export default function BoardPage({
                   setErrorDialog({
                     open: true,
                     title: "Cannot Add Note",
-                    description: "You cannot add notes directly to the archive. Notes are archived from other boards.",
+                    description:
+                      "You cannot add notes directly to the archive. Notes are archived from other boards.",
                   });
                 } else {
                   handleAddNote();
@@ -1768,7 +1445,10 @@ export default function BoardPage({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={boardSettingsDialog} onOpenChange={setBoardSettingsDialog}>
+      <AlertDialog
+        open={boardSettingsDialog}
+        onOpenChange={setBoardSettingsDialog}
+      >
         <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-border dark:border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground dark:text-zinc-100">
@@ -1778,31 +1458,34 @@ export default function BoardPage({
               Configure settings for &quot;{board?.name}&quot; board.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
+
           <div className="py-4">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="sendSlackUpdates"
                 checked={boardSettings.sendSlackUpdates}
-                onCheckedChange={(checked) => 
+                onCheckedChange={(checked) =>
                   setBoardSettings({ sendSlackUpdates: checked as boolean })
                 }
               />
-              <label 
-                htmlFor="sendSlackUpdates" 
+              <label
+                htmlFor="sendSlackUpdates"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-foreground dark:text-zinc-100"
               >
                 Send updates to Slack
               </label>
             </div>
             <p className="text-xs text-muted-foreground dark:text-zinc-400 mt-1 ml-6">
-              When enabled, note updates will be sent to your organization&apos;s Slack channel
+              When enabled, note updates will be sent to your
+              organization&apos;s Slack channel
             </p>
           </div>
 
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleUpdateBoardSettings(boardSettings)}>
+            <AlertDialogAction
+              onClick={() => handleUpdateBoardSettings(boardSettings)}
+            >
               Save settings
             </AlertDialogAction>
           </AlertDialogFooter>
