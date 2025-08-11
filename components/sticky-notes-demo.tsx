@@ -5,7 +5,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Note as NoteComponent } from "@/components/note"
 import type { Note } from "@/components/note"
-import type { ChecklistItem } from "@/components/checklist-item"
 import { Plus } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -17,8 +16,9 @@ const initialNotes: Note[] = [
     done: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    boardId: "demo-board",
     user: {
-      id: "user-1",
+      id: "demo-user",
       name: "Sahil",
       email: "sahil@example.com",
     },
@@ -35,8 +35,9 @@ const initialNotes: Note[] = [
     done: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    boardId: "demo-board",
     user: {
-      id: "user-2",
+      id: "demo-user",
       name: "Michelle",
       email: "michelle@example.com",
     },
@@ -53,8 +54,9 @@ const initialNotes: Note[] = [
     done: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    boardId: "demo-board",
     user: {
-      id: "user-3",
+      id: "demo-user",
       name: "Steve",
       email: "steve@example.com",
     },
@@ -70,8 +72,9 @@ const initialNotes: Note[] = [
     done: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
+    boardId: "demo-board",
     user: {
-      id: "user-4",
+      id: "demo-user",
       name: "Daniel",
       email: "daniel@example.com",
     },
@@ -315,75 +318,6 @@ export function StickyNotesDemo() {
     setNotes(notes.filter((note) => note.id !== noteId))
   }
 
-  const handleAddChecklistItem = (noteId: string, content: string) => {
-    const note = notes.find((n) => n.id === noteId)
-    if (!note) return
-
-    const newItem: ChecklistItem = {
-      id: `${Date.now()}`,
-      content,
-      checked: false,
-      order: (note.checklistItems || []).length,
-    }
-
-    const updatedNote = {
-      ...note,
-      checklistItems: [...(note.checklistItems || []), newItem],
-    }
-
-    handleUpdateNote(updatedNote)
-  }
-
-  const handleToggleChecklistItem = (noteId: string, itemId: string) => {
-    const note = notes.find((n) => n.id === noteId)
-    if (!note || !note.checklistItems) return
-
-    const updatedItems = note.checklistItems.map((item) =>
-      item.id === itemId ? { ...item, checked: !item.checked } : item
-    )
-
-    const allItemsChecked = updatedItems.every((item) => item.checked)
-
-    const updatedNote = {
-      ...note,
-      checklistItems: updatedItems,
-      done: allItemsChecked,
-    }
-
-    handleUpdateNote(updatedNote)
-  }
-
-  const handleEditChecklistItem = (noteId: string, itemId: string, content: string) => {
-    const note = notes.find((n) => n.id === noteId)
-    if (!note || !note.checklistItems) return
-
-    const updatedItems = note.checklistItems.map((item) =>
-      item.id === itemId ? { ...item, content } : item
-    )
-
-    const updatedNote = {
-      ...note,
-      checklistItems: updatedItems,
-    }
-
-    handleUpdateNote(updatedNote)
-  }
-
-  const handleDeleteChecklistItem = (noteId: string, itemId: string) => {
-    const note = notes.find((n) => n.id === noteId)
-    if (!note || !note.checklistItems) return
-
-    const updatedItems = note.checklistItems.filter((item) => item.id !== itemId)
-    const allItemsChecked = updatedItems.every((item) => item.checked)
-
-    const updatedNote = {
-      ...note,
-      checklistItems: updatedItems,
-      done: updatedItems.length > 0 ? allItemsChecked : false,
-    }
-
-    handleUpdateNote(updatedNote)
-  }
 
 
   const handleAddNote = () => {
@@ -396,8 +330,9 @@ export function StickyNotesDemo() {
       done: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      boardId: "demo-board",
       user: {
-        id: `user-${Date.now()}`,
+        id: "demo-user",
         name: randomAuthor.name,
         email: `${randomAuthor.name.toLowerCase().replace(/\s+/g, '')}@example.com`,
       },
@@ -427,15 +362,13 @@ export function StickyNotesDemo() {
             {notes.map((note) => (
               <motion.div key={note.id} className="mb-4 break-inside-avoid" variants={itemVariants} exit="exit" layout>
                 <NoteComponent
+                  addingChecklistItem={null}
+                  className={`${note.color} bg-white dark:bg-zinc-900 p-4`}
                   note={note}
                   currentUser={{ id: "demo-user", name: "Demo User", email: "demo@example.com" }}
                   onUpdate={handleUpdateNote}
                   onDelete={handleDeleteNote}
-                  onAddChecklistItem={handleAddChecklistItem}
-                  onToggleChecklistItem={handleToggleChecklistItem}
-                  onEditChecklistItem={handleEditChecklistItem}
-                  onDeleteChecklistItem={handleDeleteChecklistItem}
-                  className={`${note.color} bg-white dark:bg-zinc-900 p-4`}
+                  syncDB={false}
                 />
               </motion.div>
             ))}

@@ -115,7 +115,7 @@ function DateRangePicker({
 
   return (
     <div className={cn("relative", className)} ref={dropdownRef}>
-      <button
+      <Button
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
@@ -132,7 +132,7 @@ function DateRangePicker({
           "w-4 h-4 text-gray-500 dark:text-zinc-400 transition-transform",
           isOpen && "rotate-180"
         )} />
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-gray-200 dark:border-zinc-700 z-50 p-4">
@@ -180,7 +180,7 @@ function DateRangePicker({
               <Button
                 size="sm"
                 onClick={handleApply}
-                className="bg-blue-600 dark:bg-zinc-800 hover:bg-blue-700 dark:hover:bg-zinc-700"
+                className="bg-blue-600 text-white dark:bg-zinc-800 hover:bg-blue-700 dark:hover:bg-zinc-700"
               >
                 Apply
               </Button>

@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { User as UserIcon, Building2, ArrowLeft, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { BetaBadge } from "@/components/ui/beta-badge"
 import { signOut } from "next-auth/react"
 import { FullPageLoader } from "@/components/ui/loader"
 import type { User } from "@/components/note"
@@ -73,11 +75,11 @@ export default function SettingsLayout({
         <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4 sm:space-x-6">
             <Link href="/dashboard" className="flex-shrink-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">Gumboard</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">Gumboard <BetaBadge /></h1>
             </Link>
           </div>
           <div className="relative user-dropdown">
-            <button
+            <Button
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className="flex items-center space-x-2 text-foreground dark:text-zinc-100 hover:text-foreground dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 rounded-md px-3 py-2"
             >
@@ -90,7 +92,7 @@ export default function SettingsLayout({
                 {user?.name?.split(' ')[0] || 'User'}
               </span>
               <ChevronDown className="w-4 h-4 ml-1" />
-            </button>
+            </Button>
 
             {showUserDropdown && (
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-border dark:border-zinc-800 z-50">
@@ -106,13 +108,13 @@ export default function SettingsLayout({
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </Link>
-                  <button
+                  <Button
                     onClick={handleSignOut}
                     className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
