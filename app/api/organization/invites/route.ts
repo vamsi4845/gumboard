@@ -29,9 +29,16 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({ invites })
+    const response = NextResponse.json({ invites })
+    
+    // Cache invites for faster reloads - private cache for 1 minute
+    response.headers.set('Cache-Control', 'private, max-age=60, stale-while-revalidate=120')
+    
+    return response
   } catch (error) {
     console.error("Error fetching invites:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}
+
+export const runtime = "nodejs" 

@@ -16,7 +16,7 @@ import { BetaBadge } from "@/components/ui/beta-badge";
 import { Input } from "@/components/ui/input";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Trash2,
@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FullPageLoader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { User, Board } from "@/components/note";
+import { useBootstrap } from "@/hooks/useBootstrap";
+import { useQueryClient } from "@tanstack/react-query";
+import { jfetch } from "@/lib/fetcher";
 import { 
   Dialog,
   DialogContent,
@@ -68,7 +72,7 @@ const formSchema = z.object({
 export default function Dashboard() {
   const [boards, setBoards] = useState<DashboardBoard[]>([]);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: bootstrap, isLoading: isBootstrapLoading, isError: isBootstrapError } = useBootstrap();
   const [isAddBoardDialogOpen, setIsAddBoardDialogOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -84,6 +88,31 @@ export default function Dashboard() {
   }>({ open: false, title: "", description: "" });
   const [copiedBoardId, setCopiedBoardId] = useState<string | null>(null);
   const router = useRouter();
+  const prefetchedBoardsRef = useRef<Set<string>>(new Set());
+  const qc = useQueryClient();
+
+  const prefetchBoardData = async (id: string) => {
+    if (!id) return;
+    if (id === "all-notes" || id === "archive") return;
+    if (prefetchedBoardsRef.current.has(id)) return;
+    prefetchedBoardsRef.current.add(id);
+    // Seed React Query cache for board and first notes page
+    await Promise.all([
+      qc.prefetchQuery({
+        queryKey: ["board", id],
+        queryFn: () => jfetch(`/api/boards/${id}`),
+        staleTime: 30_000,
+      }),
+      qc.prefetchInfiniteQuery({
+        queryKey: ["notes", id, 50],
+        queryFn: ({ pageParam }) =>
+          jfetch(`/api/boards/${id}/notes${pageParam ? `?cursor=${pageParam}&take=50` : `?take=50`}`),
+        initialPageParam: undefined,
+        getNextPageParam: (lastPage: any) => lastPage?.nextCursor,
+        staleTime: 20_000,
+      }),
+    ]);
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,8 +123,18 @@ export default function Dashboard() {
   })
 
   useEffect(() => {
-    fetchUserAndBoards();
-  }, []);
+    if (bootstrap?.user) {
+      setUser({
+        id: bootstrap.user.id,
+        name: bootstrap.user.name ?? undefined,
+        email: bootstrap.user.email,
+        isAdmin: bootstrap.user.isAdmin,
+      } as unknown as User);
+    }
+    if (bootstrap?.boards) {
+      setBoards(bootstrap.boards as unknown as DashboardBoard[]);
+    }
+  }, [bootstrap]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -123,39 +162,21 @@ export default function Dashboard() {
     };
   }, [showUserDropdown]);
 
-  const fetchUserAndBoards = async () => {
-    try {
-      const userResponse = await fetch("/api/user");
-      if (userResponse.status === 401) {
-        router.push("/auth/signin");
-        return;
-      }
-
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData);
-        if (!userData.name) {
-          router.push("/setup/profile");
-          return;
-        }
-        if (!userData.organization) {
-          router.push("/setup/organization");
-          return;
-        }
-      }
-
-      const boardsResponse = await fetch("/api/boards");
-      if (boardsResponse.ok) {
-        const { boards } = await boardsResponse.json();
-        setBoards(boards);
-
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (bootstrap?.user === null && !isBootstrapLoading) {
+      router.push("/auth/signin");
+      return;
     }
-  };
+    // Optional additional flows are retained below; they will run after bootstrap
+    if (bootstrap?.user && !bootstrap.user.name) {
+      router.push("/setup/profile");
+      return;
+    }
+    if (bootstrap?.user && !bootstrap.user.organizationId) {
+      router.push("/setup/organization");
+      return;
+    }
+  }, [bootstrap, isBootstrapLoading, router]);
 
   const handleAddBoard = async (values: z.infer<typeof formSchema>) => {
     const {name, description} = values;
@@ -316,9 +337,7 @@ export default function Dashboard() {
     await signOut();
   };
 
-  if (loading) {
-    return <FullPageLoader message="Loading dashboard..." />;
-  }
+  const showBoardsGrid = true; // Always render the grid so static cards are visible immediately
 
   return (
     <div className="min-h-screen bg-background dark:bg-zinc-950">
@@ -392,18 +411,16 @@ export default function Dashboard() {
         </div>
       </nav>
       <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {boards.length > 0 && (
-          <div className="mb-6 sm:mb-8">
-            <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-zinc-100">
-                Boards
-              </h2>
-              <p className="text-sm sm:text-base text-muted-foreground dark:text-zinc-400 mt-1">
-                Manage your organization&apos;s boards
-              </p>
-            </div>
+        <div className="mb-6 sm:mb-8">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground dark:text-zinc-100">
+              Boards
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground dark:text-zinc-400 mt-1">
+              Manage your organization&apos;s boards
+            </p>
           </div>
-        )}
+        </div>
         
         <Dialog open={isAddBoardDialogOpen} onOpenChange={handleOpenChange}>
           <DialogContent className="bg-white dark:bg-zinc-950 border border-zinc-800 dark:border-zinc-800 sm:max-w-[425px] ">
@@ -466,8 +483,9 @@ export default function Dashboard() {
           </DialogContent>
         </Dialog>
 
-        {boards.length > 0 && (
+        {showBoardsGrid && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+            {/* Static entries always visible */}
             <Link href="/boards/all-notes">
               <Card className="group hover:shadow-lg transition-shadow cursor-pointer border-2 border-blue-200 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-zinc-900 dark:to-zinc-950 dark:hover:bg-zinc-900/75">
                 <CardHeader className="pb-3">
@@ -509,8 +527,9 @@ export default function Dashboard() {
               </Card>
             </Link>
 
-            {boards.map((board) => (
-              <Link href={`/boards/${board.id}`} key={board.id}>
+            {/* Dynamic boards */}
+            {!isBootstrapLoading && boards.map((board) => (
+              <Link href={`/boards/${board.id}`} key={board.id} onMouseEnter={() => prefetchBoardData(board.id)} onFocus={() => prefetchBoardData(board.id)}>
                 <Card className="group hover:shadow-lg transition-shadow cursor-pointer dark:bg-zinc-900 dark:border-zinc-800 dark:hover:bg-zinc-900/75">
                   <CardHeader className="pb-3">
                       <div>
@@ -604,9 +623,16 @@ export default function Dashboard() {
                 </Card>
               </Link>
             ))}
+
+            {/* Skeletons while loading dynamic boards */}
+            {isBootstrapLoading && (
+              Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-32" />
+              ))
+            )}
           </div>
         )}
-        {boards.length === 0 && (
+        {!isBootstrapLoading && boards.length === 0 && (
           <div className="text-center py-12">
             <div className="text-muted-foreground dark:text-zinc-400 mb-4">
               <Plus className="w-12 h-12 mx-auto" />
@@ -628,6 +654,7 @@ export default function Dashboard() {
             </Button>
           </div>
         )}
+
       </div>
 
       <AlertDialog open={deleteConfirmDialog.open} onOpenChange={(open) => setDeleteConfirmDialog({ open, boardId: "", boardName: "" })}>

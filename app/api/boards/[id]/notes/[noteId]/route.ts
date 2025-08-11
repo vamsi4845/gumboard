@@ -90,8 +90,9 @@ export async function PUT(
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    // Check if user is the author of the note or an admin
-    if (note.createdBy !== session.user.id && !user.isAdmin) {
+    // Allow any org member to toggle done status, but restrict other edits to author/admin
+    const isOnlyDoneToggle = (done !== undefined) && content === undefined && color === undefined && checklistItems === undefined
+    if (note.createdBy !== session.user.id && !user.isAdmin && !isOnlyDoneToggle) {
       return NextResponse.json({ error: "Only the note author or admin can edit this note" }, { status: 403 })
     }
 

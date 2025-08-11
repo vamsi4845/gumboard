@@ -17,6 +17,7 @@ import Link from "next/link"
 import { BetaBadge } from "@/components/ui/beta-badge";
 import { signOut } from "next-auth/react";
 import { FullPageLoader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { Note as NoteCard } from "@/components/note";
 
@@ -419,11 +420,63 @@ export default function BoardPage({
   }, []);
 
   useEffect(() => {
-    if (boardId) {
-      fetchBoardData();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [boardId]);
+    if (!boardId) return;
+    const c = new AbortController();
+    (async () => {
+      try {
+        const commonOpts = { signal: c.signal, cache: "no-store" as const, headers: { "Cache-Control": "no-cache" } };
+        const [userRes, allBoardsRes, boardRes, notesRes] = await Promise.all([
+          fetch("/api/user", commonOpts),
+          fetch("/api/boards", commonOpts),
+          boardId === "all-notes" || boardId === "archive"
+            ? Promise.resolve(new Response(null, { status: 204 }))
+            : fetch(`/api/boards/${boardId}`, commonOpts),
+          boardId === "all-notes"
+            ? fetch(`/api/boards/all-notes/notes`, commonOpts)
+            : boardId === "archive"
+            ? fetch(`/api/boards/archive/notes`, commonOpts)
+            : fetch(`/api/boards/${boardId}/notes?take=100`, commonOpts),
+        ]);
+
+        if (userRes.status === 401) {
+          router.push("/auth/signin");
+          return;
+        }
+        if (userRes.ok) setUser(await userRes.json());
+
+        if (allBoardsRes.ok) {
+          const { boards } = await allBoardsRes.json();
+          setAllBoards(boards);
+        }
+
+        if (boardRes.status === 200) {
+          const { board } = await boardRes.json();
+          setBoard(board);
+          setBoardSettings({
+            sendSlackUpdates: (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true,
+          });
+        } else if (boardId !== "all-notes" && boardId !== "archive") {
+          setBoard(null);
+        }
+
+        if (notesRes.ok) {
+          const data = await notesRes.json();
+          setNotes(data.notes ?? []);
+        }
+
+        if (boardId && boardId !== "all-notes") {
+          try {
+            localStorage.setItem("gumboard-last-visited-board", boardId);
+          } catch {}
+        }
+      } catch (e) {
+        if ((e as any).name !== "AbortError") console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => c.abort();
+  }, [boardId, router]);
 
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
@@ -918,11 +971,9 @@ export default function BoardPage({
     }
   };
 
-  if (loading) {
-    return <FullPageLoader message="Loading board..." />;
-  }
+  const isInitialLoading = loading;
 
-  if (!board && boardId !== "all-notes" && boardId !== "archive") {
+  if (!isInitialLoading && !board && boardId !== "all-notes" && boardId !== "archive") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Board not found</div>
@@ -1188,29 +1239,39 @@ export default function BoardPage({
       >
         {/* Notes */}
         <div className="relative w-full h-full">
-          {layoutNotes.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note as Note}
-              currentUser={user as User}
-              addingChecklistItem={addingChecklistItem}
-              onUpdate={handleUpdateNoteFromComponent}
-              onDelete={handleDeleteNote}
-              onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
-              showBoardName={boardId === "all-notes" || boardId === "archive"}
-              className="note-background"
-              style={{
-                position: "absolute",
-                left: note.x,
-                top: note.y,
-                width: note.width,
-                height: note.height,
-                padding: `${getResponsiveConfig().notePadding}px`,
-                backgroundColor:
-                  resolvedTheme === "dark" ? "#18181B" : note.color,
-              }}
-            />
-          ))}
+          {isInitialLoading ? (
+            layoutNotes.length > 0
+              ? layoutNotes.map((note, i) => (
+                  <Skeleton key={i} className="absolute" style={{ left: note.x, top: note.y, width: note.width, height: note.height }} />
+                ))
+              : Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="absolute h-40 w-72" style={{ left: 16 + (i % 4) * 300, top: 16 + Math.floor(i / 4) * 200 }} />
+                ))
+          ) : (
+            layoutNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note as Note}
+                currentUser={user as User}
+                addingChecklistItem={addingChecklistItem}
+                onUpdate={handleUpdateNoteFromComponent}
+                onDelete={handleDeleteNote}
+                onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
+                showBoardName={boardId === "all-notes" || boardId === "archive"}
+                className="note-background"
+                style={{
+                  position: "absolute",
+                  left: note.x,
+                  top: note.y,
+                  width: note.width,
+                  height: note.height,
+                  padding: `${getResponsiveConfig().notePadding}px`,
+                  backgroundColor:
+                    resolvedTheme === "dark" ? "#18181B" : note.color,
+                }}
+              />
+            ))
+          )}
         </div>
 
         {/* Empty State */}
@@ -1262,7 +1323,7 @@ export default function BoardPage({
             </div>
           )}
 
-        {notes.length === 0 && (
+        {!isInitialLoading && notes.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
             <div className="text-xl mb-2">No notes yet</div>
             <div className="text-sm mb-4">

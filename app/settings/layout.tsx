@@ -1,48 +1,22 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { User as UserIcon, Building2, ArrowLeft, Settings, LogOut, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { BetaBadge } from "@/components/ui/beta-badge"
 import { signOut } from "next-auth/react"
-import { FullPageLoader } from "@/components/ui/loader"
-import type { User } from "@/components/note"
+import { useUser } from "@/hooks/useUser"
+import { useState, useEffect } from "react"
 
 export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: user } = useUser()
   const [showUserDropdown, setShowUserDropdown] = useState(false)
-  const router = useRouter()
   const pathname = usePathname()
-
-  const fetchUserData = useCallback(async () => {
-    try {
-      const response = await fetch("/api/user")
-      if (response.status === 401) {
-        router.push("/auth/signin")
-        return
-      }
-
-      if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }, [router])
-
-  useEffect(() => {
-    fetchUserData()
-  }, [fetchUserData])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,9 +36,7 @@ export default function SettingsLayout({
     await signOut()
   }
 
-  if (loading) {
-    return <FullPageLoader message="Loading settings..." />
-  }
+
 
   const isProfileActive = pathname === '/settings'
   const isOrganizationActive = pathname === '/settings/organization'

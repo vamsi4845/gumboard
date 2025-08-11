@@ -3,12 +3,12 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import Resend from "next-auth/providers/resend"
 import GoogleProvider from "next-auth/providers/google"
 import GitHubProvider from "next-auth/providers/github"
-import { PrismaClient } from "@prisma/client"
-
-const prisma = new PrismaClient()
+import { db as prisma } from "@/lib/db"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  secret: process.env.AUTH_SECRET,
   adapter: PrismaAdapter(prisma),
+  debug: process.env.NODE_ENV === 'development',
   providers: [
     Resend({
       from: process.env.EMAIL_FROM!,
@@ -24,6 +24,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       allowDangerousEmailAccountLinking: true,
     }),
   ],
+  trustHost: true,
   pages: {
     signIn: "/auth/signin",
     verifyRequest: "/auth/verify-request",

@@ -7,6 +7,7 @@ import { Search } from "lucide-react";
 import Link from "next/link"
 import { BetaBadge } from "@/components/ui/beta-badge";
 import { FullPageLoader } from "@/components/ui/loader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import type { Note, Board } from "@/components/note";
 
@@ -333,10 +334,42 @@ export default function PublicBoardPage({
   }, [params]);
 
   useEffect(() => {
-    if (boardId) {
-      fetchBoardData();
-    }
-  }, [boardId]);
+    if (!boardId) return;
+    const c = new AbortController();
+    (async () => {
+      try {
+        const commonOpts = { signal: c.signal, cache: "no-store" as const, headers: { "Cache-Control": "no-cache" } };
+        const [boardResponse, notesResponse] = await Promise.all([
+          fetch(`/api/boards/${boardId}`, commonOpts),
+          fetch(`/api/boards/${boardId}/notes?take=100`, commonOpts),
+        ]);
+
+        if (boardResponse.status === 404) {
+          setBoard(null);
+          setLoading(false);
+          return;
+        }
+        if (boardResponse.status === 401 || boardResponse.status === 403) {
+          router.push("/auth/signin");
+          return;
+        }
+        if (boardResponse.ok) {
+          const { board } = await boardResponse.json();
+          setBoard(board);
+        }
+
+        if (notesResponse.ok) {
+          const { notes } = await notesResponse.json();
+          setNotes(notes);
+        }
+      } catch (e) {
+        if ((e as any).name !== 'AbortError') console.error("Error fetching board data:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => c.abort();
+  }, [boardId, router]);
 
   useEffect(() => {
     let resizeTimeout: NodeJS.Timeout;
@@ -423,11 +456,9 @@ export default function PublicBoardPage({
     return `${calculatedHeight}px`;
   }, [layoutNotes]);
 
-  if (loading) {
-    return <FullPageLoader message="Loading board..." />;
-  }
+  const isInitialLoading = loading;
 
-  if (!board) {
+  if (!isInitialLoading && !board) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -506,74 +537,84 @@ export default function PublicBoardPage({
       </div>
 
       <div className="relative" style={{ height: boardHeight }} ref={boardRef}>
-        {layoutNotes.map((note) => (
-          <div
-            key={note.id}
-            className="absolute transition-all duration-300 ease-out"
-            style={{
-              left: `${note.x}px`,
-              top: `${note.y}px`,
-              width: `${note.width}px`,
-              height: `${note.height}px`,
-            }}
-          >
+        {isInitialLoading ? (
+          layoutNotes.length > 0
+            ? layoutNotes.map((note, i) => (
+                <Skeleton key={i} className="absolute" style={{ left: note.x, top: note.y, width: note.width, height: note.height }} />
+              ))
+            : Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="absolute h-40 w-72" style={{ left: 16 + (i % 4) * 300, top: 16 + Math.floor(i / 4) * 200 }} />
+              ))
+        ) : (
+          layoutNotes.map((note) => (
             <div
-              className={`h-full rounded-lg shadow-md border-2 p-4 ${note.color} transition-all duration-200`}
+              key={note.id}
+              className="absolute transition-all duration-300 ease-out"
+              style={{
+                left: `${note.x}px`,
+                top: `${note.y}px`,
+                width: `${note.width}px`,
+                height: `${note.height}px`,
+              }}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                      {note.user.name
-                        ? note.user.name.charAt(0).toUpperCase()
-                        : note.user.email.charAt(0).toUpperCase()}
+              <div
+                className={`h-full rounded-lg shadow-md border-2 p-4 ${note.color} transition-all duration-200`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        {note.user.name
+                          ? note.user.name.charAt(0).toUpperCase()
+                          : note.user.email.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                      {note.user.name || note.user.email.split("@")[0]}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    {note.user.name || note.user.email.split("@")[0]}
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(note.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(note.createdAt).toLocaleDateString()}
-                </span>
-              </div>
 
-              <div className="flex-1 overflow-hidden">
-                {note.checklistItems ? (
-                  <div className="space-y-2">
-                    {note.checklistItems
-                      .sort((a, b) => a.order - b.order)
-                      .map((item) => (
-                        <div key={item.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={item.checked}
-                            disabled
-                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                          />
-                          <span
-                            className={`text-sm flex-1 ${
-                              item.checked
-                                ? "line-through text-gray-500 dark:text-gray-400"
-                                : "text-gray-900 dark:text-gray-100"
-                            }`}
-                          >
-                            {item.content}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">
-                    {note.content}
-                  </div>
-                )}
+                <div className="flex-1 overflow-hidden">
+                  {note.checklistItems ? (
+                    <div className="space-y-2">
+                      {note.checklistItems
+                        .sort((a, b) => a.order - b.order)
+                        .map((item) => (
+                          <div key={item.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={item.checked}
+                              disabled
+                              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                            />
+                            <span
+                              className={`text-sm flex-1 ${
+                                item.checked
+                                  ? "line-through text-gray-500 dark:text-gray-400"
+                                  : "text-gray-900 dark:text-gray-100"
+                              }`}
+                            >
+                              {item.content}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">
+                      {note.content}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
 
-        {filteredNotes.length === 0 && (
+        {!isInitialLoading && filteredNotes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📝</div>

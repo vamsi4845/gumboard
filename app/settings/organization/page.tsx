@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useUser } from "@/hooks/useUser";
+import { useOrganizationInvites } from "@/hooks/useOrganizationInvites";
+import { useSelfServeInvites } from "@/hooks/useSelfServeInvites";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,7 +21,7 @@ import {
   Users,
   ExternalLink,
 } from "lucide-react";
-import { Loader } from "@/components/ui/loader";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +74,10 @@ interface SelfServeInvite {
 
 export default function OrganizationSettingsPage() {
   const [user, setUser] = useState<UserWithOrganization | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: userData, isLoading, isPending } = useUser();
+  const { data: invitesData } = useOrganizationInvites();
+  const { data: selfServeData } = useSelfServeInvites();
+  const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [orgName, setOrgName] = useState("");
   const [originalOrgName, setOriginalOrgName] = useState("");
@@ -106,60 +113,44 @@ export default function OrganizationSettingsPage() {
   const [creating, setCreating] = useState(false);
   const router = useRouter();
 
-  const fetchUserData = useCallback(async () => {
-    try {
-      const response = await fetch("/api/user");
-      if (response.status === 401) {
-        router.push("/auth/signin");
-        return;
-      }
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        const orgNameValue = userData.organization?.name || "";
-        const slackWebhookValue = userData.organization?.slackWebhookUrl || "";
-        setOrgName(orgNameValue);
-        setOriginalOrgName(orgNameValue);
-        setSlackWebhookUrl(slackWebhookValue);
-        setOriginalSlackWebhookUrl(slackWebhookValue);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
+  // Priority 1: Update organization basic data immediately when user data becomes available
   useEffect(() => {
-    fetchUserData();
-    fetchInvites();
-    fetchSelfServeInvites();
-  }, [fetchUserData]);
-
-  const fetchInvites = async () => {
-    try {
-      const response = await fetch("/api/organization/invites");
-      if (response.ok) {
-        const data = await response.json();
-        setInvites(data.invites || []);
-      }
-    } catch (error) {
-      console.error("Error fetching invites:", error);
+    if (userData) {
+      const u = userData as unknown as UserWithOrganization;
+      setUser(u);
+      
+      // Organization form becomes interactive immediately
+      const orgNameValue = u.organization?.name || "";
+      const slackWebhookValue = u.organization?.slackWebhookUrl || "";
+      setOrgName(orgNameValue);
+      setOriginalOrgName(orgNameValue);
+      setSlackWebhookUrl(slackWebhookValue);
+      setOriginalSlackWebhookUrl(slackWebhookValue);
     }
-  };
+  }, [userData]);
 
-  const fetchSelfServeInvites = async () => {
-    try {
-      const response = await fetch("/api/organization/self-serve-invites");
-      if (response.ok) {
-        const data = await response.json();
-        setSelfServeInvites(data.selfServeInvites || []);
-      }
-    } catch (error) {
-      console.error("Error fetching self-serve invites:", error);
+  // Handle authentication redirect separately
+  useEffect(() => {
+    if (!isLoading && !userData) {
+      router.push("/auth/signin");
     }
-  };
+  }, [isLoading, userData, router]);
+
+  // Priority 2: Load invites data (secondary priority, doesn't block form interaction)
+  useEffect(() => {
+    if (invitesData?.invites) setInvites(invitesData.invites);
+  }, [invitesData]);
+
+  // Priority 3: Load self-serve invites data (lowest priority)
+  useEffect(() => {
+    if (selfServeData?.selfServeInvites)
+      setSelfServeInvites(
+        (selfServeData.selfServeInvites as any[]).map((s) => ({
+          ...s,
+          isActive: s.isActive ?? true,
+        }))
+      );
+  }, [selfServeData]);
 
   const handleSaveOrganization = async () => {
     setSaving(true);
@@ -219,7 +210,10 @@ export default function OrganizationSettingsPage() {
 
       if (response.ok) {
         setInviteEmail("");
-        fetchInvites();
+        // Invalidate invites cache to refetch
+        await import("@tanstack/react-query").then(({ QueryClient }) =>
+          new QueryClient().invalidateQueries({ queryKey: ["organization", "invites"] })
+        );
       } else {
         const errorData = await response.json();
         setErrorDialog({
@@ -255,7 +249,8 @@ export default function OrganizationSettingsPage() {
       });
 
       if (response.ok) {
-        fetchUserData();
+        // Invalidate user cache to refresh admin status
+        qc.invalidateQueries({ queryKey: ["user"] });
       } else {
         const errorData = await response.json();
         setErrorDialog({
@@ -281,7 +276,9 @@ export default function OrganizationSettingsPage() {
       });
 
       if (response.ok) {
-        fetchInvites();
+        await import("@tanstack/react-query").then(({ QueryClient }) =>
+          new QueryClient().invalidateQueries({ queryKey: ["organization", "invites"] })
+        );
       }
     } catch (error) {
       console.error("Error canceling invite:", error);
@@ -304,7 +301,8 @@ export default function OrganizationSettingsPage() {
       });
 
       if (response.ok) {
-        fetchUserData(); // Refresh the data to show updated admin status
+        // Invalidate user cache to refresh admin status
+        qc.invalidateQueries({ queryKey: ["user"] });
       } else {
         const errorData = await response.json();
         setErrorDialog({
@@ -359,7 +357,9 @@ export default function OrganizationSettingsPage() {
 
       if (response.ok) {
         setNewSelfServeInvite({ name: "", expiresAt: "", usageLimit: "" });
-        fetchSelfServeInvites();
+        await import("@tanstack/react-query").then(({ QueryClient }) =>
+          new QueryClient().invalidateQueries({ queryKey: ["organization", "self-serve-invites"] })
+        );
       } else {
         const errorData = await response.json();
         setErrorDialog({
@@ -398,7 +398,9 @@ export default function OrganizationSettingsPage() {
       );
 
       if (response.ok) {
-        fetchSelfServeInvites();
+        await import("@tanstack/react-query").then(({ QueryClient }) =>
+          new QueryClient().invalidateQueries({ queryKey: ["organization", "self-serve-invites"] })
+        );
       } else {
         const errorData = await response.json();
         setErrorDialog({
@@ -445,13 +447,7 @@ export default function OrganizationSettingsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8 bg-white dark:bg-black min-h-[60vh]">
-        <Loader size="lg" />
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-6 min-h-screen px-2 sm:px-0">
@@ -479,16 +475,16 @@ export default function OrganizationSettingsPage() {
               type="text"
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              placeholder="Enter organization name"
+              placeholder={isPending ? "Loading organization..." : "Enter organization name"}
               className="mt-1 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-              disabled={!user?.isAdmin}
+              disabled={isPending || !user?.isAdmin}
             />
           </div>
 
           <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
             <Button
               onClick={handleSaveOrganization}
-              disabled={saving || orgName === originalOrgName || !user?.isAdmin}
+              disabled={isPending || saving || orgName === originalOrgName || !user?.isAdmin}
               className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white dark:text-zinc-100"
               title={
                 !user?.isAdmin
@@ -526,9 +522,9 @@ export default function OrganizationSettingsPage() {
               type="url"
               value={slackWebhookUrl}
               onChange={(e) => setSlackWebhookUrl(e.target.value)}
-              placeholder="https://hooks.slack.com/services/..."
+              placeholder={isPending ? "Loading Slack settings..." : "https://hooks.slack.com/services/..."}
               className="mt-1 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-              disabled={!user?.isAdmin}
+              disabled={isPending || !user?.isAdmin}
             />
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
               Create a webhook URL in your Slack workspace to receive
@@ -549,6 +545,7 @@ export default function OrganizationSettingsPage() {
             <Button
               onClick={handleSaveOrganization}
               disabled={
+                isPending ||
                 saving ||
                 slackWebhookUrl === originalSlackWebhookUrl ||
                 !user?.isAdmin

@@ -12,7 +12,23 @@ export async function GET(
 
     const board = await db.board.findUnique({
       where: { id: boardId },
-      include: { organization: { include: { members: true } } }
+      select: { 
+        id: true,
+        name: true,
+        description: true,
+        isPublic: true,
+        sendSlackUpdates: true,
+        organizationId: true,
+        createdBy: true,
+        createdAt: true,
+        updatedAt: true,
+        organization: { 
+          select: { 
+            id: true, 
+            name: true 
+          } 
+        } 
+      }
     })
 
     if (!board) {
@@ -21,7 +37,7 @@ export async function GET(
 
     if (board.isPublic) {
       const { organization, ...boardData } = board
-      return NextResponse.json({ 
+      const res = NextResponse.json({ 
         board: {
           ...boardData,
           organization: {
@@ -30,6 +46,8 @@ export async function GET(
           }
         }
       })
+      res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=120')
+      return res
     }
 
     if (!session?.user?.id) {
@@ -37,7 +55,11 @@ export async function GET(
     }
 
     // Check if user is member of the organization
-    const isMember = board.organization.members.some(member => member.id === session?.user?.id)
+    const userOrg = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    });
+    const isMember = userOrg?.organizationId === board.organizationId
     
     if (!isMember) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
@@ -46,7 +68,7 @@ export async function GET(
     // Return board data without sensitive organization member details
     const { organization, ...boardData } = board
     
-    return NextResponse.json({ 
+    const res = NextResponse.json({ 
       board: {
         ...boardData,
         organization: {
@@ -55,11 +77,14 @@ export async function GET(
         }
       }
     })
+    res.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60')
+    return res
   } catch (error) {
     console.error("Error fetching board:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export const runtime = "nodejs"
 
 export async function PUT(
   request: NextRequest,
@@ -140,6 +165,7 @@ export async function PUT(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export const preferredRegion = "auto"
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -199,3 +225,4 @@ export async function DELETE(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }         
+export const dynamic = "force-dynamic"

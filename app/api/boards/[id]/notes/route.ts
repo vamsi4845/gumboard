@@ -13,23 +13,16 @@ export async function GET(
     const session = await auth()
     const boardId = (await params).id
 
+    const cursor = request.nextUrl.searchParams.get("cursor")
+    const takeParam = request.nextUrl.searchParams.get("take")
+    const take = Math.min(Math.max(Number(takeParam) || 50, 1), 200)
+
     const board = await db.board.findUnique({
       where: { id: boardId },
-      include: { 
-        notes: {
-          where: {
-            deletedAt: null // Only include non-deleted notes
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }
+      select: {
+        id: true,
+        isPublic: true,
+        organizationId: true,
       }
     })
 
@@ -37,17 +30,58 @@ export async function GET(
       return NextResponse.json({ error: "Board not found" }, { status: 404 })
     }
 
+    // Public boards: allow read without session
     if (board.isPublic) {
-      return NextResponse.json({ notes: board.notes })
+      if (cursor) {
+        const notes = await db.note.findMany({
+          where: { boardId, deletedAt: null },
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+          select: {
+            id: true,
+            content: true,
+            color: true,
+            done: true,
+            checklistItems: true,
+            createdAt: true,
+            updatedAt: true,
+            user: { select: { id: true, name: true, email: true } },
+          },
+        })
+        const nextCursor = notes.length === take ? notes[notes.length - 1].id : null
+        const res = NextResponse.json({ notes, nextCursor })
+        res.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60")
+        return res
+      }
+      // Non-paginated legacy response
+      const notes = await db.note.findMany({
+        where: { boardId, deletedAt: null },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: {
+          id: true,
+          content: true,
+          color: true,
+          done: true,
+          checklistItems: true,
+          createdAt: true,
+          updatedAt: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
+      })
+      const res = NextResponse.json({ notes })
+      res.headers.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60")
+      return res
     }
 
+    // Private: require session and org match
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const user = await db.user.findUnique({
       where: { id: session.user.id },
-      include: { organization: true }
+      select: { id: true, organizationId: true }
     })
 
     if (!user?.organizationId) {
@@ -58,12 +92,53 @@ export async function GET(
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    return NextResponse.json({ notes: board.notes })
+    if (cursor) {
+      const notes = await db.note.findMany({
+        where: { boardId, deletedAt: null },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        select: {
+          id: true,
+          content: true,
+          color: true,
+          done: true,
+          checklistItems: true,
+          createdAt: true,
+          updatedAt: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
+      })
+      const nextCursor = notes.length === take ? notes[notes.length - 1].id : null
+      const res = NextResponse.json({ notes, nextCursor })
+      res.headers.set("Cache-Control", "private, max-age=20, stale-while-revalidate=40")
+      return res
+    }
+
+    // Non-paginated legacy response
+    const notes = await db.note.findMany({
+      where: { boardId, deletedAt: null },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        content: true,
+        color: true,
+        done: true,
+        checklistItems: true,
+        createdAt: true,
+        updatedAt: true,
+        user: { select: { id: true, name: true, email: true } },
+      },
+    })
+    const res = NextResponse.json({ notes })
+    res.headers.set("Cache-Control", "private, max-age=20, stale-while-revalidate=40")
+    return res
   } catch (error) {
     console.error("Error fetching notes:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export const runtime = "nodejs"
 
 // Create a new note
 export async function POST(

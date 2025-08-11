@@ -44,12 +44,15 @@ export async function GET() {
       orderBy: { createdAt: "desc" }
     })
 
-    return NextResponse.json({ boards })
+    const res = NextResponse.json({ boards })
+    res.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60')
+    return res
   } catch (error) {
     console.error("Error fetching boards:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,3 +100,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }    
+export const dynamic = "force-dynamic"

@@ -44,7 +44,12 @@ export async function GET() {
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({ selfServeInvites })
+    const response = NextResponse.json({ selfServeInvites })
+    
+    // Cache self-serve invites for faster reloads - private cache for 2 minutes
+    response.headers.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=240')
+    
+    return response
   } catch (error) {
     console.error("Error fetching self-serve invites:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
@@ -135,4 +140,6 @@ export async function POST(request: NextRequest) {
     console.error("Error creating self-serve invite:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
-} 
+}
+
+export const runtime = "nodejs" 

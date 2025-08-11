@@ -1,45 +1,56 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@/hooks/useUser";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail } from "lucide-react";
-import { Loader } from "@/components/ui/loader";
 import type { User } from "@/components/note";
 
 export default function ProfileSettingsPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: userData, isLoading, isPending } = useUser();
+  const qc = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [profileName, setProfileName] = useState("");
   const router = useRouter();
 
-  const fetchUserData = useCallback(async () => {
-    try {
-      const response = await fetch("/api/user");
-      if (response.status === 401) {
-        router.push("/auth/signin");
-        return;
-      }
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        setProfileName(userData.name || "");
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
+  // Update profile name immediately when user data becomes available
   useEffect(() => {
-    fetchUserData();
-  }, [fetchUserData]);
+    if (userData?.name !== undefined) {
+      setProfileName(userData.name || "");
+    }
+  }, [userData?.name]);
+
+  // After profile data is fully loaded, prefetch organization data in background
+  useEffect(() => {
+    if (userData && !isLoading) {
+      // Priority 1: Profile data is loaded and cached
+      // Priority 2: Start prefetching organization data for instant navigation
+      setTimeout(() => {
+        qc.prefetchQuery({ 
+          queryKey: ["organization", "invites"], 
+          queryFn: () => fetch("/api/organization/invites").then(r => r.json()), 
+          staleTime: 60_000 
+        });
+        qc.prefetchQuery({ 
+          queryKey: ["organization", "self-serve-invites"], 
+          queryFn: () => fetch("/api/organization/self-serve-invites").then(r => r.json()), 
+          staleTime: 60_000 
+        });
+      }, 100); // Small delay to prioritize profile UI updates first
+    }
+  }, [userData, isLoading, qc]);
+
+  // Handle authentication redirect
+  useEffect(() => {
+    if (!isLoading && !userData) {
+      router.push("/auth/signin");
+    }
+  }, [isLoading, userData, router]);
 
   const handleSaveProfile = async () => {
     setSaving(true);
@@ -56,8 +67,9 @@ export default function ProfileSettingsPage() {
 
       if (response.ok) {
         const updatedUser = await response.json();
-        setUser(updatedUser);
         setProfileName((updatedUser.name || "").trim());
+        // Invalidate user cache to update everywhere
+        qc.invalidateQueries({ queryKey: ["user"] });
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -65,14 +77,6 @@ export default function ProfileSettingsPage() {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8 bg-white dark:bg-black min-h-screen">
-        <Loader size="lg" />
-      </div>
-    );
-  }
 
   return (
     <Card className="p-6 bg-white dark:bg-black border border-border dark:border-zinc-800">
@@ -94,7 +98,8 @@ export default function ProfileSettingsPage() {
               type="text"
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
-              placeholder="Enter your full name"
+              placeholder={isPending ? "Loading profile..." : "Enter your full name"}
+              disabled={isPending}
               className="mt-1 bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100"
             />
           </div>
@@ -105,8 +110,9 @@ export default function ProfileSettingsPage() {
               <Input
                 id="email"
                 type="email"
-                value={user?.email || ""}
+                value={userData?.email || ""}
                 disabled
+                placeholder={isPending ? "Loading email..." : ""}
                 className="bg-muted dark:bg-zinc-800 text-muted-foreground dark:text-zinc-400 cursor-not-allowed"
               />
               <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground dark:text-zinc-400" />
@@ -119,8 +125,9 @@ export default function ProfileSettingsPage() {
             onClick={handleSaveProfile}
             disabled={
               saving ||
+              isPending ||
               profileName.trim().length === 0 ||
-              profileName.trim() === (user?.name || "").trim()
+              profileName.trim() === (userData?.name || "").trim()
             }
             className="bg-black hover:bg-zinc-900 text-white dark:bg-zinc-900 dark:hover:bg-zinc-800"
           >
