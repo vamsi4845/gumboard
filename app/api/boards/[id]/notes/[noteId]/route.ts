@@ -182,8 +182,7 @@ export async function PUT(
     if (archivedAt !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
       const userName = note.user?.name || note.user?.email || 'Unknown User'
       const boardName = note.board.name
-      const isArchived = archivedAt !== null
-      await updateSlackMessage(user.organization.slackWebhookUrl, note.content, isArchived, boardName, userName)
+      await updateSlackMessage(user.organization.slackWebhookUrl, note.content, archivedAt, boardName, userName)
     }
 
     return NextResponse.json({ note: updatedNote })
