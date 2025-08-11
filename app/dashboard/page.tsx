@@ -29,7 +29,7 @@ import {
   Archive,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { FullPageLoader } from "@/components/ui/loader";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -72,7 +72,7 @@ const formSchema = z.object({
 export default function Dashboard() {
   const [boards, setBoards] = useState<DashboardBoard[]>([]);
   const [user, setUser] = useState<User | null>(null);
-  const { data: bootstrap, isLoading: isBootstrapLoading, isError: isBootstrapError } = useBootstrap();
+  const { data: bootstrap, isLoading: isBootstrapLoading } = useBootstrap();
   const [isAddBoardDialogOpen, setIsAddBoardDialogOpen] = useState(false);
   const [editingBoard, setEditingBoard] = useState<Board | null>(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -108,7 +108,7 @@ export default function Dashboard() {
         queryFn: ({ pageParam }) =>
           jfetch(`/api/boards/${id}/notes${pageParam ? `?cursor=${pageParam}&take=50` : `?take=50`}`),
         initialPageParam: undefined,
-        getNextPageParam: (lastPage: any) => lastPage?.nextCursor,
+        getNextPageParam: (lastPage: { nextCursor?: string | null }) => lastPage?.nextCursor,
         staleTime: 20_000,
       }),
     ]);

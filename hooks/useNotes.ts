@@ -25,8 +25,11 @@ export function useNotes(boardId: string, take: number = 50) {
         { signal }
       ),
     getNextPageParam: (last) => last.nextCursor,
-    staleTime: 20_000,
+    staleTime: 20_000, // Show cached data for 20 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnWindowFocus: false,
+    refetchOnMount: "always", // Always check for fresh data but show cached immediately
+    enabled: !!boardId, // Only fetch when boardId exists
     initialPageParam: undefined as unknown as string | undefined,
   });
 }

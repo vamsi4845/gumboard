@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import Link from "next/link"
 import { BetaBadge } from "@/components/ui/beta-badge";
-import { FullPageLoader } from "@/components/ui/loader";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import type { Note, Board } from "@/components/note";
@@ -363,7 +363,7 @@ export default function PublicBoardPage({
           setNotes(notes);
         }
       } catch (e) {
-        if ((e as any).name !== 'AbortError') console.error("Error fetching board data:", e);
+        if ((e as Error).name !== 'AbortError') console.error("Error fetching board data:", e);
       } finally {
         setLoading(false);
       }
@@ -394,34 +394,7 @@ export default function PublicBoardPage({
     };
   }, []);
 
-  const fetchBoardData = async () => {
-    try {
-      const boardResponse = await fetch(`/api/boards/${boardId}`);
-      if (boardResponse.status === 404) {
-        setBoard(null);
-        setLoading(false);
-        return;
-      }
-      if (boardResponse.status === 401 || boardResponse.status === 403) {
-        router.push("/auth/signin");
-        return;
-      }
-      if (boardResponse.ok) {
-        const { board } = await boardResponse.json();
-        setBoard(board);
-      }
 
-      const notesResponse = await fetch(`/api/boards/${boardId}/notes`);
-      if (notesResponse.ok) {
-        const { notes } = await notesResponse.json();
-        setNotes(notes);
-      }
-    } catch (error) {
-      console.error("Error fetching board data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const uniqueAuthors = useMemo(() => getUniqueAuthors(notes), [notes]);
 
@@ -438,7 +411,7 @@ export default function PublicBoardPage({
 
   const layoutNotes = useMemo(
     () => (isMobile ? calculateMobileLayout() : calculateGridLayout()),
-    [isMobile, filteredNotes, calculateMobileLayout, calculateGridLayout]
+    [isMobile, calculateMobileLayout, calculateGridLayout]
   );
 
   const boardHeight = useMemo(() => {

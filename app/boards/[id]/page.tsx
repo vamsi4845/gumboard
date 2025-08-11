@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,10 +16,15 @@ import {
 import Link from "next/link"
 import { BetaBadge } from "@/components/ui/beta-badge";
 import { signOut } from "next-auth/react";
-import { FullPageLoader } from "@/components/ui/loader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { Note as NoteCard } from "@/components/note";
+import { useNotes } from "@/hooks/useNotes";
+import { useNoteMutations } from "@/hooks/useNoteMutations";
+import { useUser } from "@/hooks/useUser";
+import { useBootstrap } from "@/hooks/useBootstrap";
+import { useQuery } from "@tanstack/react-query";
+import { jfetch } from "@/lib/fetcher";
 
 import {
   AlertDialog,
@@ -32,7 +37,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 // Use shared types from components
-import type { Note, Board, User } from "@/components/note";
+import type { Note, User } from "@/components/note";
 import { useTheme } from "next-themes";
 
 export default function BoardPage({
@@ -40,19 +45,38 @@ export default function BoardPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const [board, setBoard] = useState<Board | null>(null);
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [boardId, setBoardId] = useState<string>("");
   const { resolvedTheme } = useTheme();
-  const [allBoards, setAllBoards] = useState<Board[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  // React Query hooks for data fetching
+  const { data: user } = useUser();
+  const { data: bootstrap } = useBootstrap();
+  const { data: notesData, isLoading: notesLoading } = useNotes(boardId);
+  const { createNote, updateNote } = useNoteMutations(boardId);
+  
+  // Get board data
+  const { data: boardData, isLoading: boardLoading } = useQuery({
+    queryKey: ["board", boardId],
+    queryFn: () => jfetch(`/api/boards/${boardId}`),
+    enabled: !!boardId && boardId !== "all-notes" && boardId !== "archive",
+    staleTime: 30_000,
+  });
+  
+  const board = boardData?.board;
+  const allBoards = bootstrap?.boards || [];
+  const notes = useMemo(() => {
+    if (!notesData?.pages) return [];
+    return notesData.pages.flatMap(page => page.notes);
+  }, [notesData]);
+  
+  const loading = notesLoading || boardLoading;
+  
   // Inline editing state removed; handled within Note component
   const [showBoardDropdown, setShowBoardDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showAddBoard, setShowAddBoard] = useState(false);
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardDescription, setNewBoardDescription] = useState("");
-  const [boardId, setBoardId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
@@ -86,7 +110,7 @@ export default function BoardPage({
   const searchParams = useSearchParams();
 
   // Update URL with current filter state
-  const updateURL = (
+  const updateURL = useCallback((
     newSearchTerm?: string,
     newDateRange?: { startDate: Date | null; endDate: Date | null },
     newAuthor?: string | null
@@ -124,7 +148,7 @@ export default function BoardPage({
     const queryString = params.toString();
     const newURL = queryString ? `?${queryString}` : window.location.pathname;
     router.replace(newURL, { scroll: false });
-  };
+  }, [searchTerm, dateRange, selectedAuthor, router]);
 
   // Initialize filters from URL parameters
   const initializeFiltersFromURL = () => {
@@ -279,7 +303,7 @@ export default function BoardPage({
   };
 
   // Helper function to calculate bin-packed layout for desktop
-  const calculateGridLayout = () => {
+  const calculateGridLayout = useCallback(() => {
     if (typeof window === "undefined") return [];
 
     const config = getResponsiveConfig();
@@ -345,10 +369,10 @@ export default function BoardPage({
         height: noteHeight,
       };
     });
-  };
+  }, [filteredNotes]);
 
   // Helper function to calculate mobile layout (optimized single/double column)
-  const calculateMobileLayout = () => {
+  const calculateMobileLayout = useCallback(() => {
     if (typeof window === "undefined") return [];
 
     const config = getResponsiveConfig();
@@ -403,7 +427,7 @@ export default function BoardPage({
         height: noteHeight,
       };
     });
-  };
+  }, [filteredNotes]);
 
   useEffect(() => {
     const initializeParams = async () => {
@@ -419,64 +443,14 @@ export default function BoardPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Store last visited board
   useEffect(() => {
-    if (!boardId) return;
-    const c = new AbortController();
-    (async () => {
+    if (boardId && boardId !== "all-notes" && boardId !== "archive") {
       try {
-        const commonOpts = { signal: c.signal, cache: "no-store" as const, headers: { "Cache-Control": "no-cache" } };
-        const [userRes, allBoardsRes, boardRes, notesRes] = await Promise.all([
-          fetch("/api/user", commonOpts),
-          fetch("/api/boards", commonOpts),
-          boardId === "all-notes" || boardId === "archive"
-            ? Promise.resolve(new Response(null, { status: 204 }))
-            : fetch(`/api/boards/${boardId}`, commonOpts),
-          boardId === "all-notes"
-            ? fetch(`/api/boards/all-notes/notes`, commonOpts)
-            : boardId === "archive"
-            ? fetch(`/api/boards/archive/notes`, commonOpts)
-            : fetch(`/api/boards/${boardId}/notes?take=100`, commonOpts),
-        ]);
-
-        if (userRes.status === 401) {
-          router.push("/auth/signin");
-          return;
-        }
-        if (userRes.ok) setUser(await userRes.json());
-
-        if (allBoardsRes.ok) {
-          const { boards } = await allBoardsRes.json();
-          setAllBoards(boards);
-        }
-
-        if (boardRes.status === 200) {
-          const { board } = await boardRes.json();
-          setBoard(board);
-          setBoardSettings({
-            sendSlackUpdates: (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true,
-          });
-        } else if (boardId !== "all-notes" && boardId !== "archive") {
-          setBoard(null);
-        }
-
-        if (notesRes.ok) {
-          const data = await notesRes.json();
-          setNotes(data.notes ?? []);
-        }
-
-        if (boardId && boardId !== "all-notes") {
-          try {
-            localStorage.setItem("gumboard-last-visited-board", boardId);
-          } catch {}
-        }
-      } catch (e) {
-        if ((e as any).name !== "AbortError") console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-    return () => c.abort();
-  }, [boardId, router]);
+        localStorage.setItem("gumboard-last-visited-board", boardId);
+      } catch {}
+    }
+  }, [boardId]);
 
   // Close dropdowns when clicking outside and handle escape key
   useEffect(() => {
@@ -558,7 +532,7 @@ export default function BoardPage({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, updateURL]);
 
   // Get unique authors from notes
   const getUniqueAuthors = (notes: Note[]) => {
@@ -693,101 +667,26 @@ export default function BoardPage({
     return `${calculatedHeight}px`;
   }, [layoutNotes]);
 
-  const fetchBoardData = async () => {
-    try {
-      // Get user info first to check authentication
-      const userResponse = await fetch("/api/user");
-      if (userResponse.status === 401) {
-        router.push("/auth/signin");
-        return;
-      }
 
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData);
-      }
-
-      // Fetch all boards for the dropdown
-      const allBoardsResponse = await fetch("/api/boards");
-      if (allBoardsResponse.ok) {
-        const { boards } = await allBoardsResponse.json();
-        setAllBoards(boards);
-      }
-
-      if (boardId === "all-notes") {
-        // For all notes view, create a virtual board object and fetch all notes
-        setBoard({
-          id: "all-notes",
-          name: "All notes",
-          description: "Notes from all boards",
-        });
-
-        // Fetch notes from all boards
-        const notesResponse = await fetch(`/api/boards/all-notes/notes`);
-        if (notesResponse.ok) {
-          const { notes } = await notesResponse.json();
-          setNotes(notes);
-        }
-      } else if (boardId === "archive") {
-        setBoard({
-          id: "archive",
-          name: "Archive",
-          description: "Archived notes from all boards",
-        });
-
-        // Fetch archived notes from all boards
-        const notesResponse = await fetch(`/api/boards/archive/notes`);
-        if (notesResponse.ok) {
-          const { notes } = await notesResponse.json();
-          setNotes(notes);
-        }
-      } else {
-        // Fetch current board info
-        const boardResponse = await fetch(`/api/boards/${boardId}`);
-        if (boardResponse.status === 401) {
-          router.push("/auth/signin");
-          return;
-        }
-        if (boardResponse.ok) {
-          const { board } = await boardResponse.json();
-          setBoard(board);
-          setBoardSettings({
-            sendSlackUpdates:
-              (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ??
-              true,
-          });
-        }
-
-        // Fetch notes for specific board
-        const notesResponse = await fetch(`/api/boards/${boardId}/notes`);
-        if (notesResponse.ok) {
-          const { notes } = await notesResponse.json();
-          setNotes(notes);
-        }
-      }
-
-      if (boardId && boardId !== "all-notes") {
-        try {
-          localStorage.setItem("gumboard-last-visited-board", boardId);
-        } catch (error) {
-          console.warn("Failed to save last visited board:", error);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching board data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Adapter: bridge component Note -> existing update handler
   const handleUpdateNoteFromComponent = async (updatedNote: Note) => {
-      // Find the note to get its board ID for all notes view
-      const currentNote = notes.find((n) => n.id === updatedNote.id);
-      if (!currentNote) return;
+    // Use React Query mutation for optimistic updates
+    const changes: Partial<Pick<Note, 'content' | 'color' | 'done' | 'checklistItems'>> = {};
+    const currentNote = notes.find((n) => n.id === updatedNote.id);
+    if (!currentNote) return;
 
-      // OPTIMISTIC UPDATE: Update UI immediately
-      setNotes(notes.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
+    // Compare and only send changed fields
+    if (updatedNote.content !== currentNote.content) changes.content = updatedNote.content;
+    if (updatedNote.color !== currentNote.color) changes.color = updatedNote.color;
+    if (updatedNote.done !== currentNote.done) changes.done = updatedNote.done;
+    if (JSON.stringify(updatedNote.checklistItems) !== JSON.stringify(currentNote.checklistItems)) {
+      changes.checklistItems = updatedNote.checklistItems;
+    }
+
+    if (Object.keys(changes).length > 0) {
+      updateNote.mutate({ id: updatedNote.id, data: changes });
+    }
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
@@ -801,33 +700,15 @@ export default function BoardPage({
       return;
     }
 
-    try {
-      const actualTargetBoardId =
-        boardId === "all-notes" ? targetBoardId : boardId;
-      const isAllNotesView = boardId === "all-notes";
-
-      const response = await fetch(
-        `/api/boards/${isAllNotesView ? "all-notes" : actualTargetBoardId}/notes`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: "",
-            checklistItems: [],
-            ...(isAllNotesView && { boardId: targetBoardId }),
-          }),
+    // Use React Query mutation for optimistic updates
+    const actualTargetBoardId = boardId === "all-notes" ? targetBoardId : boardId;
+    
+    if (actualTargetBoardId) {
+      createNote.mutate("", {
+        onSuccess: (newNote) => {
+          setAddingChecklistItem(newNote.id);
         }
-      );
-
-      if (response.ok) {
-        const { note } = await response.json();
-        setNotes([...notes, note]);
-        setAddingChecklistItem(note.id);
-      }
-    } catch (error) {
-      console.error("Error creating note:", error);
+      });
     }
   };
 

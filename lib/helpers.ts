@@ -3,7 +3,7 @@
 /**
  * Common where clause for active (non-deleted) notes
  */
-export const activeNoteWhere = (extra: any = {}) => ({
+export const activeNoteWhere = (extra: Record<string, any> = {}) => ({
   deletedAt: null,
   ...extra,
 });
@@ -27,7 +27,7 @@ export async function getBoardNoteCounts(boardIds: string[], db: any) {
   // Convert to map with default 0 for boards with no notes
   const countMap: Record<string, number> = {};
   boardIds.forEach(id => countMap[id] = 0);
-  counts.forEach((c: any) => {
+  counts.forEach((c: { boardId: string; _count: { _all: number } }) => {
     countMap[c.boardId] = c._count._all;
   });
   

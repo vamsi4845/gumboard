@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useOrganizationInvites } from "@/hooks/useOrganizationInvites";
 import { useSelfServeInvites } from "@/hooks/useSelfServeInvites";
@@ -145,7 +145,7 @@ export default function OrganizationSettingsPage() {
   useEffect(() => {
     if (selfServeData?.selfServeInvites)
       setSelfServeInvites(
-        (selfServeData.selfServeInvites as any[]).map((s) => ({
+        (selfServeData.selfServeInvites as Array<any>).map((s) => ({
           ...s,
           isActive: s.isActive ?? true,
         }))

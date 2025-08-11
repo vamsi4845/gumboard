@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail } from "lucide-react";
-import type { User } from "@/components/note";
+
 
 export default function ProfileSettingsPage() {
   const { data: userData, isLoading, isPending } = useUser();

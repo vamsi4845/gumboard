@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -90,8 +90,38 @@ export function Note({
   );
   const [newItemContent, setNewItemContent] = useState("");
   const newItemInputRef = useRef<HTMLInputElement>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const canEdit = !readonly && (currentUser?.id === note.user.id || currentUser?.isAdmin);
+
+  // Debounced auto-save function
+  const debouncedAutoSave = useCallback(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      if (hasUnsavedChanges && editContent !== note.content && onUpdate) {
+        onUpdate({ ...note, content: editContent });
+        setHasUnsavedChanges(false);
+      }
+    }, 2000); // 2 second delay
+  }, [editContent, note, onUpdate, hasUnsavedChanges]);
+
+  // Auto-save when content changes
+  useEffect(() => {
+    if (isEditing && editContent !== note.content) {
+      setHasUnsavedChanges(true);
+      debouncedAutoSave();
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [editContent, isEditing, note.content, debouncedAutoSave]);
 
   useEffect(() => {
     if (addingChecklistItem === note.id && canEdit) {
@@ -348,8 +378,16 @@ export function Note({
 
   const handleStopEdit = () => {
     setIsEditing(false);
+    
+    // Clear any pending auto-save and save immediately if there are unsaved changes
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+    
     if (onUpdate && editContent !== note.content) {
       onUpdate({ ...note, content: editContent });
+      setHasUnsavedChanges(false);
     }
   };
 

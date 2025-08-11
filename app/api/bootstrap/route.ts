@@ -7,13 +7,11 @@ export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({}, { status: 401 });
 
-  const [user, boards] = await Promise.all([
+  const [user] = await Promise.all([
     db.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, name: true, email: true, isAdmin: true, organizationId: true },
-    }),
-    // Get boards first without expensive _count
-    null // We'll fetch this conditionally below
+    })
   ]);
 
   if (!user?.organizationId) {
