@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
       db.note.findFirst({
         where: {
           deletedAt: null,
+          done: false,
           board: { organizationId: user.organizationId }
         },
         orderBy: { updatedAt: 'desc' },
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
       db.note.count({
         where: {
           deletedAt: null,
+          done: false,
           board: { organizationId: user.organizationId }
         }
       })
@@ -49,7 +51,8 @@ export async function GET(request: NextRequest) {
     // Only fetch full notes if ETag doesn't match
     const notes = await db.note.findMany({
       where: {
-        deletedAt: null,
+        deletedAt: null, // Only include non-deleted notes
+        done: false,
         board: {
           organizationId: user.organizationId
         }

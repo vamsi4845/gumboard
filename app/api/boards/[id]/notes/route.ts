@@ -51,12 +51,12 @@ export async function GET(
     // Generate ETag from timestamp and count (minimal DB query)
     const [latestNote, noteCount] = await Promise.all([
       db.note.findFirst({
-        where: { boardId, deletedAt: null },
+        where: { boardId, deletedAt: null, done: false },
         orderBy: { updatedAt: 'desc' },
         select: { updatedAt: true }
       }),
       db.note.count({
-        where: { boardId, deletedAt: null }
+        where: { boardId, deletedAt: null, done: false }
       })
     ])
 
@@ -68,7 +68,7 @@ export async function GET(
 
     // Only fetch full notes if ETag doesn't match
     const notes = await db.note.findMany({
-      where: { boardId, deletedAt: null },
+      where: { boardId, deletedAt: null, done: false },
       include: {
         user: {
           select: {

@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { ChecklistItem as ChecklistItemComponent, ChecklistItem } from "@/components/checklist-item";
 import { cn } from "@/lib/utils";
-import { Trash2, Plus, Archive } from "lucide-react";
+import { Trash2, Plus, Archive, ArchiveRestore } from "lucide-react";
 import { useTheme } from "next-themes";
 
 // Core domain types
@@ -52,11 +53,13 @@ export interface Note {
 
 interface NoteProps {
   note: Note;
+  syncDB?: boolean;
   currentUser?: User;
   addingChecklistItem?: string | null;
   onUpdate?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
   onArchive?: (noteId: string) => void;
+  onUnarchive?: (noteId: string) => void;
   readonly?: boolean;
   showBoardName?: boolean;
   className?: string;
@@ -70,9 +73,11 @@ export function Note({
   onUpdate,
   onDelete,
   onArchive,
+  onUnarchive,
   readonly = false,
   showBoardName = false,
   className,
+  syncDB = true,
   style,
 }: NoteProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -121,28 +126,30 @@ export function Note({
 
       onUpdate?.(optimisticNote);
 
-      fetch(`/api/boards/${note.boardId}/notes/${note.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          checklistItems: sortedItems,
-        }),
-      })
-        .then(async (response) => {
-          if (!response.ok) {
-            console.error("Server error, reverting optimistic update");
-            onUpdate?.(note);
-          } else {
-            const { note: updatedNote } = await response.json();
-            onUpdate?.(updatedNote);
-          }
+      if (syncDB) {
+        fetch(`/api/boards/${note.boardId}/notes/${note.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            checklistItems: sortedItems,
+          }),
         })
-        .catch((error) => {
-          console.error("Error toggling checklist item:", error);
-          onUpdate?.(note);
-        });
+          .then(async (response) => {
+            if (!response.ok) {
+              console.error("Server error, reverting optimistic update");
+              onUpdate?.(note);
+            } else {
+              const { note: updatedNote } = await response.json();
+              onUpdate?.(updatedNote);
+            }
+          })
+          .catch((error) => {
+            console.error("Error toggling checklist item:", error);
+            onUpdate?.(note);
+          });
+      }
     } catch (error) {
       console.error("Error toggling checklist item:", error);
     }
@@ -151,41 +158,41 @@ export function Note({
   const handleDeleteChecklistItem = async (itemId: string) => {
     try {
       if (!note.checklistItems) return;
-
       const updatedItems = note.checklistItems.filter(
         (item) => item.id !== itemId
       );
-
+      
       const optimisticNote = {
         ...note,
         checklistItems: updatedItems,
       };
-
+  
       onUpdate?.(optimisticNote);
 
-      const response = await fetch(
-        `/api/boards/${note.boardId}/notes/${note.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-          }),
-        }
-      );
+      if (syncDB) {
+        const response = await fetch(
+          `/api/boards/${note.boardId}/notes/${note.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              checklistItems: updatedItems,
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const { note: updatedNote } = await response.json();
-        onUpdate?.(updatedNote);
-      } else {
-        console.error("Server error, reverting optimistic update");
-        onUpdate?.(note);
+        if (response.ok) {
+          const { note: updatedNote } = await response.json();
+          onUpdate?.(updatedNote);
+        } else {
+          console.error("Server error, reverting optimistic update");
+          onUpdate?.(note);
+        }
       }
     } catch (error) {
       console.error("Error deleting checklist item:", error);
-      onUpdate?.(note);
     }
   };
 
@@ -197,22 +204,31 @@ export function Note({
         item.id === itemId ? { ...item, content } : item
       );
 
-      const response = await fetch(
-        `/api/boards/${note.boardId}/notes/${note.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: updatedItems,
-          }),
-        }
-      );
+      const optimisticNote = {
+        ...note,
+        checklistItems: updatedItems,
+      };
 
-      if (response.ok) {
-        const { note: updatedNote } = await response.json();
-        onUpdate?.(updatedNote);
+      onUpdate?.(optimisticNote);
+
+      if (syncDB) {
+        const response = await fetch(
+          `/api/boards/${note.boardId}/notes/${note.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              checklistItems: updatedItems,
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const { note: updatedNote } = await response.json();
+          onUpdate?.(updatedNote);
+        }
       }
     } catch (error) {
       console.error("Error editing checklist item:", error);
@@ -250,20 +266,29 @@ export function Note({
         (a, b) => a.order - b.order
       );
 
-      const response = await fetch(
-        `/api/boards/${note.boardId}/notes/${note.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            checklistItems: allItems,
-          }),
-        }
-      );
+      const optimisticNote = {
+        ...note,
+        checklistItems: allItems,
+      };
 
-      if (response.ok) {
-        const { note: updatedNote } = await response.json();
-        onUpdate?.(updatedNote);
+      onUpdate?.(optimisticNote);
+
+      if (syncDB) {
+        const response = await fetch(
+          `/api/boards/${note.boardId}/notes/${note.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              checklistItems: allItems,
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const { note: updatedNote } = await response.json();
+          onUpdate?.(updatedNote);
+        }
       }
     } catch (error) {
       console.error("Error splitting checklist item:", error);
@@ -291,28 +316,29 @@ export function Note({
 
       onUpdate?.(optimisticNote);
 
-      const response = await fetch(
-        `/api/boards/${note.boardId}/notes/${note.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checklistItems: [...(note.checklistItems || []), newItem],
-          }),
-        }
-      );
+      if (syncDB) {
+        const response = await fetch(
+          `/api/boards/${note.boardId}/notes/${note.id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              checklistItems: [...(note.checklistItems || []), newItem],
+            }),
+          }
+        );
 
-      if (response.ok) {
-        const { note: updatedNote } = await response.json();
-        onUpdate?.(updatedNote);
-      } else {
-        onUpdate?.(note);
+        if (response.ok) {
+          const { note: updatedNote } = await response.json();
+          onUpdate?.(updatedNote);
+        } else {
+          onUpdate?.(note);
+        }
       }
     } catch (error) {
       console.error("Error adding checklist item:", error);
-      onUpdate?.(note);
     }
   };
 
@@ -405,9 +431,12 @@ export function Note({
             </span>
             <div className="flex flex-col">
               {showBoardName && note.board && (
-                <span className="text-xs text-blue-600 dark:text-blue-400 opacity-80 font-medium truncate max-w-20">
+                <Link 
+                  href={`/boards/${note.board.id}`}
+                  className="text-xs text-blue-600 dark:text-blue-400 opacity-80 font-medium truncate max-w-20 hover:opacity-100 transition-opacity"
+                >
                   {note.board.name}
-                </span>
+                </Link>
               )}
             </div>
           </div>
@@ -416,6 +445,7 @@ export function Note({
           {canEdit && (
             <div className="flex space-x-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
               <Button
+                aria-label={`Delete Note ${note.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete?.(note.id);
@@ -441,6 +471,22 @@ export function Note({
                 title="Archive note"
               >
                 <Archive className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
+          {canEdit && onUnarchive && (
+            <div className="flex items-center">
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onUnarchive(note.id);
+                }}
+                className="p-1 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded"
+                variant="ghost"
+                size="icon"
+                title="Unarchive note"
+              >
+                <ArchiveRestore className="w-3 h-3" />
               </Button>
             </div>
           )}

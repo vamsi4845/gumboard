@@ -11,7 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
+import { BetaBadge } from "@/components/ui/beta-badge";
 import { Input } from "@/components/ui/input";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
@@ -334,8 +335,9 @@ export default function Dashboard() {
         <div className="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
           <div className="flex items-center space-x-4">
             <div className="flex-shrink-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              <h1 className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
                 Gumboard
+                <BetaBadge />
               </h1>
             </div>
           </div>
@@ -418,7 +420,7 @@ export default function Dashboard() {
               <DialogTitle className="text-lg font-semibold mb-4 text-foreground dark:text-zinc-100">
                 {editingBoard ? "Edit Board" : "Create New Board"}
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-muted-foreground dark:text-zinc-400">
                 {editingBoard
                   ? "Update the board's name and description."
                   : "Fill out the details to create a new board."}
@@ -433,11 +435,11 @@ export default function Dashboard() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-zinc-800 dark:text-zinc-200 ">Board Name</FormLabel>
+                      <FormLabel>Board Name</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="Enter board name"
-                          className="border border-zinc-200 dark:border-zinc-800"
+                          className="border border-zinc-200 dark:border-zinc-800 text-muted-foreground dark:text-zinc-200"
                           autoFocus
                           {...field}
                         />
@@ -455,7 +457,7 @@ export default function Dashboard() {
                       <FormControl>
                         <Input
                           placeholder="Enter board description"
-                          className="border border-zinc-200 dark:border-zinc-800"
+                          className="border border-zinc-200 dark:border-zinc-800 text-muted-foreground dark:text-zinc-200"
                           {...field}
                         />
                       </FormControl>
