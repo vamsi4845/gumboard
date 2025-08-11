@@ -36,7 +36,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// Use shared types from components
 import type { Note, User } from "@/components/note";
 import { useTheme } from "next-themes";
 
