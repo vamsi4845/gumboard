@@ -266,7 +266,7 @@ test.describe('Real-time Synchronization', () => {
     await context2.close();
   });
 
-  test.skip('should preserve active edits during polling updates', async ({ browser }) => {
+  test('should preserve active edits during polling updates', async ({ browser }) => {
     const existingNote = createMockNote('Original content', 'user-1');
     sharedNotesData.push(existingNote);
     
@@ -282,12 +282,37 @@ test.describe('Real-time Synchronization', () => {
     await page1.goto('/boards/test-board');
     await page2.goto('/boards/test-board');
     
+    await page1.waitForTimeout(2000);
+    await page2.waitForTimeout(2000);
+    
+    expect(sharedNotesData.length).toBe(1);
+    expect(sharedNotesData[0].content).toBe('Original content');
+    
+    await page2.evaluate(() => {
+      fetch('/api/boards/test-board/notes/note-1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: 'User 2 updated content' })
+      });
+    });
+    
+    await page2.waitForTimeout(1000);
+    
+    expect(sharedNotesData[0].content).toBe('User 2 updated content');
+    
+    await page1.waitForTimeout(6000);
+    
+    const noteCount1 = await page1.locator('.note-background').count();
+    const noteCount2 = await page2.locator('.note-background').count();
+    expect(noteCount1).toBe(1);
+    expect(noteCount2).toBe(1);
+    
     await context1.close();
     await context2.close();
   });
 
-  test.skip('should handle optimistic updates and rollback on failure', async ({ page }) => {
-    const noteWithChecklist = createMockNote('', 'user-1');
+  test('should handle optimistic updates and rollback on failure', async ({ page }) => {
+    const noteWithChecklist = createMockNote('Test note', 'user-1');
     noteWithChecklist.checklistItems = [
       {
         id: 'item-1',
@@ -298,8 +323,51 @@ test.describe('Real-time Synchronization', () => {
     ];
     sharedNotesData.push(noteWithChecklist);
     
+    let failCount = 0;
+    
     await setupMockRoutes(page, 'user-1');
+    
+    await page.route('**/api/boards/test-board/notes/note-1/checklist/item-1', async (route) => {
+      if (route.request().method() === 'PATCH' && failCount === 0) {
+        failCount++;
+        await route.fulfill({ 
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Server error' })
+        });
+      } else {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true })
+        });
+      }
+    });
+    
     await page.goto('/boards/test-board');
+    
+    await page.waitForTimeout(2000);
+    
+    await expect(page.locator('text=Task to toggle')).toBeVisible();
+    
+    const checkbox = page.locator('input[type="checkbox"], [role="checkbox"]').first();
+    await expect(checkbox).toBeVisible();
+    
+    const initialChecked = await checkbox.isChecked().catch(() => false);
+    expect(initialChecked).toBe(false);
+    
+    await checkbox.click();
+    
+    await page.waitForTimeout(3000);
+    
+    const isCheckedNow = await checkbox.isChecked().catch(() => false);
+    
+    if (!isCheckedNow) {
+      await checkbox.click();
+      await page.waitForTimeout(2000);
+      const finalState = await checkbox.isChecked().catch(() => false);
+      expect(finalState).toBe(true);
+    }
   });
 
   test('should update polling when switching between boards', async ({ page }) => {

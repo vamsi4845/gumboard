@@ -281,29 +281,52 @@ test.describe('Polling Functionality', () => {
     expect(avgSlowInterval).toBeGreaterThan(avgNormalInterval * 1.5);
   });
 
-  test.skip('should only trigger updates when data changes', async ({ page }) => {
+  test('should only trigger updates when data changes', async ({ page }) => {
     let responseCount = 0;
+    let updateCount = 0;
     
     await page.route('**/api/boards/test-board/notes', async (route) => {
       responseCount++;
+      
+      const newEtag = responseCount <= 2 ? 'etag-1' : 'etag-2';
+      const newNotes = responseCount <= 2 ? notesData : [...notesData, {
+        id: 'note-2',
+        content: 'Updated note',
+        color: '#fef3c7',
+        done: false,
+        checklistItems: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        user: {
+          id: 'test-user',
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+      }];
       
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         headers: {
-          'ETag': 'same-etag',
+          'ETag': newEtag,
         },
-        body: JSON.stringify({ notes: notesData }),
+        body: JSON.stringify({ notes: newNotes }),
       });
     });
 
     await page.goto('/boards/test-board');
     
-    await page.waitForSelector('.note-background');
+    await page.waitForTimeout(1000);
     
-    await page.waitForTimeout(10000);
+    const initialNoteCount = await page.locator('.note-background').count();
+    expect(initialNoteCount).toBe(1);
     
-    expect(responseCount).toBeGreaterThan(1);
+    await page.waitForTimeout(8000);
+    
+    const updatedNoteCount = await page.locator('.note-background').count();
+    expect(updatedNoteCount).toBe(2);
+    
+    expect(responseCount).toBeGreaterThan(2);
   });
 
   test('should clean up polling on unmount', async ({ page }) => {
