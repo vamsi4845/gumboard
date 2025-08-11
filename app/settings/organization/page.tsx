@@ -463,7 +463,7 @@ export default function OrganizationSettingsPage() {
   return (
     <div className="space-y-6 min-h-screen px-2 sm:px-0">
       {/* Organization Info */}
-      <Card className="p-6 bg-white dark:bg-black border border-border dark:border-zinc-800">
+      <Card className="p-6 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800">
         <div className="space-y-6">
           <div>
             <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -510,7 +510,7 @@ export default function OrganizationSettingsPage() {
       </Card>
 
       {/* Slack Integration */}
-      <Card className="p-6 bg-white dark:bg-black border border-border dark:border-zinc-800">
+      <Card className="p-6 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -598,7 +598,7 @@ export default function OrganizationSettingsPage() {
       </Card>
 
       {/* Team Members */}
-      <Card className="p-6 bg-white dark:bg-black border border-border dark:border-zinc-800">
+      <Card className="p-6 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -687,7 +687,7 @@ export default function OrganizationSettingsPage() {
       </Card>
 
       {/* Invite Members */}
-      <Card className="p-6 bg-white dark:bg-black border border-border dark:border-zinc-800">
+      <Card className="p-6 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -761,7 +761,7 @@ export default function OrganizationSettingsPage() {
       </Card>
 
       {/* Self-Serve Invite Links */}
-      <Card className="p-6 bg-white dark:bg-black border border-border dark:border-zinc-800">
+      <Card className="p-6 bg-white dark:bg-black border border-gray-200 dark:border-zinc-800">
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -945,7 +945,7 @@ export default function OrganizationSettingsPage() {
       </Card>
 
       <AlertDialog open={removeMemberDialog.open} onOpenChange={(open) => setRemoveMemberDialog({ open, memberId: "", memberName: "" })}>
-        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-border dark:border-zinc-800">
+        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground dark:text-zinc-100">
               Remove team member
@@ -955,7 +955,7 @@ export default function OrganizationSettingsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-border dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <AlertDialogCancel className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-gray-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -969,7 +969,7 @@ export default function OrganizationSettingsPage() {
       </AlertDialog>
 
       <AlertDialog open={deleteInviteDialog.open} onOpenChange={(open) => setDeleteInviteDialog({ open, inviteToken: "", inviteName: "" })}>
-        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-border dark:border-zinc-800">
+        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground dark:text-zinc-100">
               Delete invite link
@@ -979,7 +979,7 @@ export default function OrganizationSettingsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-border dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
+            <AlertDialogCancel className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-gray-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -993,7 +993,7 @@ export default function OrganizationSettingsPage() {
       </AlertDialog>
 
       <AlertDialog open={errorDialog.open} onOpenChange={(open) => setErrorDialog({ open, title: "", description: "", variant: "error" })}>
-        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-border dark:border-zinc-800">
+        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground dark:text-zinc-100">
               {errorDialog.title}
