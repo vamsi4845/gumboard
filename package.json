@@ -20,6 +20,7 @@
     "db:reset": "prisma migrate reset",
     "db:seed-large": "node scripts/seed-large.js",
     "bench:indexes": "node scripts/bench-indexes.js",
+    "bench:index-toggle": "node scripts/bench-index-toggle.js",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },
