@@ -243,25 +243,53 @@ export function Note({
       const firstHalf = content.substring(0, cursorPosition).trim();
       const secondHalf = content.substring(cursorPosition).trim();
 
+      // If there's no second half, just update the first half
+      if (!secondHalf) {
+        const updatedItems = note.checklistItems.map((item) =>
+          item.id === itemId ? { ...item, content: firstHalf } : item
+        );
+        
+        const optimisticNote = {
+          ...note,
+          checklistItems: updatedItems,
+        };
+        
+        onUpdate?.(optimisticNote);
+        return;
+      }
+
+      // Find the index of the current item being split
+      const currentItemIndex = note.checklistItems.findIndex(
+        (item) => item.id === itemId
+      );
+      
+      if (currentItemIndex === -1) return;
+
+      // Update the current item with the first half of the content
       const updatedItems = note.checklistItems.map((item) =>
         item.id === itemId ? { ...item, content: firstHalf } : item
       );
 
-      const currentItem = note.checklistItems.find(
-        (item) => item.id === itemId
-      );
-      const currentOrder = currentItem?.order || 0;
-
+      // Create the new item that will be inserted after the current item
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content: secondHalf,
         checked: false,
-        order: currentOrder + 0.5,
+        order: 0, // Will be recalculated below
       };
 
-      const allItems = [...updatedItems, newItem].sort(
-        (a, b) => a.order - b.order
-      );
+      // Insert the new item right after the current item
+      const allItemsUnsorted = [
+        ...updatedItems.slice(0, currentItemIndex + 1),
+        newItem,
+        ...updatedItems.slice(currentItemIndex + 1)
+      ];
+
+      // Recalculate all orders to maintain integers (0, 1, 2, 3...)
+      const allItems = allItemsUnsorted.map((item, index) => ({
+        ...item,
+        order: index
+      }));
 
       const optimisticNote = {
         ...note,
@@ -298,7 +326,7 @@ export function Note({
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content,
         checked: false,
-        order: (note.checklistItems?.length || 0) + 1,
+        order: note.checklistItems?.length || 0, // Use 0-indexed order
       };
 
       const allItemsChecked = [...(note.checklistItems || []), newItem].every(
