@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,7 +53,6 @@ export interface Note {
 interface NoteProps {
   note: Note;
   currentUser?: User;
-  boardId: string;
   addingChecklistItem?: string | null;
   onUpdate?: (note: Note) => void;
   onDelete?: (noteId: string) => void;
@@ -68,7 +67,6 @@ interface NoteProps {
 export function Note({
   note,
   currentUser,
-  boardId,
   addingChecklistItem,
   onUpdate,
   onDelete,
@@ -91,6 +89,7 @@ export function Note({
     (!note.checklistItems || note.checklistItems.length === 0)
   );
   const [newItemContent, setNewItemContent] = useState("");
+  const newItemInputRef = useRef<HTMLInputElement>(null);
 
   const canEdit = !readonly && (currentUser?.id === note.user.id || currentUser?.isAdmin);
 
@@ -103,8 +102,6 @@ export function Note({
   const handleToggleChecklistItem = async (itemId: string) => {
     try {
       if (!note.checklistItems) return;
-
-      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
 
       const updatedItems = note.checklistItems.map((item) =>
         item.id === itemId ? { ...item, checked: !item.checked } : item
@@ -126,7 +123,7 @@ export function Note({
 
       onUpdate?.(optimisticNote);
 
-      fetch(`/api/boards/${targetBoardId}/notes/${note.id}`, {
+      fetch(`/api/boards/${note.boardId}/notes/${note.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -157,8 +154,6 @@ export function Note({
     try {
       if (!note.checklistItems) return;
 
-      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
-
       const updatedItems = note.checklistItems.filter(
         (item) => item.id !== itemId
       );
@@ -171,7 +166,7 @@ export function Note({
       onUpdate?.(optimisticNote);
 
       const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        `/api/boards/${note.boardId}/notes/${note.id}`,
         {
           method: "PUT",
           headers: {
@@ -200,14 +195,12 @@ export function Note({
     try {
       if (!note.checklistItems) return;
 
-      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
-
       const updatedItems = note.checklistItems.map((item) =>
         item.id === itemId ? { ...item, content } : item
       );
 
       const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        `/api/boards/${note.boardId}/notes/${note.id}`,
         {
           method: "PUT",
           headers: {
@@ -236,8 +229,6 @@ export function Note({
     try {
       if (!note.checklistItems) return;
 
-      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
-
       const firstHalf = content.substring(0, cursorPosition).trim();
       const secondHalf = content.substring(cursorPosition).trim();
 
@@ -262,7 +253,7 @@ export function Note({
       );
 
       const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        `/api/boards/${note.boardId}/notes/${note.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -283,8 +274,6 @@ export function Note({
 
   const handleAddChecklistItem = async (content: string) => {
     try {
-      const targetBoardId = boardId === "all-notes" && note.board?.id ? note.board.id : boardId;
-
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content,
@@ -305,7 +294,7 @@ export function Note({
       onUpdate?.(optimisticNote);
 
       const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${note.id}`,
+        `/api/boards/${note.boardId}/notes/${note.id}`,
         {
           method: "PUT",
           headers: {
@@ -477,7 +466,7 @@ export function Note({
       </div>
 
       {isEditing ? (
-        <div className="flex-1 min-h-0">
+        <div className="min-h-0">
           <textarea
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
@@ -497,8 +486,8 @@ export function Note({
           />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col">
-          <div className="overflow-y-auto space-y-1 flex-1">
+        <div className="flex flex-col">
+          <div className="overflow-y-auto space-y-1">
             {/* Checklist Items */}
             {note.checklistItems?.map((item) => (
               <ChecklistItemComponent
@@ -523,6 +512,7 @@ export function Note({
               <div className="flex items-center gap-3">
                 <Checkbox disabled className="border-slate-500 bg-white/50 dark:bg-zinc-800 dark:border-zinc-600" />
                 <Input
+                  ref={newItemInputRef}
                   type="text"
                   value={newItemContent}
                   onChange={(e) => setNewItemContent(e.target.value)}
@@ -541,7 +531,7 @@ export function Note({
                 className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed cursor-pointer"
                 onClick={handleStartEdit}
               >
-                {note.content || "Click to add content..."}
+                {note.content || ""}
               </div>
             )}
           </div>
@@ -551,7 +541,13 @@ export function Note({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setAddingItem(true)}
+              onClick={() => {
+                if (addingItem && newItemInputRef.current && newItemContent.length === 0) {
+                  newItemInputRef.current.focus();
+                } else {
+                  setAddingItem(true);
+                }
+              }}
               className="mt-2 justify-start text-slate-600 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-zinc-100"
             >
               <Plus className="mr-2 h-4 w-4" />

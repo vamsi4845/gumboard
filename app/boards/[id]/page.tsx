@@ -224,24 +224,25 @@ export default function BoardPage({
     const actualNotePadding = notePadding || config.notePadding;
     const actualNoteWidth = noteWidth || config.noteWidth;
 
-    const headerHeight = 76; // User info header + margins (more accurate)
+    const headerHeight = 60; // User info header + margins
     const paddingHeight = actualNotePadding * 2; // Top and bottom padding
-    const minContentHeight = 84; // Minimum content area (3 lines)
+    const minContentHeight = 60; // Minimum content area
 
     if (note.checklistItems) {
       // For checklist items, calculate height based on number of items
-      const itemHeight = 32; // Each checklist item is about 32px tall (text + padding)
-      const itemSpacing = 8; // Space between items
+      const itemHeight = 28; // Each checklist item is about 28px tall (more accurate)
+      const itemSpacing = 4; // Space between items (space-y-1 = 4px)
       const checklistItemsCount = note.checklistItems.length;
       const addingItemHeight = addingChecklistItem === note.id ? 32 : 0; // Add height for input field
+      const addTaskButtonHeight = 36; // Height for the "Add task" button including margin
 
       const checklistHeight =
         checklistItemsCount * itemHeight +
-        (checklistItemsCount - 1) * itemSpacing +
+        (checklistItemsCount > 0 ? (checklistItemsCount - 1) * itemSpacing : 0) +
         addingItemHeight;
       const totalChecklistHeight = Math.max(minContentHeight, checklistHeight);
 
-      return headerHeight + paddingHeight + totalChecklistHeight + 40; // Extra space for + button
+      return headerHeight + paddingHeight + totalChecklistHeight + addTaskButtonHeight;
     } else {
       // Original logic for regular notes
       const lines = note.content.split("\n");
@@ -727,62 +728,12 @@ export default function BoardPage({
 
   // Adapter: bridge component Note -> existing update handler
   const handleUpdateNoteFromComponent = async (updatedNote: Note) => {
-    try {
       // Find the note to get its board ID for all notes view
       const currentNote = notes.find((n) => n.id === updatedNote.id);
       if (!currentNote) return;
 
-      const targetBoardId = currentNote?.board?.id ?? currentNote.boardId;
-
       // OPTIMISTIC UPDATE: Update UI immediately
       setNotes(notes.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
-
-      // Send to server in background
-      const response = await fetch(
-        `/api/boards/${targetBoardId}/notes/${updatedNote.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            content: updatedNote.content,
-            checklistItems: updatedNote.checklistItems,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        // Server succeeded, confirm with actual server response
-        const { note } = await response.json();
-        setNotes(notes.map((n) => (n.id === updatedNote.id ? note : n)));
-      } else {
-        // Server failed, revert to original note
-        console.error("Server error, reverting optimistic update");
-        setNotes(notes.map((n) => (n.id === updatedNote.id ? currentNote : n)));
-
-        const errorData = await response.json();
-        setErrorDialog({
-          open: true,
-          title: "Failed to update note",
-          description: errorData.error || "Failed to update note",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating note:", error);
-
-      // Revert optimistic update on network error
-      const currentNote = notes.find((n) => n.id === updatedNote.id);
-      if (currentNote) {
-        setNotes(notes.map((n) => (n.id === updatedNote.id ? currentNote : n)));
-      }
-
-      setErrorDialog({
-        open: true,
-        title: "Connection Error",
-        description: "Failed to save note. Please try again.",
-      });
-    }
   };
 
   const handleAddNote = async (targetBoardId?: string) => {
@@ -1267,7 +1218,6 @@ export default function BoardPage({
               key={note.id}
               note={note as Note}
               currentUser={user as User}
-              boardId={boardId || "all-notes"}
               addingChecklistItem={addingChecklistItem}
               onUpdate={handleUpdateNoteFromComponent}
               onDelete={handleDeleteNote}
