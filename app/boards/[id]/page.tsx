@@ -853,7 +853,7 @@ export default function BoardPage({
       const currentNote = notes.find((n) => n.id === noteId);
       if (!currentNote) return;
       
-      const targetBoardId = currentNote.board?.id;
+      const targetBoardId = currentNote.board?.id ?? currentNote.boardId;
       if (!targetBoardId) return;
 
       setNotes(notes.filter((n) => n.id !== noteId));
