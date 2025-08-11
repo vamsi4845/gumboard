@@ -207,7 +207,7 @@ test.describe("Board Settings", () => {
               id: "new-note-id",
               content: postData.content,
               color: "#fef3c7",
-              done: false,
+              archivedAt: false,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
               user: {
