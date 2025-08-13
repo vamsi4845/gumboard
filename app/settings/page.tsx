@@ -164,9 +164,7 @@ export default function ProfileSettingsPage() {
         </div>
 
         <div className="pt-6 border-t border-gray-200 dark:border-zinc-800">
-          <h3 className="text-lg font-medium text-foreground dark:text-zinc-100 mb-4">
-            Password
-          </h3>
+          <h3 className="text-lg font-medium text-foreground dark:text-zinc-100 mb-4">Password</h3>
           <div className="space-y-4">
             <div>
               <Label htmlFor="newPassword" className="text-foreground dark:text-zinc-200">

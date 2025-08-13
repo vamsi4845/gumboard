@@ -22,12 +22,12 @@ export async function PUT(request: NextRequest) {
       }
 
       const hashedNewPassword = await hash(newPassword, 12);
-      
+
       const updatedUser = await db.user.update({
         where: { id: session.user.id },
-        data: { 
+        data: {
           ...(name && { name: name.trim() }),
-          password: hashedNewPassword 
+          password: hashedNewPassword,
         },
         include: {
           organization: {
