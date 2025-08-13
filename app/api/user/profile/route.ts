@@ -35,19 +35,16 @@ export async function PUT(request: NextRequest) {
 
       const isCurrentPasswordValid = await compare(currentPassword, user.password);
       if (!isCurrentPasswordValid) {
-        return NextResponse.json(
-          { error: "Current password is incorrect" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
       }
 
       const hashedNewPassword = await hash(newPassword, 12);
-      
+
       const updatedUser = await db.user.update({
         where: { id: session.user.id },
-        data: { 
+        data: {
           ...(name && { name: name.trim() }),
-          password: hashedNewPassword 
+          password: hashedNewPassword,
         },
         include: {
           organization: {

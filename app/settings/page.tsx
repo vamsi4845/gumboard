@@ -174,9 +174,7 @@ export default function ProfileSettingsPage() {
         </div>
 
         <div className="pt-6 border-t border-gray-200 dark:border-zinc-800">
-          <h3 className="text-lg font-medium text-foreground dark:text-zinc-100 mb-4">
-            Password
-          </h3>
+          <h3 className="text-lg font-medium text-foreground dark:text-zinc-100 mb-4">Password</h3>
           <div className="space-y-4">
             <div>
               <Label htmlFor="currentPassword" className="text-foreground dark:text-zinc-200">
@@ -191,7 +189,7 @@ export default function ProfileSettingsPage() {
                 className="mt-1 bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="newPassword" className="text-foreground dark:text-zinc-200">
                 New Password
@@ -205,7 +203,7 @@ export default function ProfileSettingsPage() {
                 className="mt-1 bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="confirmPassword" className="text-foreground dark:text-zinc-200">
                 Confirm New Password
