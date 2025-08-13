@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
+import { hash, compare } from "bcrypt-ts";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -10,7 +11,72 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name } = await request.json();
+    const { name, currentPassword, newPassword } = await request.json();
+
+    if (currentPassword && newPassword) {
+      if (newPassword.length < 8) {
+        return NextResponse.json(
+          { error: "New password must be at least 8 characters long" },
+          { status: 400 }
+        );
+      }
+
+      const user = await db.user.findUnique({
+        where: { id: session.user.id },
+        select: { password: true },
+      });
+
+      if (!user?.password) {
+        return NextResponse.json(
+          { error: "No current password set. Please use password reset." },
+          { status: 400 }
+        );
+      }
+
+      const isCurrentPasswordValid = await compare(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        return NextResponse.json(
+          { error: "Current password is incorrect" },
+          { status: 400 }
+        );
+      }
+
+      const hashedNewPassword = await hash(newPassword, 12);
+      
+      const updatedUser = await db.user.update({
+        where: { id: session.user.id },
+        data: { 
+          ...(name && { name: name.trim() }),
+          password: hashedNewPassword 
+        },
+        include: {
+          organization: {
+            include: {
+              members: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        id: updatedUser.id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        organization: updatedUser.organization
+          ? {
+              id: updatedUser.organization.id,
+              name: updatedUser.organization.name,
+              members: updatedUser.organization.members,
+            }
+          : null,
+      });
+    }
 
     if (!name || typeof name !== "string") {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
