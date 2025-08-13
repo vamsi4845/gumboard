@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
     });
 
     const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await db.verificationToken.create({
