@@ -3,7 +3,6 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Resend } from "resend";
 import { hash } from "bcrypt-ts";
-import crypto from "crypto";
 
 const resend = new Resend(env.AUTH_RESEND_KEY);
 
@@ -41,7 +40,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const token = crypto.randomBytes(32).toString("hex");
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await db.verificationToken.create({
