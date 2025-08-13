@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Resend } from "resend";
-import bcrypt from "bcryptjs";
+import { hash } from "bcrypt-ts";
 import crypto from "crypto";
 
 const resend = new Resend(env.AUTH_RESEND_KEY);
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User with this email already exists" }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await hash(password, 12);
 
     await db.user.create({
       data: {
