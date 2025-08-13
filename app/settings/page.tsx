@@ -16,9 +16,7 @@ export default function ProfileSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileName, setProfileName] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const router = useRouter();
 
   const fetchUserData = useCallback(async () => {
@@ -76,18 +74,13 @@ export default function ProfileSettingsPage() {
   };
 
   const handleUpdatePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      toast.error("All password fields are required");
+    if (!newPassword) {
+      toast.error("Password is required");
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error("New password must be at least 8 characters long");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      toast.error("New password and confirmation do not match");
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
@@ -99,16 +92,13 @@ export default function ProfileSettingsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          currentPassword,
           newPassword,
         }),
       });
 
       if (response.ok) {
         toast.success("Password updated successfully");
-        setCurrentPassword("");
         setNewPassword("");
-        setConfirmPassword("");
       } else {
         const error = await response.json();
         toast.error(error.error || "Failed to update password");
@@ -179,20 +169,6 @@ export default function ProfileSettingsPage() {
           </h3>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="currentPassword" className="text-foreground dark:text-zinc-200">
-                Current Password
-              </Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter your current password"
-                className="mt-1 bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100"
-              />
-            </div>
-            
-            <div>
               <Label htmlFor="newPassword" className="text-foreground dark:text-zinc-200">
                 New Password
               </Label>
@@ -205,51 +181,30 @@ export default function ProfileSettingsPage() {
                 className="mt-1 bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100"
               />
             </div>
-            
             <div>
-              <Label htmlFor="confirmPassword" className="text-foreground dark:text-zinc-200">
-                Confirm New Password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm your new password"
-                className="mt-1 bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100"
-              />
+              <Button
+                onClick={handleUpdatePassword}
+                disabled={saving || !newPassword}
+                className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-600 dark:hover:bg-blue-700"
+              >
+                {saving ? "Updating..." : "Update password"}
+              </Button>
             </div>
           </div>
         </div>
 
         <div className="pt-4 border-t border-gray-200 dark:border-zinc-800">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              onClick={handleSaveProfile}
-              disabled={
-                saving ||
-                profileName.trim().length === 0 ||
-                profileName.trim() === (user?.name || "").trim()
-              }
-              className="bg-black hover:bg-zinc-900 text-white dark:bg-zinc-900 dark:hover:bg-zinc-800"
-            >
-              {saving ? "Saving..." : "Save changes"}
-            </Button>
-            <Button
-              onClick={handleUpdatePassword}
-              disabled={
-                saving ||
-                !currentPassword ||
-                !newPassword ||
-                !confirmPassword ||
-                newPassword !== confirmPassword
-              }
-              variant="outline"
-              className="border-gray-200 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800"
-            >
-              {saving ? "Updating..." : "Update password"}
-            </Button>
-          </div>
+          <Button
+            onClick={handleSaveProfile}
+            disabled={
+              saving ||
+              profileName.trim().length === 0 ||
+              profileName.trim() === (user?.name || "").trim()
+            }
+            className="bg-black hover:bg-zinc-900 text-white dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          >
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
         </div>
       </div>
     </Card>

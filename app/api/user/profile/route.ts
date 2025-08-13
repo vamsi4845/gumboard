@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
-import { hash, compare } from "bcrypt-ts";
+import { hash } from "bcrypt-ts";
 
 export async function PUT(request: NextRequest) {
   try {
@@ -11,32 +11,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, currentPassword, newPassword } = await request.json();
+    const { name, newPassword } = await request.json();
 
-    if (currentPassword && newPassword) {
+    if (newPassword) {
       if (newPassword.length < 8) {
         return NextResponse.json(
-          { error: "New password must be at least 8 characters long" },
-          { status: 400 }
-        );
-      }
-
-      const user = await db.user.findUnique({
-        where: { id: session.user.id },
-        select: { password: true },
-      });
-
-      if (!user?.password) {
-        return NextResponse.json(
-          { error: "No current password set. Please use password reset." },
-          { status: 400 }
-        );
-      }
-
-      const isCurrentPasswordValid = await compare(currentPassword, user.password);
-      if (!isCurrentPasswordValid) {
-        return NextResponse.json(
-          { error: "Current password is incorrect" },
+          { error: "Password must be at least 8 characters long" },
           { status: 400 }
         );
       }
