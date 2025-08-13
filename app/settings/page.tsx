@@ -163,6 +163,20 @@ export default function ProfileSettingsPage() {
           </div>
         </div>
 
+        <div className="pt-4 border-t border-gray-200 dark:border-zinc-800">
+          <Button
+            onClick={handleSaveProfile}
+            disabled={
+              saving ||
+              profileName.trim().length === 0 ||
+              profileName.trim() === (user?.name || "").trim()
+            }
+            className="bg-black hover:bg-zinc-900 text-white dark:bg-zinc-900 dark:hover:bg-zinc-800"
+          >
+            {saving ? "Saving..." : "Save changes"}
+          </Button>
+        </div>
+
         <div className="pt-6 border-t border-gray-200 dark:border-zinc-800">
           <h3 className="text-lg font-medium text-foreground dark:text-zinc-100 mb-4">Password</h3>
           <div className="space-y-4">
@@ -189,20 +203,6 @@ export default function ProfileSettingsPage() {
               </Button>
             </div>
           </div>
-        </div>
-
-        <div className="pt-4 border-t border-gray-200 dark:border-zinc-800">
-          <Button
-            onClick={handleSaveProfile}
-            disabled={
-              saving ||
-              profileName.trim().length === 0 ||
-              profileName.trim() === (user?.name || "").trim()
-            }
-            className="bg-black hover:bg-zinc-900 text-white dark:bg-zinc-900 dark:hover:bg-zinc-800"
-          >
-            {saving ? "Saving..." : "Save changes"}
-          </Button>
         </div>
       </div>
     </Card>
