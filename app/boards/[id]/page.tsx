@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Plus, ChevronDown, Settings, Search } from "lucide-react";
 import Link from "next/link";
-import { BetaBadge } from "@/components/ui/beta-badge";
 import { FullPageLoader } from "@/components/ui/loader";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { Note as NoteCard } from "@/components/note";
@@ -27,6 +26,7 @@ import type { Note, Board, User } from "@/components/note";
 import { useTheme } from "next-themes";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { toast } from "sonner";
+import { BetaBadge } from "@/components/ui/beta-badge";
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null);
@@ -540,6 +540,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   // Get unique authors for dropdown
   const uniqueAuthors = useMemo(() => getUniqueAuthors(notes), [notes]);
 
+  // Alphabetically sorted boards for dropdown and defaults
+  const sortedBoards = useMemo(
+    () =>
+      [...allBoards].sort((a, b) =>
+        (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" })
+      ),
+    [allBoards]
+  );
+
   // Get filtered and sorted notes for display
   const filteredNotes = useMemo(
     () => filterAndSortNotes(notes, debouncedSearchTerm, dateRange, selectedAuthor, user),
@@ -876,133 +885,131 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   }
 
   return (
-    <div className="min-h-screen max-w-screen bg-background dark:bg-zinc-950">
-      <div className="bg-card dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 shadow-sm">
-        <div className="flex flex-wrap sm:flex-nowrap justify-between items-center h-auto sm:h-16 p-2 sm:p-0">
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:space-x-3 w-full sm:w-auto">
-            {/* Company Name */}
-            <Link href="/dashboard" className="flex-shrink-0 pl-4 sm:pl-2 lg:pl-4">
-              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                Gumboard
-                <BetaBadge />
-              </h1>
-            </Link>
+    <div
+      className="min-h-screen max-w-screen"
+      style={{
+        backgroundColor: resolvedTheme === "dark" ? "rgb(24 24 27)" : "white",
+        backgroundImage: `radial-gradient(circle, ${resolvedTheme === "dark" ? "rgb(63 63 70)" : "rgb(212 212 212)"} 0.5px, ${resolvedTheme === "dark" ? "rgb(24 24 27)" : "white"} 0.5px)`,
+        backgroundSize: "14px 14px",
+        backgroundPosition: "-0.5px -0.5px",
+      }}
+    >
+      <div className="pt-4 px-4">
+        <div className="flex flex-wrap sm:flex-nowrap justify-between items-center h-auto sm:h-12 p-2 sm:p-0">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center bg-white dark:bg-zinc-900 px-2 py-1 border rounded-lg border-zinc-100 dark:border-zinc-800 gap-2">
+              {/* Company logo */}
+              <Link href="/dashboard" className="flex-shrink-0">
+                <h1 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                  Gumboard
+                  <BetaBadge />
+                </h1>
+              </Link>
 
-            {/* Board Selector Dropdown */}
-            <div className="relative board-dropdown flex-1 sm:flex-none">
-              <Button
-                onClick={() => setShowBoardDropdown(!showBoardDropdown)}
-                className="flex items-center justify-between border border-gray-200 dark:border-zinc-800 space-x-2 text-foreground dark:text-zinc-100 hover:text-foreground dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 rounded-md px-3 py-2 cursor-pointer w-full sm:w-auto"
-              >
-                <div>
-                  <div className="text-sm font-semibold text-foreground dark:text-zinc-100">
-                    {boardId === "all-notes"
-                      ? "All notes"
-                      : boardId === "archive"
-                        ? "Archive"
-                        : board?.name}
+              {/* Board Selector Dropdown */}
+              <div className="relative board-dropdown">
+                <Button
+                  onClick={() => setShowBoardDropdown(!showBoardDropdown)}
+                  size="sm"
+                  className="dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-foreground dark:text-zinc-100">
+                      {boardId === "all-notes"
+                        ? "All notes"
+                        : boardId === "archive"
+                          ? "Archive"
+                          : board?.name}
+                    </div>
                   </div>
-                </div>
-                <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform ${
-                    showBoardDropdown ? "rotate-180" : ""
-                  }`}
-                />
-              </Button>
+                  <ChevronDown className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
+                </Button>
+                {showBoardDropdown && (
+                  <div className="fixed sm:absolute left-0 mt-3 w-full sm:w-64 bg-white dark:bg-zinc-900 rounded-md border border-zinc-100 dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
+                    <div className="py-2 gap-1 flex flex-col">
+                      {sortedBoards.map((b) => (
+                        <Link
+                          key={b.id}
+                          href={`/boards/${b.id}`}
+                          className={`block mx-2 rounded pr-2 pl-3 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800 ${
+                            b.id === boardId
+                              ? "bg-zinc-100 font-medium dark:bg-zinc-900/70 text-zinc-900 dark:text-blue-300"
+                              : "text-foreground dark:text-zinc-100"
+                          }`}
+                          onClick={() => setShowBoardDropdown(false)}
+                        >
+                          <div className="font-base">{b.name}</div>
+                        </Link>
+                      ))}
 
-              {showBoardDropdown && (
-                <div className="fixed sm:absolute left-0 mt-2 w-full sm:w-64 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-gray-200 dark:border-zinc-800 z-50 max-h-80 overflow-y-auto">
-                  <div className="py-1">
-                    {/* All Notes Option */}
-                    <Link
-                      href="/boards/all-notes"
-                      className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
-                        boardId === "all-notes"
-                          ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
-                          : "text-foreground dark:text-zinc-100"
-                      }`}
-                      onClick={() => setShowBoardDropdown(false)}
-                    >
-                      <div className="font-medium">All notes</div>
-                      <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
-                        Notes from all boards
-                      </div>
-                    </Link>
+                      {sortedBoards.length > 0 && (
+                        <div className="border-t border-zinc-100 dark:border-zinc-800 my-1"></div>
+                      )}
 
-                    {/* Archive Option */}
-                    <Link
-                      href="/boards/archive"
-                      className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
-                        boardId === "archive"
-                          ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
-                          : "text-foreground dark:text-zinc-100"
-                      }`}
-                      onClick={() => setShowBoardDropdown(false)}
-                    >
-                      <div className="font-medium">Archive</div>
-                      <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
-                        Archived notes from all boards
-                      </div>
-                    </Link>
-
-                    {allBoards.length > 0 && (
-                      <div className="border-t border-gray-200 dark:border-zinc-800 my-1"></div>
-                    )}
-                    {allBoards.map((b) => (
+                      {/* All Notes Option */}
                       <Link
-                        key={b.id}
-                        href={`/boards/${b.id}`}
-                        className={`block px-4 py-2 text-sm hover:bg-accent dark:hover:bg-zinc-800 ${
-                          b.id === boardId
-                            ? "bg-blue-50 dark:bg-zinc-900/70 text-blue-700 dark:text-blue-300"
+                        href="/boards/all-notes"
+                        className={`block mx-2 rounded px-2 py-1.5 text-sm hover:bg-gray-100 dark:hover:bg-zinc-800 ${
+                          boardId === "all-notes"
+                            ? "bg-gray-100 font-medium dark:bg-zinc-900/70 text-zinc-900 dark:text-blue-300"
                             : "text-foreground dark:text-zinc-100"
                         }`}
                         onClick={() => setShowBoardDropdown(false)}
                       >
-                        <div className="font-medium">{b.name}</div>
-                        {b.description && (
-                          <div className="text-xs text-muted-foreground dark:text-zinc-400 mt-1">
-                            {b.description}
-                          </div>
-                        )}
+                        <div className="font-base">All notes</div>
                       </Link>
-                    ))}
-                    {allBoards.length > 0 && (
-                      <div className="border-t border-gray-200 dark:border-zinc-800 my-1"></div>
-                    )}
-                    <Button
-                      onClick={() => {
-                        setShowAddBoard(true);
-                        setShowBoardDropdown(false);
-                      }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      <span className="font-medium">Create new board</span>
-                    </Button>
-                    {boardId !== "all-notes" && boardId !== "archive" && (
+
+                      {/* Archive Option */}
+                      <Link
+                        href="/boards/archive"
+                        className={`block mx-2 rounded px-2 py-1.5 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
+                          boardId === "archive"
+                            ? "bg-zinc-100 font-medium dark:bg-zinc-900/70 text-zinc-900 dark:text-blue-300"
+                            : "text-foreground dark:text-zinc-100"
+                        }`}
+                        onClick={() => setShowBoardDropdown(false)}
+                      >
+                        <div className="font-base">Archived</div>
+                      </Link>
+
+                      <div className="border-t border-zinc-100 dark:border-zinc-800 my-1"></div>
+
                       <Button
+                        size="sm"
                         onClick={() => {
-                          setBoardSettings({
-                            sendSlackUpdates:
-                              (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true,
-                          });
-                          setBoardSettingsDialog(true);
+                          setShowAddBoard(true);
                           setShowBoardDropdown(false);
                         }}
-                        className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
+                        className="bg-blue-500 hover:bg-blue-500/90 mx-2 text-white"
                       >
-                        <Settings className="w-4 h-4 mr-2" />
-                        <span className="font-medium">Board settings</span>
+                        <span>New board</span>
+                        <kbd className="hidden sm:inline-flex h-5 min-w-5 items-center justify-center rounded border border-white/40 bg-white/10 px-1.5 text-xs font-medium leading-none text-white">
+                          B
+                        </kbd>
                       </Button>
-                    )}
+                      {boardId !== "all-notes" && boardId !== "archive" && (
+                        <Button
+                          onClick={() => {
+                            setBoardSettings({
+                              sendSlackUpdates:
+                                (board as { sendSlackUpdates?: boolean })?.sendSlackUpdates ?? true,
+                            });
+                            setBoardSettingsDialog(true);
+                            setShowBoardDropdown(false);
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-foreground dark:text-zinc-100 hover:bg-accent dark:hover:bg-zinc-800"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          <span className="font-medium">Board settings</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Filter Popover */}
-            <div className="relative board-dropdown flex-1 sm:flex-none">
+            <div className="flex items-center bg-white dark:bg-zinc-900 px-1 py-1 border rounded-lg border-zinc-100 dark:border-zinc-800">
               <FilterPopover
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
@@ -1022,12 +1029,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
 
-          {/* Right side - Search, Add Note and User dropdown */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-            {/* Search Box */}
-            <div className="relative flex-1 sm:flex-none min-w-[150px]">
+          {/* Search Box */}
+          <div className="flex-1 flex justify-center px-4 max-w-2xl w-full">
+            <div className="relative w-full max-w-2xl">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-muted-foreground dark:text-zinc-400" />
+                <Search className="h-4 w-4 text-muted-foregroun dark:text-zinc-400" />
               </div>
               <input
                 aria-label="Search notes"
@@ -1037,7 +1043,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                 }}
-                className="w-full sm:w-64 pl-10 pr-8 py-2 border border-gray-200 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent text-sm bg-background dark:bg-zinc-900 text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-400"
+                className="w-full bg-white h-10 pl-10 pr-8 border border-zinc-100 dark:border-zinc-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent text-sm bg-background dark:bg-zinc-900 text-foreground dark:text-zinc-100 placeholder:text-muted-foreground dark:placeholder:text-zinc-400"
               />
               {searchTerm && (
                 <Button
@@ -1052,25 +1058,28 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </Button>
               )}
             </div>
+          </div>
 
+          {/* Add Note and User Dropdown */}
+          <div className="flex items-center bg-white dark:bg-zinc-900 px-2 py-1 border rounded-xl border-zinc-100 dark:border-zinc-800 gap-2">
             <Button
+              size="sm"
               onClick={() => {
-                if (boardId === "all-notes" && allBoards.length > 0) {
-                  handleAddNote(allBoards[0].id);
+                if (boardId === "all-notes" && sortedBoards.length > 0) {
+                  handleAddNote(sortedBoards[0].id);
                 } else {
                   handleAddNote();
                 }
               }}
-              className="flex items-center justify-center w-10 h-10 sm:w-auto sm:h-auto sm:space-x-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer font-medium"
+              className="text-white bg-blue-500 hover:bg-blue-600/90"
             >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Add Note</span>
+              <span className="hidden sm:inline">Add note</span>
+              <kbd className="hidden sm:inline-flex h-5 min-w-5 items-center justify-center rounded border border-white/40 bg-white/10 px-1.5 text-xs font-medium leading-none text-white">
+                N
+              </kbd>
             </Button>
-
             {/* User Dropdown */}
-            <div className="mr-3">
-              <ProfileDropdown user={user} />
-            </div>
+            <ProfileDropdown user={user} />
           </div>
         </div>
       </div>
@@ -1078,7 +1087,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       {/* Board Area */}
       <div
         ref={boardRef}
-        className="relative w-full bg-gray-50 dark:bg-zinc-950"
+        className="relative w-full"
         style={{
           height: boardHeight,
           minHeight: "calc(100vh - 64px)", // Account for header height
@@ -1156,8 +1165,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             <div className="text-sm mb-4">Click &ldquo;Add Note&rdquo; to get started</div>
             <Button
               onClick={() => {
-                if (boardId === "all-notes" && allBoards.length > 0) {
-                  handleAddNote(allBoards[0].id);
+                if (boardId === "all-notes" && sortedBoards.length > 0) {
+                  handleAddNote(sortedBoards[0].id);
                 } else if (boardId === "archive") {
                   setErrorDialog({
                     open: true,
@@ -1188,7 +1197,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           }}
         >
           <div
-            className="bg-white dark:bg-zinc-950 bg-opacity-95 dark:bg-opacity-95 rounded-xl p-5 sm:p-7 w-full max-w-sm sm:max-w-md shadow-2xl border border-gray-200 dark:border-zinc-800"
+            className="bg-white dark:bg-zinc-950 bg-opacity-95 dark:bg-opacity-95 rounded-xl p-5 sm:p-7 w-full max-w-sm sm:max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-800"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold mb-4 text-foreground dark:text-zinc-100">
@@ -1206,7 +1215,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     onChange={(e) => setNewBoardName(e.target.value)}
                     placeholder="Enter board name"
                     required
-                    className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-gray-200 dark:border-zinc-700"
+                    className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700"
                   />
                 </div>
                 <div>
@@ -1218,7 +1227,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     value={newBoardDescription}
                     onChange={(e) => setNewBoardDescription(e.target.value)}
                     placeholder="Enter board description"
-                    className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-gray-200 dark:border-zinc-700"
+                    className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700"
                   />
                 </div>
               </div>
@@ -1231,7 +1240,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     setNewBoardName("");
                     setNewBoardDescription("");
                   }}
-                  className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-gray-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  className="bg-white dark:bg-zinc-900 text-foreground dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 >
                   Cancel
                 </Button>
@@ -1251,7 +1260,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         open={errorDialog.open}
         onOpenChange={(open) => setErrorDialog({ open, title: "", description: "" })}
       >
-        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground dark:text-zinc-100">
               {errorDialog.title}
@@ -1272,7 +1281,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       </AlertDialog>
 
       <AlertDialog open={boardSettingsDialog} onOpenChange={setBoardSettingsDialog}>
-        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800">
+        <AlertDialogContent className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-foreground dark:text-zinc-100">
               Board settings

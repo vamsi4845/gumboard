@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useState, useRef, useEffect } from "react";
-import { Filter, ChevronDown, User } from "lucide-react";
+import { ListFilter, User } from "lucide-react";
 import { clsx } from "clsx";
 import { Button } from "./button";
 
@@ -71,33 +71,27 @@ function FilterPopover({
   return (
     <div className={cn("relative", className)} ref={dropdownRef}>
       <Button
+        size="sm"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "flex items-center space-x-2 px-3 py-2 text-sm border border-gray-200 dark:border-zinc-800 rounded-md bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-zinc-600 focus:border-transparent transition-colors",
+          "flex items-center hover:bg-zinc-100 !px-2 py-2 gap-0 text-sm dark:border-zinc-800 rounded-md bg-card dark:bg-zinc-900 hover:bg-accent dark:hover:bg-zinc-800 transition-colors",
           disabled && "opacity-50 cursor-not-allowed",
-          isOpen && "ring-2 ring-blue-500 dark:ring-zinc-600 border-transparent"
+          isOpen && "bg-zinc-100 dark:bg-zinc-800 border-transparent"
         )}
       >
-        <Filter className="w-4 h-4 text-muted-foreground dark:text-zinc-400" />
+        <ListFilter className="w-4 h-4 text-zinc-800 dark:text-zinc-200" />
         <span className="text-foreground dark:text-zinc-100">
-          Filter
           {getFilterCount() > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded">
+            <span className="ml-1 px-1.5 py-0.5 text-xs bg-blue-50 dark:bg-blue-900 text-blue-500 dark:text-blue-300 rounded">
               {getFilterCount()}
             </span>
           )}
         </span>
-        <ChevronDown
-          className={cn(
-            "w-4 h-4 text-muted-foreground dark:text-zinc-400 transition-transform",
-            isOpen && "rotate-180"
-          )}
-        />
       </Button>
 
       {isOpen && (
-        <div className="fixed sm:absolute left-0 w-full sm:w-80 mt-2 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-gray-200 dark:border-zinc-800 z-50 p-4">
+        <div className="fixed sm:absolute left-0 w-full sm:w-80 mt-2 bg-white dark:bg-zinc-900 rounded-md shadow-lg border border-zinc-100 dark:border-zinc-800 z-50 p-4">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-foreground dark:text-zinc-100">Filters</h3>
@@ -164,5 +158,4 @@ function FilterPopover({
     </div>
   );
 }
-
 export { FilterPopover };
