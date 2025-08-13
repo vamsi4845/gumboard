@@ -214,7 +214,11 @@ function SignInContent() {
             <BetaBadge />
           </CardTitle>
           <CardDescription className="text-muted-foreground dark:text-zinc-400">
-            {mode === "signup" ? "Create your account" : mode === "signin" ? "Sign in to your account" : "Enter your email and we'll send you a magic link"}
+            {mode === "signup"
+              ? "Create your account"
+              : mode === "signin"
+                ? "Sign in to your account"
+                : "Enter your email and we'll send you a magic link"}
           </CardDescription>
         </CardHeader>
 
@@ -223,8 +227,8 @@ function SignInContent() {
             <button
               onClick={() => setMode("signin")}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                mode === "signin" 
-                  ? "bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-sm" 
+                mode === "signin"
+                  ? "bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-sm"
                   : "text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200"
               }`}
             >
@@ -233,8 +237,8 @@ function SignInContent() {
             <button
               onClick={() => setMode("signup")}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                mode === "signup" 
-                  ? "bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-sm" 
+                mode === "signup"
+                  ? "bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-sm"
                   : "text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200"
               }`}
             >
@@ -243,8 +247,8 @@ function SignInContent() {
             <button
               onClick={() => setMode("magic")}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-                mode === "magic" 
-                  ? "bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-sm" 
+                mode === "magic"
+                  ? "bg-white dark:bg-zinc-900 text-gray-900 dark:text-zinc-100 shadow-sm"
                   : "text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200"
               }`}
             >
@@ -318,7 +322,11 @@ function SignInContent() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder={mode === "signup" ? "Create a password (min 8 characters)" : "Enter your password"}
+                  placeholder={
+                    mode === "signup"
+                      ? "Create a password (min 8 characters)"
+                      : "Enter your password"
+                  }
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
@@ -339,11 +347,19 @@ function SignInContent() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {mode === "signup" ? "Creating account..." : mode === "signin" ? "Signing in..." : "Sending magic link..."}
+                  {mode === "signup"
+                    ? "Creating account..."
+                    : mode === "signin"
+                      ? "Signing in..."
+                      : "Sending magic link..."}
                 </>
               ) : (
                 <>
-                  {mode === "signup" ? "Create Account" : mode === "signin" ? "Sign In" : "Continue with Email"}
+                  {mode === "signup"
+                    ? "Create Account"
+                    : mode === "signin"
+                      ? "Sign In"
+                      : "Continue with Email"}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </>
               )}
