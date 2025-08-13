@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { Resend } from "resend";
 import { hash } from "bcrypt-ts";
+import { getBaseUrl } from "@/lib/utils";
 
 const resend = new Resend(env.AUTH_RESEND_KEY);
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const verificationUrl = `${env.AUTH_URL}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+    const verificationUrl = `${getBaseUrl(request)}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
     await resend.emails.send({
       from: env.EMAIL_FROM,
