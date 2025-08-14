@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     await db.user.create({
       data: {
         email,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         name: name || null,
         emailVerified: null,
       },

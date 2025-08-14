@@ -124,7 +124,7 @@ async function autoCreateAccountAndJoin(token: string, formData: FormData) {
     }
 
     // Verify email if not already verified and user doesn't have password
-    if (!user.emailVerified && !user.password) {
+    if (!user.emailVerified && !user.passwordHash) {
       await db.user.update({
         where: { id: user.id },
         data: { emailVerified: new Date() },

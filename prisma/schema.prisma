@@ -47,7 +47,7 @@ model User {
   updatedAt               DateTime                      @updatedAt
   organizationId          String?
   isAdmin                 Boolean                       @default(false)
-  password                String?
+  passwordHash            String?
   accounts                Account[]
   notes                   Note[]
   invitedOrganizations    OrganizationInvite[]

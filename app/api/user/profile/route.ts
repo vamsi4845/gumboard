@@ -27,7 +27,7 @@ export async function PUT(request: NextRequest) {
         where: { id: session.user.id },
         data: {
           ...(name && { name: name.trim() }),
-          password: hashedNewPassword,
+          passwordHash: hashedNewPassword,
         },
         include: {
           organization: {
