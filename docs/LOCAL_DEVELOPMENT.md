@@ -38,6 +38,7 @@ When testing the signup flow locally:
 ### Alternative Testing Methods
 
 For development without email setup:
+
 1. Check server logs for verification URLs
 2. Manually construct verification URLs using the token from database
 3. Use a tool like MailHog for local email testing
