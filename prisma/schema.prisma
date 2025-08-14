@@ -55,6 +55,7 @@ model User {
   sessions                Session[]
   organization            Organization?                 @relation(fields: [organizationId], references: [id])
 
+  @@index([organizationId], name: "idx_user_org")
   @@map("users")
 }
 
@@ -91,7 +92,6 @@ model Board {
 
 model Note {
   id             String          @id @default(cuid())
-  content        String
   color          String          @default("#fef3c7")
   boardId        String
   createdAt      DateTime        @default(now())
