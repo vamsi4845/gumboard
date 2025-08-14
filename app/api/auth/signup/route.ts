@@ -56,18 +56,33 @@ export async function POST(request: NextRequest) {
 
     const verificationUrl = `${getBaseUrl(request)}/auth/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
-    await resend.emails.send({
-      from: env.EMAIL_FROM,
-      to: email,
-      subject: "Verify your email address",
-      html: `
-        <h2>Welcome to Gumboard!</h2>
-        <p>Please click the link below to verify your email address:</p>
-        <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Verify Email</a>
-        <p>This link will expire in 24 hours.</p>
-        <p>If you didn't create an account, you can safely ignore this email.</p>
-      `,
-    });
+    try {
+      await resend.emails.send({
+        from: env.EMAIL_FROM,
+        to: email,
+        subject: "Verify your email address",
+        html: `
+          <h2>Welcome to Gumboard!</h2>
+          <p>Please click the link below to verify your email address:</p>
+          <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Verify Email</a>
+          <p>This link will expire in 24 hours.</p>
+          <p>If you didn't create an account, you can safely ignore this email.</p>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Email sending failed:", emailError);
+      
+      if (process.env.NODE_ENV === "development") {
+        return NextResponse.json({
+          error: "Email service not configured. Please set AUTH_RESEND_KEY and EMAIL_FROM environment variables.",
+          details: "For local development, contact your administrator for Resend credentials."
+        }, { status: 500 });
+      }
+      
+      return NextResponse.json({
+        error: "Failed to send verification email. Please try again later."
+      }, { status: 500 });
+    }
 
     return NextResponse.json({
       message: "Account created successfully. Please check your email to verify your account.",
