@@ -71,17 +71,24 @@ export async function POST(request: NextRequest) {
       });
     } catch (emailError) {
       console.error("Email sending failed:", emailError);
-      
+
       if (process.env.NODE_ENV === "development") {
-        return NextResponse.json({
-          error: "Email service not configured. Please set AUTH_RESEND_KEY and EMAIL_FROM environment variables.",
-          details: "For local development, contact your administrator for Resend credentials."
-        }, { status: 500 });
+        return NextResponse.json(
+          {
+            error:
+              "Email service not configured. Please set AUTH_RESEND_KEY and EMAIL_FROM environment variables.",
+            details: "For local development, contact your administrator for Resend credentials.",
+          },
+          { status: 500 }
+        );
       }
-      
-      return NextResponse.json({
-        error: "Failed to send verification email. Please try again later."
-      }, { status: 500 });
+
+      return NextResponse.json(
+        {
+          error: "Failed to send verification email. Please try again later.",
+        },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({
