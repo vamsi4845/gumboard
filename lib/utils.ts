@@ -256,7 +256,7 @@ export function filterAndSortNotes(
 export function formatActivityTime(updatedAt: string) {
   const now = new Date();
   const updated = new Date(updatedAt);
-  const seconds = Math.floor((now - updated) / 1000);
+  const seconds = Math.floor((now.getTime() - updated.getTime()) / 1000);
 
   // Minutes
   let interval = Math.floor(seconds / 60);
