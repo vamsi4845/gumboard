@@ -9,10 +9,7 @@ import { BetaBadge } from "@/components/ui/beta-badge";
 import { Button } from "@/components/ui/button";
 import { FilterPopover } from "@/components/ui/filter-popover";
 import { FullPageLoader } from "@/components/ui/loader";
-import {
-  filterAndSortNotes,
-  getUniqueAuthors
-} from "@/lib/utils";
+import { filterAndSortNotes, getUniqueAuthors } from "@/lib/utils";
 import { Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -48,7 +45,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
       fetchBoardData();
     }
   }, [boardId]);
-
 
   const fetchBoardData = async () => {
     try {
@@ -89,7 +85,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
     () => filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, null),
     [notes, searchTerm, dateRange, selectedAuthor]
   );
-
 
   if (loading) {
     return <FullPageLoader message="Loading board..." />;
@@ -180,17 +175,14 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
 
       <BoardWrapper>
         {filteredNotes.map((note) => (
-        <div
-          key={note.id}
-          className="mb-4 break-inside-avoid"
-             >
-              <NoteCard
-                key={note.id}
-                note={note as Note}
-                readonly={true}
-                className={`shadow-md shadow-black/10 p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] ${note.color} rounded-lg`}
+          <div key={note.id} className="mb-4 break-inside-avoid">
+            <NoteCard
+              key={note.id}
+              note={note as Note}
+              readonly={true}
+              className={`shadow-md shadow-black/10 p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] ${note.color} rounded-lg`}
             />
-        </div>
+          </div>
         ))}
 
         {filteredNotes.length === 0 && (

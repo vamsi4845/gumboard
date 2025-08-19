@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { ChevronDown, ChevronUp, Copy, EllipsisVertical, Search, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState,useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 
 import {
   AlertDialog,
@@ -27,10 +27,7 @@ import { useUser } from "@/app/contexts/UserContext";
 import { BoardPageSkeleton } from "@/components/board-skeleton";
 import type { Board, Note, User } from "@/components/note";
 import { ProfileDropdown } from "@/components/profile-dropdown";
-import {
-  filterAndSortNotes,
-  getUniqueAuthors
-} from "@/lib/utils";
+import { filterAndSortNotes, getUniqueAuthors } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { BoardWrapper } from "@/components/board-wrapper";
@@ -212,8 +209,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     };
   }, [showBoardDropdown, showAddBoard, addingChecklistItem]);
 
-
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -231,8 +226,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     () => filterAndSortNotes(notes, debouncedSearchTerm, dateRange, selectedAuthor, user),
     [notes, debouncedSearchTerm, dateRange, selectedAuthor, user]
   );
-
-
 
   const fetchBoardData = async () => {
     try {
@@ -838,27 +831,24 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
-        {/* Notes */}
-        <BoardWrapper>
-          {filteredNotes.map((note) => (
-            <div
+      {/* Notes */}
+      <BoardWrapper>
+        {filteredNotes.map((note) => (
+          <div key={note.id} className="mb-4 break-inside-avoid">
+            <NoteCard
               key={note.id}
-              className="mb-4 break-inside-avoid"
-            >
-                <NoteCard
-                  key={note.id}
-                  note={note as Note}
-                  currentUser={user as User}
-                  onUpdate={handleUpdateNoteFromComponent}
-                  onDelete={handleDeleteNote}
-                  onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
-                  onUnarchive={boardId === "archive" ? handleUnarchiveNote : undefined}
-                  onCopy={handleCopyNote}
-                  showBoardName={boardId === "all-notes" || boardId === "archive"}
-                  className={`shadow-md shadow-black/10 p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] ${resolvedTheme === "dark" ? "#18181B" :note.color} rounded-lg`}
-                />
-            </div>
-          ))}
+              note={note as Note}
+              currentUser={user as User}
+              onUpdate={handleUpdateNoteFromComponent}
+              onDelete={handleDeleteNote}
+              onArchive={boardId !== "archive" ? handleArchiveNote : undefined}
+              onUnarchive={boardId === "archive" ? handleUnarchiveNote : undefined}
+              onCopy={handleCopyNote}
+              showBoardName={boardId === "all-notes" || boardId === "archive"}
+              className={`shadow-md shadow-black/10 p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] ${resolvedTheme === "dark" ? "#18181B" : note.color} rounded-lg`}
+            />
+          </div>
+        ))}
 
         {/* Empty State */}
         {filteredNotes.length === 0 &&
