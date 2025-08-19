@@ -6,6 +6,7 @@ interface BoardWrapperProps {
   className?: string;
 }
 
+
 export function BoardWrapper({ children, className }: BoardWrapperProps) {
   return (
     <div
