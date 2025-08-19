@@ -1,31 +1,27 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
-import Link from "next/link";
-import { BetaBadge } from "@/components/ui/beta-badge";
-import { FullPageLoader } from "@/components/ui/loader";
-import { FilterPopover } from "@/components/ui/filter-popover";
-import type { Note, Board } from "@/components/note";
+import { useUser } from "@/app/contexts/UserContext";
+import type { Board, Note } from "@/components/note";
 import { Note as NoteCard } from "@/components/note";
 import { ProfileDropdown } from "@/components/profile-dropdown";
-import { useUser } from "@/app/contexts/UserContext";
+import { BetaBadge } from "@/components/ui/beta-badge";
+import { Button } from "@/components/ui/button";
+import { FilterPopover } from "@/components/ui/filter-popover";
+import { FullPageLoader } from "@/components/ui/loader";
 import {
-  getResponsiveConfig,
-  getUniqueAuthors,
-  calculateGridLayout,
-  calculateMobileLayout,
   filterAndSortNotes,
+  getUniqueAuthors
 } from "@/lib/utils";
+import { Search } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 export default function PublicBoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [boardId, setBoardId] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
     startDate: Date | null;
@@ -35,7 +31,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
     endDate: null,
   });
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
-  const boardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { user } = useUser();
 
@@ -53,28 +48,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
     }
   }, [boardId]);
 
-  useEffect(() => {
-    let resizeTimeout: NodeJS.Timeout;
-
-    const checkResponsive = () => {
-      if (typeof window !== "undefined") {
-        const width = window.innerWidth;
-        setIsMobile(width < 768);
-
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          setNotes((prevNotes) => [...prevNotes]);
-        }, 50);
-      }
-    };
-
-    checkResponsive();
-    window.addEventListener("resize", checkResponsive);
-    return () => {
-      window.removeEventListener("resize", checkResponsive);
-      clearTimeout(resizeTimeout);
-    };
-  }, []);
 
   const fetchBoardData = async () => {
     try {
@@ -116,25 +89,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
     [notes, searchTerm, dateRange, selectedAuthor]
   );
 
-  const layoutNotes = useMemo(
-    () =>
-      isMobile
-        ? calculateMobileLayout(filteredNotes, null)
-        : calculateGridLayout(filteredNotes, null),
-    [isMobile, filteredNotes]
-  );
-
-  const boardHeight = useMemo(() => {
-    if (layoutNotes.length === 0) {
-      return "calc(100vh - 64px)";
-    }
-
-    const maxBottom = Math.max(...layoutNotes.map((note) => note.y + note.height));
-    const minHeight = typeof window !== "undefined" && window.innerWidth < 768 ? 500 : 600;
-    const calculatedHeight = Math.max(minHeight, maxBottom + 100);
-
-    return `${calculatedHeight}px`;
-  }, [layoutNotes]);
 
   if (loading) {
     return <FullPageLoader message="Loading board..." />;
@@ -223,22 +177,19 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      <div className="relative" style={{ height: boardHeight }} ref={boardRef}>
-        {layoutNotes.map((note) => (
-          <NoteCard
-            key={note.id}
-            note={note as Note}
-            readonly={true}
-            className="shadow-md shadow-black/10 absolute"
-            style={{
-              position: "absolute",
-              left: note.x,
-              top: note.y,
-              width: note.width,
-              height: note.height,
-              padding: `${getResponsiveConfig().notePadding}px`,
-            }}
-          />
+      <div className="w-full h-full columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 md:gap-4 p-3 md:p-6">
+        {filteredNotes.map((note) => (
+        <div
+          key={note.id}
+          className="mb-4 break-inside-avoid"
+             >
+              <NoteCard
+                key={note.id}
+                note={note as Note}
+                readonly={true}
+                className={`shadow-md shadow-black/10 p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] ${note.color} rounded-lg`}
+            />
+        </div>
         ))}
 
         {filteredNotes.length === 0 && (

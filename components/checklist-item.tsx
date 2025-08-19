@@ -55,40 +55,32 @@ export function ChecklistItem({
     textarea.style.height = textarea.scrollHeight + "px";
   };
 
-  React.useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      adjustTextareaHeight(textareaRef.current);
-      previousContentRef.current = editContent ?? item.content;
-    }
-  }, [isEditing, editContent, item.content]);
+	React.useEffect(() => {
+		const el = textareaRef.current;
+		if (!el) return;
+		adjustTextareaHeight(el);
+		previousContentRef.current = editContent ?? item.content;
+	}, [isEditing, editContent, item.content]);
 
-  React.useEffect(() => {
-    if (!isEditing && textareaRef.current) {
-      adjustTextareaHeight(textareaRef.current);
-    }
-  }, [item.content, isEditing]);
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (isNewItem && editContent?.trim() && onCreateItem) {
-        onCreateItem(editContent.trim());
-      } else {
-        const target = e.target as HTMLTextAreaElement;
-        target.blur();
-      }
-    }
-    if (e.key === "Enter" && e.shiftKey) {
-      const target = e.target as HTMLTextAreaElement;
-      setTimeout(() => adjustTextareaHeight(target), 0);
-    }
-    if (e.key === "Escape") {
-      onStopEdit?.();
-    }
-    if (e.key === "Backspace" && editContent?.trim() === "") {
-      e.preventDefault();
-      onDelete?.(item.id);
-    }
-  };
+
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+		if (e.key === "Enter" && !e.shiftKey) {
+			e.preventDefault();
+			if (isNewItem && editContent?.trim() && onCreateItem) {
+				onCreateItem(editContent.trim());
+			} else {
+				const target = e.target as HTMLTextAreaElement;
+				target.blur();
+			}
+		}
+		if (e.key === "Escape") {
+			onStopEdit?.();
+		}
+		if (e.key === "Backspace" && editContent?.trim() === "") {
+			e.preventDefault();
+			onDelete?.(item.id);
+		}
+	};
 
   const handleBlur = () => {
     if (deletingRef.current) {
