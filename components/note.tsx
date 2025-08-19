@@ -346,7 +346,7 @@ export function Note({
         ...style,
       }}
     >
-      <div className="flex items-start justify-between mb-2 flex-shrink-0">
+      <div className="flex items-start justify-between mb-1 flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Avatar className="h-7 w-7 border-2 border-white dark:border-zinc-800">
             <AvatarFallback className="bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-sm font-semibold">
@@ -386,7 +386,7 @@ export function Note({
                       e.stopPropagation();
                       onCopy?.(note);
                     }}
-                    className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
+                    className="p-0.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
                     variant="ghost"
                     size="icon"
                   >
@@ -405,7 +405,7 @@ export function Note({
                       e.stopPropagation();
                       onDelete?.(note.id);
                     }}
-                    className="p-1 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded"
+                    className="p-0.5 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded"
                     variant="ghost"
                     size="icon"
                   >
@@ -427,7 +427,7 @@ export function Note({
                       e.stopPropagation();
                       onArchive(note.id);
                     }}
-                    className="p-1 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
+                    className="p-0.5 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded"
                     variant="ghost"
                     size="icon"
                     aria-label="Archive note"
@@ -450,7 +450,7 @@ export function Note({
                       e.stopPropagation();
                       onUnarchive(note.id);
                     }}
-                    className="p-1 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded"
+                    className="p-0.5 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded"
                     variant="ghost"
                     size="icon"
                     aria-label="Unarchive note"
@@ -478,7 +478,7 @@ export function Note({
               }
             }}
           >
-            <DraggableContainer className="space-y-1">
+            <DraggableContainer className="space-y-0.5">
               {note.checklistItems?.map((item) => (
                 <DraggableItem key={item.id} id={item.id} disabled={!canEdit}>
                   <ChecklistItemComponent
