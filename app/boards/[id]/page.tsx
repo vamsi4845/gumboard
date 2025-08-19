@@ -33,6 +33,7 @@ import {
 } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
+import { BoardWrapper } from "@/components/board-wrapper";
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null);
@@ -838,9 +839,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
         {/* Notes */}
-        <div
-          className="w-full h-full columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 md:gap-4  p-3 md:p-6"
-        >
+        <BoardWrapper>
           {filteredNotes.map((note) => (
             <div
               key={note.id}
@@ -899,7 +898,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               </Button>
             </div>
           )}
-      </div>
+      </BoardWrapper>
 
       {showAddBoard && (
         <div

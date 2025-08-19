@@ -1,6 +1,7 @@
 "use client";
 
 import { useUser } from "@/app/contexts/UserContext";
+import { BoardWrapper } from "@/components/board-wrapper";
 import type { Board, Note } from "@/components/note";
 import { Note as NoteCard } from "@/components/note";
 import { ProfileDropdown } from "@/components/profile-dropdown";
@@ -177,7 +178,7 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      <div className="w-full h-full columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 md:gap-4 p-3 md:p-6">
+      <BoardWrapper>
         {filteredNotes.map((note) => (
         <div
           key={note.id}
@@ -207,7 +208,7 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
         )}
-      </div>
+      </BoardWrapper>
     </div>
   );
 }
