@@ -334,7 +334,7 @@ export default function Dashboard() {
                             </p>
                          )}
                         <p className="text-slate-600 dark:text-zinc-500 truncate">
-                          {board._count.notes > 0 ? (
+                          {(board.updatedAt !== board.createdAt) ? (
                             <p className="text-slate-600 dark:text-zinc-500 truncate">
                               Last Updated: {formatActivityTime(board.updatedAt)}
                             </p>
