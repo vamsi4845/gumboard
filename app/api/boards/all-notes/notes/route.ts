@@ -145,6 +145,11 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await db.board.update({
+      where: { id: boardId },
+      data: { updatedAt: new Date() },
+    });
+
     return NextResponse.json({ note }, { status: 201 });
   } catch (error) {
     console.error("Error creating note:", error);

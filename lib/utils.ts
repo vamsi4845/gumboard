@@ -252,3 +252,38 @@ export function filterAndSortNotes(
 
   return filteredNotes;
 }
+
+export function formatActivityTime(updatedAt: string) {
+  const now = new Date();
+  const updated = new Date(updatedAt);
+  const seconds = Math.floor((now - updated) / 1000);
+
+  // Minutes
+  let interval = Math.floor(seconds / 60);
+  if (interval < 60) {
+    return interval <= 1 ? '1m ago' : interval + 'm ago';
+  }
+
+  // Hours
+  interval = Math.floor(seconds / 3600);
+  if (interval < 24) {
+    return interval <= 1 ? '1hr ago' : interval + 'hrs ago';
+  }
+
+  // Days
+  interval = Math.floor(seconds / 86400);
+  if (interval < 30) {
+    return interval <= 1 ? '1 day ago' : interval + ' days ago';
+  }
+
+  // Months
+  interval = Math.floor(seconds / 2592000);
+  if (interval < 12) {
+    return interval <= 1 ? '1 month ago' : interval + ' months ago';
+  }
+
+  // Years
+  interval = Math.floor(seconds / 31536000);
+  return interval <= 1 ? '1 year ago' : interval + ' years ago';
+}
+

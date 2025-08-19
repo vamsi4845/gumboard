@@ -184,6 +184,12 @@ export async function PUT(
       });
     });
 
+
+    await db.board.update({
+      where: { id: boardId },
+      data: { updatedAt: new Date() },
+    });
+
     if (archivedAt !== undefined && user.organization?.slackWebhookUrl && note.slackMessageId) {
       const userName = note.user?.name || note.user?.email || "Unknown User";
       const boardName = note.board.name;
@@ -309,6 +315,11 @@ export async function DELETE(
       data: {
         deletedAt: new Date(),
       },
+    });
+
+    await db.board.update({
+      where: { id: boardId },
+      data: { updatedAt: new Date() },
     });
 
     return NextResponse.json({ success: true });

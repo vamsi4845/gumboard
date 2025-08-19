@@ -174,6 +174,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     });
 
+
+    await db.board.update({
+      where: { id: boardId },
+      data: { updatedAt: new Date() },
+    });
+
     // Send Slack notification if note has checklist items with content
     const noteWithItems = note as typeof note & { checklistItems?: Array<{ content: string }> };
     const hasContent =
