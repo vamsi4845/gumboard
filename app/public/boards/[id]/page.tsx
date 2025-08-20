@@ -1,27 +1,25 @@
 "use client";
-//removed useRef which we used for board ref as we don't need this anymore
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
-import Link from "next/link";
-import { BetaBadge } from "@/components/ui/beta-badge";
-import { FullPageLoader } from "@/components/ui/loader";
-import { FilterPopover } from "@/components/ui/filter-popover";
-import type { Note, Board } from "@/components/note";
+
+import { useUser } from "@/app/contexts/UserContext";
+import { BoardWrapper } from "@/components/board-wrapper";
+import type { Board, Note } from "@/components/note";
 import { Note as NoteCard } from "@/components/note";
 import { ProfileDropdown } from "@/components/profile-dropdown";
-import { useUser } from "@/app/contexts/UserContext";
-// removed   calculateGridLayout   calculateGridLayout, calculateMobileLayout  as we don't need to calculate the layout and height of the notes(handled by board-wrapper)
-import { getUniqueAuthors, filterAndSortNotes } from "@/lib/utils";
-import { BoardWrapper } from "@/components/board-wrapper";
+import { BetaBadge } from "@/components/ui/beta-badge";
+import { Button } from "@/components/ui/button";
+import { FilterPopover } from "@/components/ui/filter-popover";
+import { FullPageLoader } from "@/components/ui/loader";
+import { filterAndSortNotes, getUniqueAuthors } from "@/lib/utils";
+import { Search } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 export default function PublicBoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [boardId, setBoardId] = useState<string | null>(null);
-  //removed isMobile, handled using tailwind classes instead
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
     startDate: Date | null;
@@ -31,7 +29,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
     endDate: null,
   });
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
-  //removed board ref as its not needed anymore
   const router = useRouter();
   const { user } = useUser();
 
@@ -48,8 +45,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
       fetchBoardData();
     }
   }, [boardId]);
-
-  // Removed responsive handling as its handled by board-wrapper automatically
 
   const fetchBoardData = async () => {
     try {
@@ -90,8 +85,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
     () => filterAndSortNotes(notes, searchTerm, dateRange, selectedAuthor, null),
     [notes, searchTerm, dateRange, selectedAuthor]
   );
-
-  //Removed layout notes and board height as we don't need to calculate the layout and  height of the notes(handled by board-wrapper)
 
   if (loading) {
     return <FullPageLoader message="Loading board..." />;
@@ -180,12 +173,9 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* Removed Old Div and replaced with BoardWrapper */}
-      {/* Notes (uses filteredNotes directly instead of layoutNotes as we don't need to calculate layouts or heights anymore */}
       <BoardWrapper>
         {filteredNotes.map((note) => (
           <div key={note.id} className="mb-4 break-inside-avoid">
-            {/* Replaced inline style with tailwind classes with breakpoints */}
             <NoteCard
               key={note.id}
               note={note as Note}

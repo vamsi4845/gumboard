@@ -21,8 +21,6 @@ export function getBaseUrl(requestOrHeaders?: Request | Headers): string {
   return process.env.AUTH_URL || "http://localhost:3000";
 }
 
-//Removed getResponsiveConfig as its handled by tailwind classes automatically
-
 export function getUniqueAuthors(notes: Note[]) {
   const authorsMap = new Map<
     string,
@@ -42,8 +40,6 @@ export function getUniqueAuthors(notes: Note[]) {
 
   return Array.from(authorsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
-
-//Removed calculateNoteHeight,calculateGridLayout,calculateMobileLayout as we don't need to adjust the layout and height of the notes in every view(handled by board-wrapper)
 
 // Filter and sort notes based on search term, date range, and author
 export function filterAndSortNotes(
