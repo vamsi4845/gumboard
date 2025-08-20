@@ -176,11 +176,7 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
       <BoardWrapper>
         {filteredNotes.map((note) => (
           <div key={note.id} className="mb-4 break-inside-avoid">
-            <NoteCard
-              key={note.id}
-              note={note as Note}
-              readonly={true}
-            />
+            <NoteCard key={note.id} note={note as Note} readonly={true} />
           </div>
         ))}
 
