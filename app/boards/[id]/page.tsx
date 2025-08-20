@@ -1,5 +1,5 @@
 "use client";
-
+// Auto-sorted by IDE
 import { Note as NoteCard } from "@/components/note";
 import { BetaBadge } from "@/components/ui/beta-badge";
 import { Button } from "@/components/ui/button";

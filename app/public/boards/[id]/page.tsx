@@ -1,5 +1,5 @@
 "use client";
-
+// Auto-sorted by IDE
 import { useUser } from "@/app/contexts/UserContext";
 import { BoardWrapper } from "@/components/board-wrapper";
 import type { Board, Note } from "@/components/note";
