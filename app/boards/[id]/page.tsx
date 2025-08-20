@@ -28,14 +28,12 @@ import { BoardPageSkeleton } from "@/components/board-skeleton";
 import type { Board, Note, User } from "@/components/note";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { filterAndSortNotes, getUniqueAuthors } from "@/lib/utils";
-import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { BoardWrapper } from "@/components/board-wrapper";
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [notes, setNotes] = useState<Note[]>([]);
-  const { resolvedTheme } = useTheme();
   const [allBoards, setAllBoards] = useState<Board[]>([]);
   const [notesloading, setNotesLoading] = useState(true);
   const { user, loading: userLoading } = useUser();
