@@ -5,7 +5,7 @@ interface BoardWrapperProps {
   children: React.ReactNode;
   className?: string;
 }
-
+//Wrapper component that handles the layout and height of the notes automatically uses tailwind classes for breakpoints
 export function BoardWrapper({ children, className }: BoardWrapperProps) {
   return (
     <div

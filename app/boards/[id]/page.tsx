@@ -1,16 +1,16 @@
 "use client";
 
-import { Note as NoteCard } from "@/components/note";
-import { BetaBadge } from "@/components/ui/beta-badge";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FilterPopover } from "@/components/ui/filter-popover";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ChevronDown, ChevronUp, Copy, EllipsisVertical, Search, Trash2, X } from "lucide-react";
+import { ChevronDown, Search, Copy, Trash2, X, ChevronUp, EllipsisVertical } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { BetaBadge } from "@/components/ui/beta-badge";
+import { FilterPopover } from "@/components/ui/filter-popover";
+import { Note as NoteCard } from "@/components/note";
 
 import {
   AlertDialog,
@@ -23,13 +23,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 // Use shared types from components
-import { useUser } from "@/app/contexts/UserContext";
-import { BoardPageSkeleton } from "@/components/board-skeleton";
-import type { Board, Note, User } from "@/components/note";
-import { ProfileDropdown } from "@/components/profile-dropdown";
-import { filterAndSortNotes, getUniqueAuthors } from "@/lib/utils";
+import type { Note, Board, User } from "@/components/note";
 import { useTheme } from "next-themes";
+import { ProfileDropdown } from "@/components/profile-dropdown";
 import { toast } from "sonner";
+import { useUser } from "@/app/contexts/UserContext";
+// removed   calculateGridLayout   calculateGridLayout, calculateMobileLayout  as we don't need to calculate the layout and height of the notes(handled by board-wrapper)
+import { filterAndSortNotes, getUniqueAuthors } from "@/lib/utils";
+import { BoardPageSkeleton } from "@/components/board-skeleton";
 import { BoardWrapper } from "@/components/board-wrapper";
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
@@ -45,6 +46,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [newBoardName, setNewBoardName] = useState("");
   const [newBoardDescription, setNewBoardDescription] = useState("");
   const [boardId, setBoardId] = useState<string | null>(null);
+  //removed isMobile, handled using tailwind classes instead
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState<{
@@ -72,6 +74,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   });
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(false);
+  //removed board ref as its not needed anymore
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -209,6 +212,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     };
   }, [showBoardDropdown, showAddBoard, addingChecklistItem]);
 
+  // Removed debounce cleanup effect; editing is scoped to Note
+
+  // Removed responsive handling as its handled by board-wrapper automatically
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
@@ -226,6 +233,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     () => filterAndSortNotes(notes, debouncedSearchTerm, dateRange, selectedAuthor, user),
     [notes, debouncedSearchTerm, dateRange, selectedAuthor, user]
   );
+
+  //Removed layout notes and board height as we don't need to calculate the layout and  height of the notes(handled by board-wrapper)
 
   const fetchBoardData = async () => {
     try {
@@ -831,10 +840,12 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
       </div>
 
-      {/* Notes */}
+      {/* Removed Board Area Div and replaced with BoardWrapper */}
+      {/* Notes (uses filteredNotes directly instead of layoutNotes as we don't need to calculate layouts or heights anymore */}
       <BoardWrapper>
         {filteredNotes.map((note) => (
           <div key={note.id} className="mb-4 break-inside-avoid">
+            {/* Replaced inline style with tailwind classes with breakpoints */}
             <NoteCard
               key={note.id}
               note={note as Note}
