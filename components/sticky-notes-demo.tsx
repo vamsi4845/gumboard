@@ -361,7 +361,7 @@ export function StickyNotesDemo() {
               >
                 <div className="pb-4">
                   <NoteComponent
-                    className={`${note.color} bg-white dark:bg-zinc-900 p-4`}
+                    className={`${note.color} bg-white dark:bg-zinc-900`}
                     note={note}
                     currentUser={{ id: "demo-user", name: "Demo User", email: "demo@example.com" }}
                     onUpdate={handleUpdateNote}

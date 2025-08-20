@@ -337,7 +337,7 @@ export function Note({
   return (
     <div
       className={cn(
-        "rounded-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border",
+        " p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] rounded-lg select-none group transition-all duration-200 flex flex-col border border-gray-200 dark:border-gray-600 box-border shadow-md shadow-black/10 ",
         className
       )}
       data-testid="note-card"

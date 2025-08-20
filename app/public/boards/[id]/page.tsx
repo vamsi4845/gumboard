@@ -180,7 +180,6 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
               key={note.id}
               note={note as Note}
               readonly={true}
-              className={`shadow-md shadow-black/10 p-3 sm:p-[14px] md:p-4 xl:p-4 2xl:p-[18px] ${note.color} rounded-lg`}
             />
           </div>
         ))}
