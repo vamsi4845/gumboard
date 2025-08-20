@@ -186,7 +186,8 @@ export default function PublicBoardPage({ params }: { params: Promise<{ id: stri
         ))}
 
         {filteredNotes.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          //absolute center of the page
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
             <div className="text-center">
               <div className="text-6xl mb-4">📝</div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
