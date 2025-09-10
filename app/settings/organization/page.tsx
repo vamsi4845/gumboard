@@ -602,7 +602,7 @@ export default function OrganizationSettingsPage() {
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 truncate max-w-full overflow-hidden whitespace-nowrap">
             {user?.organization?.members?.map((member) => (
               <div
                 key={member.id}
@@ -877,7 +877,7 @@ export default function OrganizationSettingsPage() {
                     deletingInviteToken === invite.token
                       ? "opacity-50 pointer-events-none transition-opacity duration-100"
                       : ""
-                  }`}
+                  } truncate max-w-full overflow-scroll whitespace-nowrap`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
