@@ -176,7 +176,7 @@ export default function ProfileSettingsPage() {
                         </AlertDialogTitle>
                         <AlertDialogDescription
                           asChild
-                          className="text-foreground dark:text-zinc-100"
+                          className="text-foreground dark:text-zinc-100 text-left"
                         >
                           <div>
                             This will permanently delete your account and related data. This action
